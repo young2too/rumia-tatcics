@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lumia Tactics</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="topbar" aria-label="game status">
+        <div class="brand">
+          <span class="brand-mark">LT</span>
+          <div>
+            <h1>Lumia Tactics</h1>
+            <p>이터널 리턴 캐릭터 팬 오토체스 프로토타입</p>
+          </div>
+        </div>
+        <div class="stats">
+          <div><span>라운드</span><strong id="round">1</strong></div>
+          <div><span>체력</span><strong id="hp">100</strong></div>
+          <div class="level-stat">
+            <span>레벨</span>
+            <strong id="level">1</strong>
+            <small id="levelXp">0 / 2 XP</small>
+            <i id="levelXpBar"></i>
+          </div>
+          <div><span>흐름</span><strong id="streak">-</strong><small id="income">수입 +0</small></div>
+        </div>
+      </section>
+
+      <section class="main-grid">
+        <aside class="panel left-panel">
+          <div class="panel-title">
+            <h2>시너지</h2>
+          </div>
+          <div id="traits" class="traits"></div>
+          <div class="log-wrap">
+            <h2>전투 로그</h2>
+            <div id="log" class="log"></div>
+          </div>
+        </aside>
+
+        <section class="board-wrap">
+          <div class="arena-head">
+            <div>
+              <h2>루미아 섬 전장</h2>
+              <p id="phase">준비 단계: 상점에서 영입하고 보드에 배치하세요.</p>
+            </div>
+            <div class="actions">
+              <button id="levelUp">4XP 구매</button>
+              <button id="battle" class="primary">전투 시작</button>
+            </div>
+          </div>
+          <div class="battlefield" aria-label="auto chess board">
+            <div id="enemyBoard" class="enemy-board"></div>
+            <div id="board" class="board"></div>
+          </div>
+          <div class="bench-wrap">
+            <div class="bench-head">
+              <h2>벤치</h2>
+              <span id="benchCount">0/8</span>
+            </div>
+            <div id="bench" class="bench"></div>
+          </div>
+        </section>
+
+        <aside class="panel shop-panel">
+          <div class="panel-title">
+            <h2>상점</h2>
+            <div class="shop-tools">
+              <button id="oddsToggle" class="odds-toggle" title="상점 확률표">확률표</button>
+              <button id="shopLock" class="shop-lock" title="상점 잠금">잠금 해제</button>
+              <button id="reroll" class="shop-reroll" title="상점 새로고침">2크레딧 리롤</button>
+            </div>
+          </div>
+          <div class="shop-wallet">
+            <span>보유 크레딧</span>
+            <strong id="gold">8</strong>
+          </div>
+          <div id="shop" class="shop"></div>
+          <div id="oddsPopover" class="shop-odds" hidden>
+            <div class="panel-title">
+              <h2>상점 확률</h2>
+              <span>기물 풀</span>
+            </div>
+            <div id="shopOdds" class="odds-grid"></div>
+          </div>
+          <div class="unit-detail">
+            <div class="panel-title">
+              <h2>유닛 정보</h2>
+              <span id="detailTier">선택 없음</span>
+            </div>
+            <div id="unitDetail" class="detail-body"></div>
+            <button id="sellUnit" class="sell-unit" disabled>판매</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <template id="unitTemplate">
+      <button class="unit" draggable="true">
+        <span class="portrait"></span>
+        <span class="name"></span>
+        <span class="meta"></span>
+        <span class="stars"></span>
+        <span class="hpbar"><i></i></span>
+        <span class="manabar"><i></i></span>
+      </button>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
