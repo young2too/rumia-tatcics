@@ -1136,7 +1136,11 @@ function makeEnemies() {
 
   const segmentRound = ((state.round - 1) % balance.battle.bossInterval) + 1;
   const countByRound = [1, 2, 2, 3, 3, 4, 4];
-  const count = countByRound[segmentRound - 1] || 4;
+  const allyCount = Math.max(1, boardUnits().length);
+  const baselineCount = countByRound[segmentRound - 1] || 4;
+  const segmentPressure = (segmentRound >= 8 ? 1 : 0) + (segmentRound >= 12 ? 1 : 0);
+  const stagePressure = Math.floor(stage / 2);
+  const count = Math.min(balance.battle.enemySlots, Math.max(baselineCount, allyCount) + segmentPressure + stagePressure);
   const maxCost = Math.min(5, 1 + stage + (segmentRound >= 5 ? 1 : 0));
   const candidates = roster.filter((unit) => unit.cost <= maxCost);
   const hpScale = Math.min(1.45, balance.battle.enemyBaseHpScale + stage * balance.battle.enemyStageHpGrowth);
