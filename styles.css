@@ -283,7 +283,8 @@ h2 {
     repeating-linear-gradient(90deg, transparent 0 58px, rgba(255, 255, 255, 0.025) 58px 60px);
 }
 
-.ranking-button {
+.ranking-button,
+.audio-button {
   height: 38px;
   padding: 0 14px;
   border: 1px solid rgba(106, 169, 255, 0.45);
@@ -293,9 +294,22 @@ h2 {
   font-weight: 800;
 }
 
-.ranking-button:hover {
+.ranking-button:hover,
+.audio-button:hover {
   border-color: rgba(106, 169, 255, 0.8);
   background: rgba(106, 169, 255, 0.16);
+}
+
+.audio-button.active {
+  border-color: rgba(117, 200, 120, 0.78);
+  background: rgba(117, 200, 120, 0.15);
+  color: #d8ffd9;
+}
+
+.audio-button.error {
+  border-color: rgba(239, 90, 86, 0.62);
+  background: rgba(239, 90, 86, 0.12);
+  color: #ffd7d5;
 }
 
 .field-xp {
@@ -585,20 +599,20 @@ h2 {
 
 .enemy-board {
   position: relative;
-  z-index: 3;
+  z-index: auto;
   margin-bottom: 0;
-  opacity: 0.88;
   padding-bottom: 0;
 }
 
 .board {
   position: relative;
-  z-index: 2;
+  z-index: auto;
   padding-top: 0;
 }
 
 .cell {
   position: relative;
+  z-index: 1;
   display: grid;
   width: var(--hex-w);
   min-height: var(--hex-h);
@@ -610,8 +624,12 @@ h2 {
   overflow: visible;
 }
 
+.cell.has-unit {
+  z-index: calc(var(--depth, 1) + 200);
+}
+
 .cell.boss-cell {
-  z-index: 500;
+  z-index: calc(var(--depth, 1) + 500);
 }
 
 .cell::before {
