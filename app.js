@@ -449,6 +449,7 @@ function applySynergy(unit, counts) {
 function unitNode(unit, source, index, compact = false) {
   const tpl = document.getElementById("unitTemplate");
   const node = tpl.content.firstElementChild.cloneNode(true);
+  node.classList.add(source);
   node.dataset.source = source;
   node.dataset.index = String(index);
   node.dataset.unitId = unit.id;
@@ -997,6 +998,19 @@ function dealDamage(source, target, amount) {
   return damage;
 }
 
+function weaponEffectKind(unit, type = "attack") {
+  if (type === "heal" || type === "shield") return type;
+  if (type === "skill" && ["술법", "지원"].includes(unit.role)) return "magic";
+  if (["권총", "돌격소총", "저격총"].includes(unit.weapon)) return "bullet";
+  if (["활", "석궁"].includes(unit.weapon)) return "arrow";
+  if (["투척", "암기", "아르카나"].includes(unit.weapon)) return "magic";
+  return "slash";
+}
+
+function combatEffect(from, to, type = "attack") {
+  return { from: from.id, to: to.id, type, weapon: from.weapon, kind: weaponEffectKind(from, type) };
+}
+
 function basicAttack(attacker, enemies) {
   const target = pickTarget(attacker, enemies);
   if (!target) return { message: "", effects: [] };
@@ -1013,7 +1027,7 @@ function basicAttack(attacker, enemies) {
   attacker.status = "attacking";
   return {
     message: `${attacker.name} → ${target.name} ${damage} 피해`,
-    effects: [{ from: attacker.id, to: target.id, type: "attack" }],
+    effects: [combatEffect(attacker, target, "attack")],
   };
 }
 
@@ -1028,7 +1042,7 @@ function castSkill(caster, allies, enemies) {
     target.status = "healed";
     return {
       message: `${caster.name} 스킬: ${target.name} ${heal} 회복`,
-      effects: [{ from: caster.id, to: target.id, type: "heal" }],
+      effects: [combatEffect(caster, target, "heal")],
     };
   }
 
@@ -1038,7 +1052,7 @@ function castSkill(caster, allies, enemies) {
     for (const target of targets) total += dealDamage(caster, target, caster.skillAmp * 0.75 + 10);
     return {
       message: `${caster.name} 스킬: 광역 ${total} 피해`,
-      effects: targets.map((target) => ({ from: caster.id, to: target.id, type: "skill" })),
+      effects: targets.map((target) => combatEffect(caster, target, "skill")),
     };
   }
 
@@ -1048,7 +1062,7 @@ function castSkill(caster, allies, enemies) {
     caster.status = "healed";
     return {
       message: `${caster.name} 스킬: ${heal} 보호막`,
-      effects: [{ from: caster.id, to: caster.id, type: "shield" }],
+      effects: [combatEffect(caster, caster, "shield")],
     };
   }
 
@@ -1066,7 +1080,7 @@ function castSkill(caster, allies, enemies) {
   const damage = dealDamage(caster, target, caster.atk * 0.75 + caster.skillAmp * scale + 10);
   return {
     message: `${caster.name} 스킬: ${target.name} ${damage} 피해`,
-    effects: [{ from: caster.id, to: target.id, type: "skill" }],
+    effects: [combatEffect(caster, target, "skill")],
   };
 }
 
@@ -1091,11 +1105,15 @@ function playCombatEffects(effects) {
     const endX = toRect.left + toRect.width / 2 - fieldRect.left;
     const endY = toRect.top + toRect.height / 2 - fieldRect.top;
     const projectile = document.createElement("span");
-    projectile.className = `projectile ${effect.type}`;
-    projectile.style.left = `${startX}px`;
-    projectile.style.top = `${startY}px`;
+    const kind = effect.kind || effect.type;
+    projectile.className = `projectile ${effect.type} ${kind}`;
+    const originX = kind === "slash" ? endX : startX;
+    const originY = kind === "slash" ? endY : startY;
+    projectile.style.left = `${originX}px`;
+    projectile.style.top = `${originY}px`;
     projectile.style.setProperty("--dx", `${endX - startX}px`);
     projectile.style.setProperty("--dy", `${endY - startY}px`);
+    projectile.style.setProperty("--angle", `${Math.atan2(endY - startY, endX - startX)}rad`);
     field.append(projectile);
     projectile.addEventListener("animationend", () => projectile.remove(), { once: true });
   }
