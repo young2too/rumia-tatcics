@@ -231,6 +231,7 @@ const bossRoster = [
 ];
 
 const rankingStorageKey = "lumia-tactics-rankings";
+const rankingConfig = window.LUMIA_TACTICS_CONFIG?.supabase || {};
 let memoryRankings = [];
 
 const state = {
@@ -254,6 +255,11 @@ const state = {
   selected: null,
   busy: false,
   rankingOpen: false,
+  rankingEntries: [],
+  rankingLoaded: false,
+  rankingLoading: false,
+  rankingSaving: false,
+  rankingError: "",
   deathRecord: null,
   rankingSubmitted: false,
 };
@@ -318,7 +324,7 @@ function createUnitPool() {
   return Object.fromEntries(roster.map((unit) => [unit.name, balance.shop.stockByCost[unit.cost] || 0]));
 }
 
-function rankingEntries() {
+function localRankingEntries() {
   try {
     return JSON.parse(localStorage.getItem(rankingStorageKey) || "[]");
   } catch {
@@ -326,12 +332,69 @@ function rankingEntries() {
   }
 }
 
-function saveRankingEntries(entries) {
+function saveLocalRankingEntries(entries) {
   memoryRankings = entries;
   try {
     localStorage.setItem(rankingStorageKey, JSON.stringify(entries));
   } catch {
     // localStorage can be unavailable in some embedded contexts.
+  }
+}
+
+function rankingBackendEnabled() {
+  return Boolean(rankingConfig.url && rankingConfig.anonKey && rankingConfig.table);
+}
+
+function rankingEndpoint(query = "") {
+  return `${rankingConfig.url.replace(/\/$/, "")}/rest/v1/${rankingConfig.table}${query}`;
+}
+
+function rankingHeaders(extra = {}) {
+  return {
+    apikey: rankingConfig.anonKey,
+    Authorization: `Bearer ${rankingConfig.anonKey}`,
+    "Content-Type": "application/json",
+    ...extra,
+  };
+}
+
+function normalizeRankingEntry(entry) {
+  return {
+    id: entry.id || crypto.randomUUID(),
+    name: entry.name || entry.nickname || "익명",
+    stage: Number(entry.stage) || 1,
+    board: Array.isArray(entry.board) ? entry.board : [],
+    createdAt: entry.createdAt || entry.created_at || new Date().toISOString(),
+  };
+}
+
+async function loadRankings(force = false) {
+  if (state.rankingLoading || (state.rankingLoaded && !force)) return;
+  state.rankingLoading = true;
+  state.rankingError = "";
+  renderRanking();
+
+  try {
+    if (!rankingBackendEnabled()) {
+      state.rankingEntries = localRankingEntries().map(normalizeRankingEntry);
+      return;
+    }
+
+    const response = await fetch(rankingEndpoint("?select=id,nickname,stage,board,created_at&order=stage.desc,created_at.asc&limit=50"), {
+      headers: rankingHeaders(),
+    });
+    if (!response.ok) throw new Error(`랭킹 조회 실패 (${response.status})`);
+    state.rankingEntries = (await response.json()).map(normalizeRankingEntry);
+  } catch (error) {
+    state.rankingError = rankingBackendEnabled()
+      ? "서버 랭킹을 불러오지 못해 로컬 기록을 표시합니다."
+      : "";
+    state.rankingEntries = localRankingEntries().map(normalizeRankingEntry);
+    console.warn(error);
+  } finally {
+    state.rankingLoaded = true;
+    state.rankingLoading = false;
+    renderRanking();
   }
 }
 
@@ -358,21 +421,56 @@ function captureDeathRecord(stage, board = state.board) {
   state.rankingOpen = true;
 }
 
-function submitRanking() {
+async function submitRanking() {
   if (!state.deathRecord || state.rankingSubmitted) return;
+  if (state.rankingSaving) return;
   const name = refs.rankName.value.trim().slice(0, 12) || "익명";
   const entry = {
     id: crypto.randomUUID(),
     name,
     ...state.deathRecord,
   };
-  const entries = [entry, ...rankingEntries()]
-    .sort((a, b) => b.stage - a.stage || new Date(a.createdAt) - new Date(b.createdAt))
-    .slice(0, 20);
-  saveRankingEntries(entries);
-  state.rankingSubmitted = true;
-  refs.rankName.value = "";
-  render();
+  state.rankingSaving = true;
+  state.rankingError = "";
+  renderRanking();
+
+  try {
+    if (rankingBackendEnabled()) {
+      const response = await fetch(rankingEndpoint(), {
+        method: "POST",
+        headers: rankingHeaders({ Prefer: "return=minimal" }),
+        body: JSON.stringify({
+          nickname: entry.name,
+          stage: entry.stage,
+          board: entry.board,
+        }),
+      });
+      if (!response.ok) throw new Error(`랭킹 등록 실패 (${response.status})`);
+      state.rankingSubmitted = true;
+      refs.rankName.value = "";
+      await loadRankings(true);
+      render();
+      return;
+    }
+
+    throw new Error("서버 랭킹 설정이 없습니다.");
+  } catch (error) {
+    const entries = [entry, ...localRankingEntries()]
+      .map(normalizeRankingEntry)
+      .sort((a, b) => b.stage - a.stage || new Date(a.createdAt) - new Date(b.createdAt))
+      .slice(0, 20);
+    saveLocalRankingEntries(entries);
+    state.rankingEntries = entries;
+    state.rankingError = rankingBackendEnabled()
+      ? "서버 등록에 실패해 이 브라우저에 임시 저장했습니다."
+      : "서버 설정 전이라 이 브라우저에 임시 저장했습니다.";
+    state.rankingSubmitted = true;
+    refs.rankName.value = "";
+    console.warn(error);
+  } finally {
+    state.rankingSaving = false;
+    render();
+  }
 }
 
 function sample(arr) {
@@ -773,11 +871,16 @@ function renderTraits() {
 }
 
 function renderRanking() {
-  const entries = rankingEntries();
+  const entries = state.rankingEntries;
   refs.rankingModal.hidden = !state.rankingOpen;
   refs.rankSubmit.hidden = !state.deathRecord || state.rankingSubmitted;
+  refs.rankSave.disabled = state.rankingSaving;
+  refs.rankSave.textContent = state.rankingSaving ? "등록 중" : "등록";
   refs.rankingPanel.hidden = false;
-  refs.rankingPanel.innerHTML = entries.length
+  const status = state.rankingError ? `<div class="ranking-empty">${state.rankingError}</div>` : "";
+  refs.rankingPanel.innerHTML = state.rankingLoading
+    ? `<div class="ranking-empty">랭킹을 불러오는 중입니다.</div>`
+    : entries.length
     ? entries
         .map((entry, index) => `
           <div class="rank-entry">
@@ -794,6 +897,7 @@ function renderRanking() {
         `)
         .join("")
     : `<div class="ranking-empty">등록된 기록이 없습니다.</div>`;
+  if (status) refs.rankingPanel.insertAdjacentHTML("afterbegin", status);
 }
 
 function renderUnitDetail() {
@@ -1518,6 +1622,7 @@ $("levelUp").addEventListener("click", buyXp);
 refs.sellUnit.addEventListener("click", sellSelectedUnit);
 refs.rankingToggle.addEventListener("click", () => {
   state.rankingOpen = true;
+  loadRankings(true);
   render();
 });
 refs.rankingClose.addEventListener("click", () => {
@@ -1536,4 +1641,5 @@ refs.rankName.addEventListener("keydown", (event) => {
 });
 
 addLog("상점에서 캐릭터를 영입하고 보드로 드래그하세요.");
+loadRankings();
 rollShop();
