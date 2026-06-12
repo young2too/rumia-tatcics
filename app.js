@@ -202,6 +202,7 @@ const refs = {
   level: $("level"),
   levelXp: $("levelXp"),
   levelXpBar: $("levelXpBar"),
+  fieldXpBar: $("fieldXpBar"),
   levelUp: $("levelUp"),
   shop: $("shop"),
   oddsToggle: $("oddsToggle"),
@@ -645,7 +646,9 @@ function render() {
   refs.level.textContent = state.level;
   refs.levelXp.textContent = levelXpLabel();
   const nextXp = xpToNextLevel();
-  refs.levelXpBar.style.width = state.level >= balance.player.maxLevel ? "100%" : `${Math.round((state.xp / nextXp) * 100)}%`;
+  const xpWidth = state.level >= balance.player.maxLevel ? "100%" : `${Math.round((state.xp / nextXp) * 100)}%`;
+  refs.levelXpBar.style.width = xpWidth;
+  refs.fieldXpBar.style.width = xpWidth;
   refs.levelUp.textContent =
     state.level >= balance.player.maxLevel ? "최대 레벨" : `${balance.player.buyXpCost}크레딧 → ${balance.player.buyXpAmount}XP`;
   refs.levelUp.disabled = state.level >= balance.player.maxLevel;
