@@ -134,6 +134,7 @@ const balance = {
   battle: {
     columns: 8,
     enemySlots: 16,
+    maxFieldEnemies: 11,
     meleeRange: 1,
     rangedRange: 4,
     baseIncome: 1,
@@ -141,10 +142,14 @@ const balance = {
     maxInterest: 5,
     interestStep: 10,
     bossInterval: 15,
-    enemyBaseHpScale: 0.45,
-    enemyBaseAtkScale: 0.38,
-    enemyStageHpGrowth: 0.16,
-    enemyStageAtkGrowth: 0.13,
+    enemyBaseHpScale: 0.85,
+    enemyBaseAtkScale: 0.85,
+    enemyHpRoundGrowth: 0.019,
+    enemyAtkRoundGrowth: 0.013,
+    enemyStageHpGrowth: 0.09,
+    enemyStageAtkGrowth: 0.1,
+    enemyHpScaleCap: 3.05,
+    enemyAtkScaleCap: 2.55,
     tickMs: 520,
     maxTicks: 32,
     manaPerAttack: 34,
@@ -1163,19 +1168,21 @@ function currentBossInfo() {
 
 function makeBossUnit(stage) {
   const base = bossRoster[(stage - 1) % bossRoster.length];
-  const cycle = Math.floor((stage - 1) / bossRoster.length);
-  const scale = 1 + cycle * 0.3;
+  const bossIndex = Math.max(0, stage - 1);
+  const hpScale = 1 + bossIndex * 0.34;
+  const powerScale = 1 + bossIndex * 0.16;
+  const defenseScale = 1 + bossIndex * 0.1;
   return {
     ...base,
     id: crypto.randomUUID(),
     tier: Math.min(3, 1 + Math.floor(stage / 2)),
     cost: 5,
     boss: true,
-    maxHp: Math.round(base.maxHp * scale),
-    hp: Math.round(base.maxHp * scale),
-    atk: Math.round(base.atk * scale),
-    skillAmp: Math.round(base.skillAmp * scale),
-    defense: Math.round(base.defense * (1 + cycle * 0.16)),
+    maxHp: Math.round(base.maxHp * hpScale),
+    hp: Math.round(base.maxHp * hpScale),
+    atk: Math.round(base.atk * powerScale),
+    skillAmp: Math.round(base.skillAmp * powerScale),
+    defense: Math.round(base.defense * defenseScale),
     summonCount: 0,
     immuneUsed: false,
     immuneTicks: 0,
@@ -1196,11 +1203,17 @@ function makeEnemies() {
   const baselineCount = countByRound[segmentRound - 1] || 4;
   const segmentPressure = (segmentRound >= 8 ? 1 : 0) + (segmentRound >= 12 ? 1 : 0);
   const stagePressure = Math.floor(stage / 2);
-  const count = Math.min(balance.battle.enemySlots, Math.max(baselineCount, allyCount) + segmentPressure + stagePressure);
+  const count = Math.min(balance.battle.maxFieldEnemies, Math.max(baselineCount, allyCount) + segmentPressure + stagePressure);
   const maxCost = Math.min(5, 1 + stage + (segmentRound >= 5 ? 1 : 0));
   const candidates = roster.filter((unit) => unit.cost <= maxCost);
-  const hpScale = Math.min(1.45, balance.battle.enemyBaseHpScale + stage * balance.battle.enemyStageHpGrowth);
-  const atkScale = Math.min(1.3, balance.battle.enemyBaseAtkScale + stage * balance.battle.enemyStageAtkGrowth);
+  const hpScale = Math.min(
+    balance.battle.enemyHpScaleCap,
+    balance.battle.enemyBaseHpScale + state.round * balance.battle.enemyHpRoundGrowth + stage * balance.battle.enemyStageHpGrowth
+  );
+  const atkScale = Math.min(
+    balance.battle.enemyAtkScaleCap,
+    balance.battle.enemyBaseAtkScale + state.round * balance.battle.enemyAtkRoundGrowth + stage * balance.battle.enemyStageAtkGrowth
+  );
   const spawnOrder = [11, 12, 10, 13, 9, 14, 3, 4, 2, 5, 1, 6, 0, 7, 8, 15];
   Array.from({ length: count }, (_, i) => {
     const unit = makeUnit(sample(candidates), stage >= 2 && Math.random() > 0.88 ? 2 : 1);
@@ -1366,6 +1379,123 @@ function removeDeadUnits(units) {
   }
 }
 
+function hexNeighborSteps(y) {
+  return y % 2 === 0
+    ? [
+        { x: 1, y: 0 },
+        { x: -1, y: 0 },
+        { x: 0, y: -1 },
+        { x: -1, y: -1 },
+        { x: 0, y: 1 },
+        { x: -1, y: 1 },
+      ]
+    : [
+        { x: 1, y: 0 },
+        { x: -1, y: 0 },
+        { x: 1, y: -1 },
+        { x: 0, y: -1 },
+        { x: 1, y: 1 },
+        { x: 0, y: 1 },
+      ];
+}
+
+function unitsInRange(source, targets, range) {
+  return living(targets).filter((unit) => distanceBetween(source, unit) <= range);
+}
+
+function unitsInFront(source, targets, range) {
+  const from = unitSlot(source);
+  if (!from) return [];
+  const forward = source.side === "enemy" ? 1 : -1;
+  return unitsInRange(source, targets, range).filter((unit) => {
+    const to = unitSlot(unit);
+    return to && (to.y - from.y) * forward >= 0;
+  });
+}
+
+function applyStun(unit, ticks) {
+  unit.stunTicks = Math.max(unit.stunTicks || 0, ticks);
+  unit.status = "stunned";
+}
+
+function knockBack(target, source, steps) {
+  if (!state.combatGrid) return 0;
+  let moved = 0;
+  for (let i = 0; i < steps; i++) {
+    const from = unitSlot(target);
+    const sourceSlot = unitSlot(source);
+    if (!from || !sourceSlot) break;
+    const currentDistance = hexDistanceSlots(from, sourceSlot);
+    const options = hexNeighborSteps(from.y)
+      .map((step) => ({ x: from.x + step.x, y: from.y + step.y }))
+      .filter((slot) => {
+        const index = slotIndexFor(target.side, slot.x, slot.y, true);
+        if (index < 0 || state.combatGrid[index]) return false;
+        return hexDistanceSlots(slot, sourceSlot) > currentDistance;
+      })
+      .sort((a, b) => hexDistanceSlots(b, sourceSlot) - hexDistanceSlots(a, sourceSlot));
+    if (!options.length) break;
+    const next = options[0];
+    const nextIndex = slotIndexFor(target.side, next.x, next.y, true);
+    state.combatGrid[from.index] = null;
+    state.combatGrid[nextIndex] = target;
+    moved++;
+  }
+  if (moved) target.status = "moving";
+  return moved;
+}
+
+function backlineTargets(caster, enemies, count = 3) {
+  return living(enemies)
+    .slice()
+    .sort((a, b) => {
+      const slotA = unitSlot(a);
+      const slotB = unitSlot(b);
+      const depthA = slotA ? (caster.side === "enemy" ? slotA.y : -slotA.y) : 0;
+      const depthB = slotB ? (caster.side === "enemy" ? slotB.y : -slotB.y) : 0;
+      if (depthA !== depthB) return depthB - depthA;
+      return a.hp - b.hp;
+    })
+    .slice(0, count);
+}
+
+function summonOmega(caster) {
+  if (!state.combatGrid || caster.summonCount >= 1) return null;
+  const emptyEnemySlots = state.enemies
+    .map((unit, index) => (unit ? -1 : index))
+    .filter((index) => index >= 0)
+    .sort((a, b) => {
+      const casterSlot = unitSlot(caster);
+      if (!casterSlot) return a - b;
+      const slotA = { x: a % balance.battle.columns, y: Math.floor(a / balance.battle.columns) };
+      const slotB = { x: b % balance.battle.columns, y: Math.floor(b / balance.battle.columns) };
+      return hexDistanceSlots(slotA, casterSlot) - hexDistanceSlots(slotB, casterSlot);
+    });
+  const index = emptyEnemySlots[0];
+  if (index == null) return null;
+  const omega = {
+    ...bossRoster.find((boss) => boss.pattern === "omega"),
+    id: crypto.randomUUID(),
+    tier: 2,
+    cost: 5,
+    boss: true,
+    summoned: true,
+    maxHp: Math.round(caster.maxHp * 0.42),
+    hp: Math.round(caster.maxHp * 0.42),
+    atk: Math.round(caster.atk * 0.72),
+    skillAmp: Math.round(caster.skillAmp * 0.72),
+    defense: Math.round(caster.defense * 0.9),
+    summonCount: 0,
+    immuneUsed: false,
+    immuneTicks: 0,
+  };
+  prepareCombatUnit(omega, caster.side);
+  state.enemies[index] = omega;
+  state.combatGrid[index] = omega;
+  caster.summonCount += 1;
+  return omega;
+}
+
 function prepareCombatUnit(unit, side, counts = {}) {
   const stats = side === "ally" ? applySynergy(unit, counts) : {
     hp: unit.maxHp,
@@ -1386,6 +1516,8 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.healPower = stats.heal;
   unit.range = unitAttackRange(unit);
   unit.status = "";
+  unit.stunTicks = 0;
+  unit.immuneTicks = unit.immuneTicks || 0;
   unit.focusTargetId = null;
   unit.hasPickedOpeningTarget = false;
   return unit;
@@ -1411,6 +1543,16 @@ function pickTarget(attacker, enemies) {
 function dealDamage(source, target, amount) {
   const damageFloor = Math.max(3, Math.round(amount * 0.12));
   const damage = Math.max(damageFloor, Math.round(amount - target.defense * 0.45));
+  if (target.pattern === "wickeline" && target.immuneTicks > 0) {
+    target.status = "immune";
+    return 0;
+  }
+  if (target.pattern === "wickeline" && !target.immuneUsed && (target.hp - damage) / target.maxHp <= 0.1) {
+    target.immuneUsed = true;
+    target.immuneTicks = 4;
+    target.status = "immune";
+    return 0;
+  }
   target.hp = Math.max(0, target.hp - damage);
   const manaFromHit = Math.min(balance.battle.manaPerHit, Math.max(3, Math.round(damage * 0.32)));
   target.mana = Math.min(100, (target.mana || 0) + manaFromHit);
@@ -1443,6 +1585,19 @@ function basicAttack(attacker, enemies) {
     };
   }
   const variance = 0.86 + Math.random() * 0.28;
+  if (attacker.pattern === "nadja") {
+    const targets = unitsInRange(attacker, enemies, unitAttackRange(attacker))
+      .sort((a, b) => distanceBetween(attacker, a) - distanceBetween(attacker, b))
+      .slice(0, 2);
+    let total = 0;
+    for (const unit of targets) total += dealDamage(attacker, unit, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
+    attacker.mana = Math.min(100, attacker.mana + balance.battle.manaPerAttack);
+    attacker.status = "attacking";
+    return {
+      message: `${attacker.name} basic cleave ${total}`,
+      effects: targets.map((unit) => combatEffect(attacker, unit, "attack")),
+    };
+  }
   const damage = dealDamage(attacker, target, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
   attacker.mana = Math.min(100, attacker.mana + balance.battle.manaPerAttack);
   attacker.status = "attacking";
@@ -1452,9 +1607,75 @@ function basicAttack(attacker, enemies) {
   };
 }
 
+function castBossSkill(caster, allies, enemies) {
+  const effects = [];
+  if (caster.pattern === "bear") {
+    const targets = unitsInRange(caster, enemies, 1);
+    let total = 0;
+    for (const target of targets) {
+      total += dealDamage(caster, target, caster.skillAmp * 1.35 + caster.atk * 0.35);
+      applyStun(target, 2);
+      effects.push(combatEffect(caster, target, "skill"));
+    }
+    return { message: `${caster.name} roar stun ${targets.length} / ${total}`, effects };
+  }
+
+  if (caster.pattern === "alpha" || caster.pattern === "omega") {
+    const isOmega = caster.pattern === "omega";
+    const targets = unitsInFront(caster, enemies, 2);
+    let total = 0;
+    for (const target of targets) {
+      total += dealDamage(caster, target, caster.skillAmp * (isOmega ? 1.45 : 1.15) + caster.atk * 0.55);
+      knockBack(target, caster, isOmega ? 2 : 1);
+      applyStun(target, isOmega ? 2 : 1);
+      effects.push(combatEffect(caster, target, "skill"));
+    }
+    return { message: `${caster.name} shockwave ${targets.length} / ${total}`, effects };
+  }
+
+  if (caster.pattern === "wickeline") {
+    const targets = backlineTargets(caster, enemies, 3);
+    let total = 0;
+    for (const target of targets) {
+      total += dealDamage(caster, target, caster.skillAmp * 1.4 + caster.atk * 0.4);
+      effects.push(combatEffect(caster, target, "skill"));
+    }
+    return { message: `${caster.name} toxic shots ${targets.length} / ${total}`, effects };
+  }
+
+  if (caster.pattern === "hana") {
+    const omega = summonOmega(caster);
+    if (omega) {
+      effects.push(combatEffect(caster, omega, "skill"));
+      return { message: `${caster.name} summoned Omega`, effects };
+    }
+    const target = pickTarget(caster, enemies);
+    if (!target) return { message: "", effects: [] };
+    const damage = dealDamage(caster, target, caster.skillAmp * 1.2 + caster.atk * 0.45);
+    return { message: `${caster.name} arcane hit ${damage}`, effects: [combatEffect(caster, target, "skill")] };
+  }
+
+  if (caster.pattern === "nadja") {
+    const targets = living(enemies);
+    let total = 0;
+    for (const target of targets) {
+      total += dealDamage(caster, target, caster.skillAmp * 0.95 + caster.atk * 0.35);
+      effects.push(combatEffect(caster, target, "skill"));
+    }
+    return { message: `${caster.name} full-map strike ${targets.length} / ${total}`, effects };
+  }
+
+  return null;
+}
+
 function castSkill(caster, allies, enemies) {
   caster.mana = 0;
   caster.status = "casting";
+
+  if (caster.boss) {
+    const bossAction = castBossSkill(caster, allies, enemies);
+    if (bossAction) return bossAction;
+  }
 
   if (caster.role === "지원") {
     const target = living(allies).reduce((low, unit) => (unit.hp / unit.maxHp < low.hp / low.maxHp ? unit : low), living(allies)[0]);
@@ -1584,18 +1805,32 @@ async function simulate() {
   while (living(allies).length && living(state.enemies).length && tick < balance.battle.maxTicks) {
     tick += 1;
     clearCombatStatus([...allies, ...state.enemies]);
+    for (const unit of [...living(allies), ...living(state.enemies)]) {
+      if (unit.immuneTicks > 0) {
+        unit.status = "immune";
+      }
+    }
     const actors = [...living(allies), ...living(state.enemies)].sort((a, b) => b.speed - a.speed);
     const tickLogs = [];
     const effects = [];
 
     for (const actor of actors) {
       if (actor.hp <= 0) continue;
+      if (actor.stunTicks > 0) {
+        actor.stunTicks -= 1;
+        actor.status = "stunned";
+        continue;
+      }
       const friends = actor.side === "ally" ? allies : state.enemies;
       const foes = actor.side === "ally" ? state.enemies : allies;
       if (!living(foes).length) break;
       const action = actor.mana >= 100 ? castSkill(actor, friends, foes) : basicAttack(actor, foes);
       if (action.message) tickLogs.push(action.message);
       effects.push(...action.effects);
+    }
+
+    for (const unit of [...living(allies), ...living(state.enemies)]) {
+      if (unit.immuneTicks > 0) unit.immuneTicks -= 1;
     }
 
     addLog(tickLogs.slice(0, 3).join(" / "));
@@ -1625,6 +1860,8 @@ async function simulate() {
     unit.hp = unit.maxHp;
     unit.mana = 0;
     unit.status = "";
+    unit.stunTicks = 0;
+    unit.immuneTicks = 0;
     unit.focusTargetId = null;
     unit.hasPickedOpeningTarget = false;
   }
