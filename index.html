@@ -15,6 +15,7 @@
             <h1>Lumia Tactics</h1>
             <p>이터널 리턴 캐릭터 팬 오토체스 프로토타입</p>
           </div>
+          <button id="rankingToggle" class="ranking-button" title="랭킹 보기">랭킹</button>
         </div>
         <div class="stats">
           <div><span>라운드</span><strong id="round">1</strong></div>
@@ -53,7 +54,10 @@
             </div>
           </div>
           <div class="battlefield" aria-label="auto chess board">
-            <div id="boardCapacity" class="board-capacity" aria-hidden="true">0/1</div>
+            <div id="boardCapacity" class="board-capacity" aria-hidden="true">
+              <strong id="boardCapacityMain">0/1</strong>
+              <span id="boardCapacitySub"></span>
+            </div>
             <div id="enemyBoard" class="enemy-board"></div>
             <div id="board" class="board"></div>
             <div class="field-xp" aria-hidden="true"><i id="fieldXpBar"></i></div>
@@ -78,7 +82,7 @@
           </div>
           <div class="shop-wallet">
             <span>보유 크레딧</span>
-            <strong id="gold">8</strong>
+            <strong id="gold">1</strong>
           </div>
           <div id="shop" class="shop"></div>
           <div id="oddsPopover" class="shop-odds" hidden>
@@ -98,6 +102,23 @@
           </div>
         </aside>
       </section>
+
+      <div id="rankingModal" class="ranking-modal" hidden>
+        <section class="ranking-dialog" role="dialog" aria-modal="true" aria-labelledby="rankingTitle">
+          <div class="panel-title">
+            <h2 id="rankingTitle">랭킹</h2>
+            <button id="rankingClose" class="icon-button" title="닫기">닫기</button>
+          </div>
+          <div id="rankSubmit" class="rank-submit" hidden>
+            <p>체력이 0이 된 시점의 기록을 등록할 수 있습니다.</p>
+            <div>
+              <input id="rankName" maxlength="12" placeholder="닉네임" />
+              <button id="rankSave">등록</button>
+            </div>
+          </div>
+          <div id="rankingPanel" class="ranking-panel"></div>
+        </section>
+      </div>
     </main>
 
     <template id="unitTemplate">
@@ -111,6 +132,6 @@
       </button>
     </template>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20260612-battle-lock"></script>
   </body>
 </html>
