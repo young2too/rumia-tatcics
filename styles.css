@@ -406,6 +406,26 @@ h2 {
     #251d20;
 }
 
+.cell.occupied.ally::before {
+  background:
+    linear-gradient(145deg, rgba(117, 200, 120, 0.42), rgba(52, 197, 183, 0.18)),
+    #203528;
+  box-shadow:
+    inset 0 0 0 2px rgba(117, 200, 120, 0.78),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.08),
+    0 0 18px rgba(117, 200, 120, 0.28);
+}
+
+.cell.occupied.enemy::before {
+  background:
+    linear-gradient(145deg, rgba(170, 137, 255, 0.44), rgba(239, 90, 86, 0.12)),
+    #2c2540;
+  box-shadow:
+    inset 0 0 0 2px rgba(170, 137, 255, 0.82),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.08),
+    0 0 18px rgba(170, 137, 255, 0.3);
+}
+
 .cell[data-col="1"],
 .cell[data-col="3"],
 .cell[data-col="5"],

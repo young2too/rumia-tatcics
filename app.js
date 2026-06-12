@@ -525,6 +525,7 @@ function renderBoard() {
   visibleBoard.forEach((unit, index) => {
     const cell = document.createElement("div");
     cell.className = "cell";
+    if (state.combatGrid && unit) cell.classList.add("occupied", "ally");
     cell.dataset.index = String(index);
     cell.dataset.row = String(Math.floor(index / balance.battle.columns));
     cell.dataset.col = String(index % balance.battle.columns);
@@ -544,6 +545,7 @@ function renderBoard() {
   visibleEnemies.forEach((unit, index) => {
     const cell = document.createElement("div");
     cell.className = "cell";
+    if (state.combatGrid && unit) cell.classList.add("occupied", "enemy");
     cell.dataset.row = String(Math.floor(index / balance.battle.columns));
     cell.dataset.col = String(index % balance.battle.columns);
     if (unit) cell.append(unitNode(unit, "enemy", index, true));
