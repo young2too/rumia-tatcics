@@ -37,7 +37,7 @@ roster.push(
   { name: "일레븐", cost: 3, role: "방패", weapon: "망치", trait: "수호", color: "#f0a5b8", hp: 134, atk: 20, speed: 0.9, skillAmp: 12, defense: 13, skill: "버거 타임", artFile: "030_Eleven.png" },
   { name: "리오", cost: 3, role: "사격", weapon: "활", trait: "정밀", color: "#9fd274", hp: 80, atk: 29, speed: 1.16, skillAmp: 11, defense: 3, skill: "쌍궁 전환", artFile: "031_Rio.png" },
   { name: "니키", cost: 3, role: "난투", weapon: "글러브", trait: "맹공", color: "#e26e6e", hp: 102, atk: 28, speed: 1.08, skillAmp: 9, defense: 7, skill: "가드 카운터", artFile: "033_Nicky.png" },
-  { name: "마커스", cost: 4, role: "방패", weapon: "도끼", trait: "수호", color: "#8f7767", hp: 146, atk: 24, speed: 0.88, skillAmp: 10, defense: 16, skill: "전장 돌파", artFile: "053_Markus.png" },
+  { name: "마커스", cost: 4, role: "방패", weapon: "도끼", trait: "수호", color: "#8f7767", hp: 132, atk: 24, speed: 0.88, skillAmp: 10, defense: 13, skill: "전장 돌파", artFile: "053_Markus.png" },
   { name: "카밀로", cost: 4, role: "검객", weapon: "레이피어", trait: "결투", color: "#e0a15e", hp: 96, atk: 34, speed: 1.16, skillAmp: 13, defense: 6, skill: "춤추는 검", artFile: "039_Camilo.png" },
   { name: "비앙카", cost: 4, role: "술법", weapon: "아르카나", trait: "주술", color: "#d184a8", hp: 84, atk: 18, speed: 0.98, skillAmp: 34, defense: 4, skill: "흡혈 의식", artFile: "042_Bianca.png" },
   { name: "셀린", cost: 4, role: "술법", weapon: "투척", trait: "주술", color: "#f08b63", hp: 82, atk: 20, speed: 1.0, skillAmp: 33, defense: 3, skill: "폭발 설치", artFile: "043_Celine.png" },
@@ -140,9 +140,11 @@ const balance = {
     winIncome: 1,
     maxInterest: 5,
     interestStep: 10,
-    enemyEarlyHpScale: 0.34,
-    enemyEarlyAtkScale: 0.3,
-    enemyScaleGrowth: 0.045,
+    bossInterval: 8,
+    enemyBaseHpScale: 0.36,
+    enemyBaseAtkScale: 0.32,
+    enemyStageHpGrowth: 0.16,
+    enemyStageAtkGrowth: 0.13,
     tickMs: 520,
     maxTicks: 32,
     manaPerAttack: 34,
@@ -161,14 +163,63 @@ const balance = {
 };
 
 const traitRules = {
-  "맹공": { need: 2, text: "난투형 공격력 +18%", apply: (s) => (s.atk *= 1.18) },
-  "정밀": { need: 2, text: "사격형 치명 기대값 +22%", apply: (s) => (s.atk *= 1.22) },
-  "수호": { need: 2, text: "방패형 체력 +24%", apply: (s) => (s.hp *= 1.24) },
-  "주술": { need: 2, text: "술법형 스킬 피해 +25%", apply: (s) => (s.skillAmp *= 1.25) },
-  "결투": { need: 2, text: "검객형 공격 속도 +20%", apply: (s) => (s.speed *= 1.2) },
-  "리듬": { need: 2, text: "지원형 회복량 +35%", apply: (s) => (s.heal *= 1.35) },
-  "기습": { need: 2, text: "암살형 첫 피해 +30%", apply: (s) => (s.atk *= 1.3) },
+  "맹공": {
+    tiers: [
+      { need: 2, text: "난투형 공격력 +18%", apply: (s) => (s.atk *= 1.18) },
+      { need: 4, text: "난투형 공격력 +34%", apply: (s) => (s.atk *= 1.34) },
+      { need: 6, text: "난투형 공격력 +55%", apply: (s) => (s.atk *= 1.55) },
+    ],
+  },
+  "정밀": {
+    tiers: [
+      { need: 2, text: "사격형 치명 기대값 +22%", apply: (s) => (s.atk *= 1.22) },
+      { need: 4, text: "사격형 치명 기대값 +40%", apply: (s) => (s.atk *= 1.4) },
+      { need: 6, text: "사격형 치명 기대값 +65%", apply: (s) => (s.atk *= 1.65) },
+    ],
+  },
+  "수호": {
+    tiers: [
+      { need: 2, text: "방패형 체력 +24%", apply: (s) => (s.hp *= 1.24) },
+      { need: 4, text: "방패형 체력 +42%, 방어 +10%", apply: (s) => { s.hp *= 1.42; s.defense *= 1.1; } },
+      { need: 6, text: "방패형 체력 +68%, 방어 +22%", apply: (s) => { s.hp *= 1.68; s.defense *= 1.22; } },
+    ],
+  },
+  "주술": {
+    tiers: [
+      { need: 2, text: "술법형 스킬 피해 +25%", apply: (s) => (s.skillAmp *= 1.25) },
+      { need: 4, text: "술법형 스킬 피해 +45%", apply: (s) => (s.skillAmp *= 1.45) },
+      { need: 6, text: "술법형 스킬 피해 +75%", apply: (s) => (s.skillAmp *= 1.75) },
+    ],
+  },
+  "결투": {
+    tiers: [
+      { need: 2, text: "검객형 공격 속도 +20%", apply: (s) => (s.speed *= 1.2) },
+      { need: 4, text: "검객형 공격 속도 +36%, 공격 +10%", apply: (s) => { s.speed *= 1.36; s.atk *= 1.1; } },
+      { need: 6, text: "검객형 공격 속도 +58%, 공격 +22%", apply: (s) => { s.speed *= 1.58; s.atk *= 1.22; } },
+    ],
+  },
+  "리듬": {
+    tiers: [
+      { need: 2, text: "지원형 회복량 +18%", apply: (s) => (s.heal *= 1.18) },
+      { need: 4, text: "지원형 회복량 +32%, 스킬 피해 +8%", apply: (s) => { s.heal *= 1.32; s.skillAmp *= 1.08; } },
+      { need: 6, text: "지원형 회복량 +52%, 스킬 피해 +16%", apply: (s) => { s.heal *= 1.52; s.skillAmp *= 1.16; } },
+    ],
+  },
+  "기습": {
+    tiers: [
+      { need: 2, text: "암살형 첫 피해 +30%", apply: (s) => (s.atk *= 1.3) },
+      { need: 4, text: "암살형 첫 피해 +55%, 공격 속도 +18%", apply: (s) => { s.atk *= 1.55; s.speed *= 1.18; } },
+    ],
+  },
 };
+
+const bossRoster = [
+  { name: "변이 곰", role: "방패", weapon: "발톱", trait: "수호", color: "#9b6a48", maxHp: 430, atk: 26, speed: 0.82, skillAmp: 14, defense: 10, skill: "육중한 포효", art: "./assets/bosses/boss_mutant_bear.png" },
+  { name: "알파", role: "난투", weapon: "VF 병기", trait: "맹공", color: "#d89b5f", maxHp: 680, atk: 38, speed: 0.92, skillAmp: 24, defense: 14, skill: "실험체 제압", art: "./assets/bosses/boss_alpha.png" },
+  { name: "오메가", role: "방패", weapon: "VF 병기", trait: "수호", color: "#aa89ff", maxHp: 940, atk: 50, speed: 0.9, skillAmp: 34, defense: 19, skill: "섬멸 프로토콜", art: "./assets/bosses/boss_omega.png" },
+  { name: "하나", role: "술법", weapon: "아르카나", trait: "주술", color: "#8ed8ff", maxHp: 1160, atk: 55, speed: 1.02, skillAmp: 58, defense: 18, skill: "관리자 권한", art: "./assets/bosses/boss_hana.png" },
+  { name: "나쟈", role: "술법", weapon: "아르카나", trait: "주술", color: "#ef5a56", maxHp: 1450, atk: 68, speed: 1.04, skillAmp: 72, defense: 22, skill: "최종 실험", art: "./assets/bosses/boss_nadja.png" },
+];
 
 const state = {
   round: 1,
@@ -210,6 +261,8 @@ const refs = {
   shopLock: $("shopLock"),
   shopOdds: $("shopOdds"),
   boardCapacity: $("boardCapacity"),
+  boardCapacityMain: $("boardCapacityMain"),
+  boardCapacitySub: $("boardCapacitySub"),
   board: $("board"),
   enemyBoard: $("enemyBoard"),
   bench: $("bench"),
@@ -434,6 +487,14 @@ function activeTraits() {
   return counts;
 }
 
+function activeTraitTier(rule, count) {
+  return rule?.tiers?.filter((tier) => count >= tier.need).at(-1) || null;
+}
+
+function nextTraitNeed(rule, count) {
+  return rule?.tiers?.find((tier) => count < tier.need)?.need || rule?.tiers?.at(-1)?.need || 0;
+}
+
 function applySynergy(unit, counts) {
   const stats = {
     hp: unit.maxHp,
@@ -444,7 +505,8 @@ function applySynergy(unit, counts) {
     heal: 1,
   };
   const rule = traitRules[unit.trait];
-  if (rule && counts[unit.trait] >= rule.need) rule.apply(stats);
+  const tier = activeTraitTier(rule, counts[unit.trait] || 0);
+  if (tier) tier.apply(stats);
   return stats;
 }
 
@@ -452,6 +514,7 @@ function unitNode(unit, source, index, compact = false) {
   const tpl = document.getElementById("unitTemplate");
   const node = tpl.content.firstElementChild.cloneNode(true);
   node.classList.add(source);
+  if (unit.boss) node.classList.add("boss-unit");
   node.dataset.source = source;
   node.dataset.index = String(index);
   node.dataset.unitId = unit.id;
@@ -589,9 +652,13 @@ function renderTraits() {
   refs.traits.innerHTML = "";
   for (const [trait, rule] of Object.entries(traitRules)) {
     const count = counts[trait] || 0;
+    const activeTier = activeTraitTier(rule, count);
+    const nextNeed = nextTraitNeed(rule, count);
+    const labelCount = Math.min(count, nextNeed);
+    const tierText = activeTier ? activeTier.text : `다음 단계: ${rule.tiers[0].text}`;
     const row = document.createElement("div");
-    row.className = `trait ${count >= rule.need ? "active" : ""}`;
-    row.innerHTML = `<strong><span>${trait}</span><span>${count}/${rule.need}</span></strong><p>${rule.text}</p>`;
+    row.className = `trait ${activeTier ? "active" : ""}`;
+    row.innerHTML = `<strong><span>${trait}</span><span>${labelCount}/${nextNeed}</span></strong><p>${tierText}</p>`;
     refs.traits.append(row);
   }
 }
@@ -652,7 +719,10 @@ function render() {
   refs.levelUp.textContent =
     state.level >= balance.player.maxLevel ? "최대 레벨" : `${balance.player.buyXpCost}크레딧 → ${balance.player.buyXpAmount}XP`;
   refs.levelUp.disabled = state.level >= balance.player.maxLevel;
-  refs.boardCapacity.textContent = `${boardUnits().length}/${boardLimit()}`;
+  const bossInfo = currentBossInfo();
+  refs.boardCapacity.classList.toggle("boss-warning", Boolean(bossInfo));
+  refs.boardCapacityMain.textContent = bossInfo ? "BOSS" : `${boardUnits().length}/${boardLimit()}`;
+  refs.boardCapacitySub.textContent = bossInfo ? `${bossInfo.name} 출현` : "";
   refs.boardCapacity.hidden = Boolean(state.combatGrid);
   refs.shopLock.textContent = state.shopLocked ? "잠금 중" : "잠금 해제";
   refs.shopLock.classList.toggle("active", state.shopLocked);
@@ -781,21 +851,60 @@ function combineAllUnits() {
   pruneShopForOwnedThreeStars();
 }
 
+function enemyDifficultyStage() {
+  return Math.floor((state.round - 1) / balance.battle.bossInterval);
+}
+
+function isBossRound() {
+  return state.round % balance.battle.bossInterval === 0;
+}
+
+function currentBossInfo() {
+  if (!isBossRound()) return null;
+  const stage = Math.max(1, state.round / balance.battle.bossInterval);
+  return bossRoster[Math.min(stage - 1, bossRoster.length - 1)];
+}
+
+function makeBossUnit(stage) {
+  const base = bossRoster[Math.min(stage - 1, bossRoster.length - 1)];
+  const overflow = Math.max(0, stage - bossRoster.length);
+  return {
+    ...base,
+    id: crypto.randomUUID(),
+    tier: Math.min(3, 1 + Math.floor(stage / 2)),
+    cost: 5,
+    boss: true,
+    maxHp: Math.round(base.maxHp * (1 + overflow * 0.28)),
+    hp: Math.round(base.maxHp * (1 + overflow * 0.28)),
+    atk: Math.round(base.atk * (1 + overflow * 0.2)),
+    skillAmp: Math.round(base.skillAmp * (1 + overflow * 0.22)),
+    defense: Math.round(base.defense * (1 + overflow * 0.14)),
+  };
+}
+
 function makeEnemies() {
-  const count = Math.min(5, Math.max(1, Math.ceil((state.round - 1) / 2)));
-  const maxCost = state.round < 4 ? 1 : state.round < 7 ? 2 : state.round < 10 ? 3 : 5;
-  const candidates = roster.filter((unit) => unit.cost <= maxCost);
-  const hpScale = Math.min(0.98, balance.battle.enemyEarlyHpScale + state.round * balance.battle.enemyScaleGrowth);
-  const atkScale = Math.min(0.92, balance.battle.enemyEarlyAtkScale + state.round * balance.battle.enemyScaleGrowth);
+  const stage = enemyDifficultyStage();
   const slots = Array(balance.battle.enemySlots).fill(null);
+  if (isBossRound()) {
+    slots[12] = makeBossUnit(Math.max(1, state.round / balance.battle.bossInterval));
+    return slots;
+  }
+
+  const segmentRound = ((state.round - 1) % balance.battle.bossInterval) + 1;
+  const countByRound = [1, 1, 2, 2, 3, 3, 4];
+  const count = countByRound[segmentRound - 1] || 4;
+  const maxCost = Math.min(5, 1 + stage + (segmentRound >= 5 ? 1 : 0));
+  const candidates = roster.filter((unit) => unit.cost <= maxCost);
+  const hpScale = Math.min(1.22, balance.battle.enemyBaseHpScale + stage * balance.battle.enemyStageHpGrowth);
+  const atkScale = Math.min(1.12, balance.battle.enemyBaseAtkScale + stage * balance.battle.enemyStageAtkGrowth);
   const spawnOrder = [11, 12, 10, 13, 9, 14, 3, 4, 2, 5, 1, 6, 0, 7, 8, 15];
   Array.from({ length: count }, (_, i) => {
-    const unit = makeUnit(sample(candidates), state.round > 8 && Math.random() > 0.84 ? 2 : 1);
-    unit.maxHp = Math.round((unit.maxHp + state.round * 3) * hpScale);
+    const unit = makeUnit(sample(candidates), stage >= 2 && Math.random() > 0.88 ? 2 : 1);
+    unit.maxHp = Math.round((unit.maxHp + stage * 14) * hpScale);
     unit.hp = unit.maxHp;
-    unit.atk = Math.max(3, Math.round((unit.atk + state.round * 0.65) * atkScale));
-    unit.skillAmp = Math.max(2, Math.round((unit.skillAmp + state.round * 0.65) * atkScale));
-    unit.defense = Math.max(0, Math.round((unit.defense + Math.floor(state.round / 4)) * hpScale));
+    unit.atk = Math.max(3, Math.round((unit.atk + stage * 2) * atkScale));
+    unit.skillAmp = Math.max(2, Math.round((unit.skillAmp + stage * 2) * atkScale));
+    unit.defense = Math.max(0, Math.round((unit.defense + stage) * hpScale));
     slots[spawnOrder[i] ?? i] = unit;
   });
   return slots;
@@ -996,9 +1105,11 @@ function pickTarget(attacker, enemies) {
 }
 
 function dealDamage(source, target, amount) {
-  const damage = Math.max(3, Math.round(amount - target.defense * 0.55));
+  const damageFloor = Math.max(3, Math.round(amount * 0.12));
+  const damage = Math.max(damageFloor, Math.round(amount - target.defense * 0.45));
   target.hp = Math.max(0, target.hp - damage);
-  target.mana = Math.min(100, (target.mana || 0) + balance.battle.manaPerHit);
+  const manaFromHit = Math.min(balance.battle.manaPerHit, Math.max(3, Math.round(damage * 0.32)));
+  target.mana = Math.min(100, (target.mana || 0) + manaFromHit);
   target.status = target.hp > 0 ? "hit" : "dead";
   if (target.hp <= 0) removeDeadUnits([target]);
   return damage;
@@ -1043,7 +1154,8 @@ function castSkill(caster, allies, enemies) {
 
   if (caster.role === "지원") {
     const target = living(allies).reduce((low, unit) => (unit.hp / unit.maxHp < low.hp / low.maxHp ? unit : low), living(allies)[0]);
-    const heal = Math.round((caster.skillAmp * 1.4 + 18) * caster.healPower);
+    const rawHeal = Math.round((caster.skillAmp * 0.72 + 10) * caster.healPower);
+    const heal = Math.min(rawHeal, Math.round(target.maxHp * 0.12));
     target.hp = Math.min(target.maxHp, target.hp + heal);
     target.status = "healed";
     return {
@@ -1063,7 +1175,8 @@ function castSkill(caster, allies, enemies) {
   }
 
   if (caster.role === "방패") {
-    const heal = Math.round(caster.skillAmp + caster.defense * 2.2 + 12);
+    const rawHeal = Math.round(caster.skillAmp * 0.35 + caster.defense * 0.55 + 5);
+    const heal = Math.min(rawHeal, Math.round(caster.maxHp * 0.045));
     caster.hp = Math.min(caster.maxHp, caster.hp + heal);
     caster.status = "healed";
     return {
@@ -1157,7 +1270,8 @@ async function simulate() {
   state.board.forEach((unit, index) => {
     if (unit) state.combatGrid[16 + index] = unit;
   });
-  addLog(`전투 시작: 아군 ${allies.length}명 vs 야생 실험체 ${living(state.enemies).length}명`);
+  const boss = living(state.enemies).find((unit) => unit.boss);
+  addLog(boss ? `보스전 시작: ${boss.name} 출현!` : `전투 시작: 아군 ${allies.length}명 vs 야생 실험체 ${living(state.enemies).length}명`);
   render();
 
   let tick = 0;
