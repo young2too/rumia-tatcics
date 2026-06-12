@@ -208,6 +208,7 @@ const refs = {
   oddsPopover: $("oddsPopover"),
   shopLock: $("shopLock"),
   shopOdds: $("shopOdds"),
+  boardCapacity: $("boardCapacity"),
   board: $("board"),
   enemyBoard: $("enemyBoard"),
   bench: $("bench"),
@@ -648,6 +649,8 @@ function render() {
   refs.levelUp.textContent =
     state.level >= balance.player.maxLevel ? "최대 레벨" : `${balance.player.buyXpCost}크레딧 → ${balance.player.buyXpAmount}XP`;
   refs.levelUp.disabled = state.level >= balance.player.maxLevel;
+  refs.boardCapacity.textContent = `${boardUnits().length}/${boardLimit()}`;
+  refs.boardCapacity.hidden = Boolean(state.combatGrid);
   refs.shopLock.textContent = state.shopLocked ? "잠금 중" : "잠금 해제";
   refs.shopLock.classList.toggle("active", state.shopLocked);
   refs.oddsPopover.hidden = !state.oddsOpen;

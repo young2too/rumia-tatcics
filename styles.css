@@ -282,6 +282,27 @@ h2 {
     repeating-linear-gradient(90deg, transparent 0 58px, rgba(255, 255, 255, 0.025) 58px 60px);
 }
 
+.board-capacity {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  z-index: 4;
+  translate: -50% -50%;
+  pointer-events: none;
+  color: rgba(237, 242, 244, 0.22);
+  font-size: clamp(52px, 9vw, 118px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.08),
+    0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+.board-capacity[hidden] {
+  display: none;
+}
+
 .projectile {
   position: absolute;
   z-index: 5;
