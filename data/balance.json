@@ -1,0 +1,190 @@
+{
+  "tier": { 
+    "hp": [
+      1,
+      1.62,
+      2.55
+    ],
+    "atk": [
+      1,
+      1.55,
+      2.35
+    ],
+    "skillAmp": [
+      1,
+      1.5,
+      2.25
+    ],
+    "defense": [
+      1,
+      1.35,
+      1.9
+    ],
+    "costBonus": [
+      0,
+      2,
+      5
+    ]
+  },
+  "shop": {
+    "baseSize": 3,
+    "maxSize": 5,
+    "rerollCost": 2,
+    "locked": false,
+    "stockByCost": {
+      "1": 29,
+      "2": 22,
+      "3": 18,
+      "4": 10,
+      "5": 9
+    },
+    "costOdds": {
+      "1": [
+        100,
+        0,
+        0,
+        0,
+        0
+      ],
+      "2": [
+        80,
+        20,
+        0,
+        0,
+        0
+      ],
+      "3": [
+        75,
+        25,
+        0,
+        0,
+        0
+      ],
+      "4": [
+        55,
+        30,
+        15,
+        0,
+        0
+      ],
+      "5": [
+        45,
+        33,
+        20,
+        2,
+        0
+      ],
+      "6": [
+        30,
+        40,
+        25,
+        5,
+        0
+      ],
+      "7": [
+        19,
+        30,
+        40,
+        10,
+        1
+      ],
+      "8": [
+        15,
+        20,
+        32,
+        30,
+        3
+      ],
+      "9": [
+        10,
+        17,
+        25,
+        33,
+        15
+      ]
+    }
+  },
+  "player": {
+    "startHp": 100,
+    "startGold": 1,
+    "maxLevel": 9,
+    "levelXp": [
+      0,
+      2,
+      6,
+      10,
+      20,
+      36,
+      48,
+      76,
+      80
+    ],
+    "combatXp": 2,
+    "buyXpCost": 4,
+    "buyXpAmount": 4
+  },
+  "battle": {
+    "columns": 8,
+    "enemySlots": 16,
+    "maxFieldEnemies": 11,
+    "enemySegmentCounts": [
+      1,
+      2,
+      2,
+      3,
+      3,
+      4,
+      4
+    ],
+    "enemySpawnOrder": [
+      11,
+      12,
+      10,
+      13,
+      9,
+      14,
+      3,
+      4,
+      2,
+      5,
+      1,
+      6,
+      0,
+      7,
+      8,
+      15
+    ],
+    "meleeRange": 1,
+    "rangedRange": 4,
+    "baseIncome": 1,
+    "winIncome": 1,
+    "maxInterest": 5,
+    "interestStep": 10,
+    "bossInterval": 15,
+    "bossHpGrowth": 0.34,
+    "bossPowerGrowth": 0.16,
+    "bossDefenseGrowth": 0.1,
+    "enemyBaseHpScale": 0.85,
+    "enemyBaseAtkScale": 0.85,
+    "enemyHpRoundGrowth": 0.019,
+    "enemyAtkRoundGrowth": 0.013,
+    "enemyStageHpGrowth": 0.09,
+    "enemyStageAtkGrowth": 0.1,
+    "enemyHpScaleCap": 3.05,
+    "enemyAtkScaleCap": 2.55,
+    "tickMs": 520,
+    "maxTicks": 32,
+    "manaPerAttack": 34,
+    "manaPerHit": 16,
+    "basicDamageMultiplier": 0.68,
+    "hpWeight": 0.32,
+    "atkWeight": 4,
+    "skillWeight": 1.4,
+    "defenseWeight": 2.6,
+    "supportBonus": 14,
+    "tankHpWeight": 0.16,
+    "tierWeight": 10,
+    "varianceMin": 0.92,
+    "varianceMax": 1.12
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "bear": {
+    "range": 1,
+    "stunTicks": 2,
+    "skillAmpMultiplier": 1.35,
+    "atkMultiplier": 0.35
+  },
+  "alpha": {
+    "range": 2,
+    "knockback": 1,
+    "stunTicks": 1,
+    "skillAmpMultiplier": 1.15,
+    "atkMultiplier": 0.55
+  },
+  "omega": {
+    "range": 2,
+    "knockback": 2,
+    "stunTicks": 2,
+    "skillAmpMultiplier": 1.45,
+    "atkMultiplier": 0.55
+  },
+  "wickeline": {
+    "targetCount": 3,
+    "immuneHpRatio": 0.1,
+    "immuneTicks": 4,
+    "skillAmpMultiplier": 1.4,
+    "atkMultiplier": 0.4
+  },
+  "hana": {
+    "summonLimit": 1,
+    "summonHpRatio": 0.42,
+    "summonAtkRatio": 0.72,
+    "summonSkillAmpRatio": 0.72,
+    "summonDefenseRatio": 0.9,
+    "fallbackSkillAmpMultiplier": 1.2,
+    "fallbackAtkMultiplier": 0.45
+  },
+  "nadja": {
+    "basicTargetCount": 2,
+    "skillAmpMultiplier": 0.95,
+    "atkMultiplier": 0.35
+  }
+}

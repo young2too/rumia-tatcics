@@ -1,240 +1,18 @@
-const roster = [
-  { name: "재키", cost: 2, role: "난투", weapon: "도끼", trait: "맹공", color: "#ef5a56", hp: 104, atk: 24, speed: 1.02, skillAmp: 12, defense: 7, skill: "처치 시 공격력 증가" },
-  { name: "아야", cost: 2, role: "사격", weapon: "권총", trait: "정밀", color: "#6aa9ff", hp: 82, atk: 28, speed: 1.1, skillAmp: 9, defense: 3, skill: "첫 공격 치명타" },
-  { name: "현우", cost: 1, role: "방패", weapon: "글러브", trait: "수호", color: "#75c878", hp: 122, atk: 17, speed: 0.92, skillAmp: 5, defense: 12, skill: "전투 시작 보호막" },
-  { name: "혜진", cost: 3, role: "술법", weapon: "활", trait: "주술", color: "#aa89ff", hp: 76, atk: 20, speed: 0.96, skillAmp: 24, defense: 2, skill: "적 전체 약화" },
-  { name: "유키", cost: 3, role: "검객", weapon: "양손검", trait: "결투", color: "#f0bd54", hp: 96, atk: 31, speed: 1.0, skillAmp: 10, defense: 6, skill: "단일 대상 추가 피해" },
-  { name: "하트", cost: 2, role: "지원", weapon: "기타", trait: "리듬", color: "#ff8ec7", hp: 84, atk: 15, speed: 1.04, skillAmp: 18, defense: 4, skill: "아군 회복" },
-  { name: "쇼이치", cost: 3, role: "암살", weapon: "단검", trait: "기습", color: "#d0d4d8", hp: 78, atk: 34, speed: 1.16, skillAmp: 12, defense: 3, skill: "후열 공격" },
-  { name: "리다이린", cost: 2, role: "난투", weapon: "쌍절곤", trait: "맹공", color: "#e4824d", hp: 98, atk: 23, speed: 1.14, skillAmp: 8, defense: 6, skill: "연속 타격" },
-  { name: "시셀라", cost: 4, role: "술법", weapon: "투척", trait: "주술", color: "#8ed8ff", hp: 70, atk: 17, speed: 0.98, skillAmp: 31, defense: 1, skill: "체력이 낮을수록 강함" },
-  { name: "레녹스", cost: 3, role: "방패", weapon: "채찍", trait: "수호", color: "#39c0a2", hp: 132, atk: 19, speed: 0.9, skillAmp: 8, defense: 14, skill: "받는 피해 감소" },
-  { name: "로지", cost: 2, role: "사격", weapon: "권총", trait: "정밀", color: "#ff7c76", hp: 80, atk: 25, speed: 1.22, skillAmp: 9, defense: 3, skill: "공격 속도 증가" },
-  { name: "마이", cost: 2, role: "지원", weapon: "채찍", trait: "리듬", color: "#d9b06f", hp: 92, atk: 16, speed: 0.96, skillAmp: 17, defense: 8, skill: "아군 방어력 증가" },
-  { name: "엘레나", cost: 3, role: "검객", weapon: "레이피어", trait: "결투", color: "#91d5f6", hp: 94, atk: 27, speed: 1.08, skillAmp: 15, defense: 6, skill: "빙결 일격" },
-  { name: "아이작", cost: 4, role: "암살", weapon: "톤파", trait: "기습", color: "#9c8174", hp: 88, atk: 37, speed: 1.08, skillAmp: 14, defense: 5, skill: "약한 적 마무리" },
-  { name: "프리야", cost: 3, role: "지원", weapon: "기타", trait: "리듬", color: "#98db85", hp: 86, atk: 14, speed: 1.0, skillAmp: 25, defense: 4, skill: "전투 중 재생" },
-  { name: "헤이즈", cost: 4, role: "사격", weapon: "돌격소총", trait: "정밀", color: "#ffb15f", hp: 84, atk: 32, speed: 1.12, skillAmp: 18, defense: 4, skill: "광역 탄막" },
-  { name: "클로에", cost: 5, role: "술법", weapon: "암기", trait: "주술", color: "#d8c3b8", hp: 78, atk: 22, speed: 1.02, skillAmp: 38, defense: 3, skill: "인형과 함께 큰 피해" },
-];
+import "./config.js";
 
-roster.push(
-  { name: "피오라", cost: 1, role: "검객", weapon: "레이피어", trait: "결투", color: "#c7d8ef", hp: 88, atk: 22, speed: 1.08, skillAmp: 9, defense: 5, skill: "찌르기 연계", artFile: "005_Fiora.png" },
-  { name: "나딘", cost: 1, role: "사격", weapon: "석궁", trait: "정밀", color: "#89b97a", hp: 74, atk: 24, speed: 1.06, skillAmp: 8, defense: 3, skill: "야성 중첩", artFile: "006_Nadine.png" },
-  { name: "쇼우", cost: 1, role: "난투", weapon: "창", trait: "맹공", color: "#db8d4d", hp: 106, atk: 19, speed: 0.94, skillAmp: 10, defense: 8, skill: "뜨거운 한방", artFile: "013_Xiukai.png" },
-  { name: "매그너스", cost: 1, role: "방패", weapon: "망치", trait: "수호", color: "#7b8a93", hp: 128, atk: 18, speed: 0.88, skillAmp: 5, defense: 13, skill: "몸통 박치기", artFile: "004_Magnus.png" },
-  { name: "자히르", cost: 2, role: "술법", weapon: "투척", trait: "주술", color: "#6fbcc2", hp: 72, atk: 17, speed: 1.0, skillAmp: 25, defense: 2, skill: "차크람 폭풍", artFile: "007_Zahir.png" },
-  { name: "키아라", cost: 2, role: "난투", weapon: "레이피어", trait: "맹공", color: "#b35d7a", hp: 98, atk: 24, speed: 1.02, skillAmp: 13, defense: 6, skill: "집착의 낙인", artFile: "015_Chiara.png" },
-  { name: "루크", cost: 2, role: "암살", weapon: "방망이", trait: "기습", color: "#d8c65d", hp: 86, atk: 29, speed: 1.1, skillAmp: 8, defense: 4, skill: "청소 완료", artFile: "022_Luke.png" },
-  { name: "캐시", cost: 2, role: "지원", weapon: "단검", trait: "리듬", color: "#f08da4", hp: 84, atk: 18, speed: 1.04, skillAmp: 20, defense: 5, skill: "응급 처치", artFile: "023_Cathy.png" },
-  { name: "실비아", cost: 2, role: "사격", weapon: "권총", trait: "정밀", color: "#f2c15e", hp: 78, atk: 25, speed: 1.14, skillAmp: 10, defense: 3, skill: "기동 사격", artFile: "018_Silvia.png" },
-  { name: "엠마", cost: 2, role: "술법", weapon: "암기", trait: "주술", color: "#c393ef", hp: 76, atk: 16, speed: 1.0, skillAmp: 26, defense: 2, skill: "마술 모자", artFile: "019_Emma.png" },
-  { name: "버니스", cost: 3, role: "사격", weapon: "저격총", trait: "정밀", color: "#a97b55", hp: 86, atk: 32, speed: 0.96, skillAmp: 12, defense: 4, skill: "덫 사격", artFile: "025_Bernice.png" },
-  { name: "바바라", cost: 3, role: "술법", weapon: "방망이", trait: "주술", color: "#83b8e8", hp: 82, atk: 18, speed: 0.94, skillAmp: 29, defense: 5, skill: "센트리 건", artFile: "026_Barbara.png" },
-  { name: "알렉스", cost: 3, role: "암살", weapon: "톤파", trait: "기습", color: "#8494a8", hp: 88, atk: 30, speed: 1.12, skillAmp: 13, defense: 5, skill: "잠입 전술", artFile: "027_Alex.png" },
-  { name: "수아", cost: 3, role: "지원", weapon: "망치", trait: "리듬", color: "#b5a6f2", hp: 90, atk: 17, speed: 1.0, skillAmp: 26, defense: 6, skill: "책갈피 보호", artFile: "028_Sua.png" },
-  { name: "레온", cost: 3, role: "난투", weapon: "글러브", trait: "맹공", color: "#59b8d0", hp: 106, atk: 27, speed: 1.06, skillAmp: 10, defense: 7, skill: "파도타기", artFile: "029_Leon.png" },
-  { name: "일레븐", cost: 3, role: "방패", weapon: "망치", trait: "수호", color: "#f0a5b8", hp: 134, atk: 20, speed: 0.9, skillAmp: 12, defense: 13, skill: "버거 타임", artFile: "030_Eleven.png" },
-  { name: "리오", cost: 3, role: "사격", weapon: "활", trait: "정밀", color: "#9fd274", hp: 80, atk: 29, speed: 1.16, skillAmp: 11, defense: 3, skill: "쌍궁 전환", artFile: "031_Rio.png" },
-  { name: "니키", cost: 3, role: "난투", weapon: "글러브", trait: "맹공", color: "#e26e6e", hp: 102, atk: 28, speed: 1.08, skillAmp: 9, defense: 7, skill: "가드 카운터", artFile: "033_Nicky.png" },
-  { name: "마커스", cost: 4, role: "방패", weapon: "도끼", trait: "수호", color: "#8f7767", hp: 132, atk: 24, speed: 0.88, skillAmp: 10, defense: 13, skill: "전장 돌파", artFile: "053_Markus.png" },
-  { name: "카밀로", cost: 4, role: "검객", weapon: "레이피어", trait: "결투", color: "#e0a15e", hp: 96, atk: 34, speed: 1.16, skillAmp: 13, defense: 6, skill: "춤추는 검", artFile: "039_Camilo.png" },
-  { name: "비앙카", cost: 4, role: "술법", weapon: "아르카나", trait: "주술", color: "#d184a8", hp: 84, atk: 18, speed: 0.98, skillAmp: 34, defense: 4, skill: "흡혈 의식", artFile: "042_Bianca.png" },
-  { name: "셀린", cost: 4, role: "술법", weapon: "투척", trait: "주술", color: "#f08b63", hp: 82, atk: 20, speed: 1.0, skillAmp: 33, defense: 3, skill: "폭발 설치", artFile: "043_Celine.png" },
-  { name: "에키온", cost: 4, role: "난투", weapon: "VF의수", trait: "맹공", color: "#7bd0b0", hp: 112, atk: 31, speed: 1.08, skillAmp: 15, defense: 8, skill: "폭주", artFile: "044_Echion.png" },
-  { name: "띠아", cost: 4, role: "지원", weapon: "방망이", trait: "리듬", color: "#f0d36f", hp: 86, atk: 16, speed: 1.04, skillAmp: 31, defense: 4, skill: "색채 보호", artFile: "048_Tia.png" },
-  { name: "아디나", cost: 4, role: "술법", weapon: "아르카나", trait: "주술", color: "#86a7ef", hp: 80, atk: 17, speed: 1.0, skillAmp: 36, defense: 3, skill: "천체 배열", artFile: "052_Adina.png" },
-  { name: "에스텔", cost: 4, role: "방패", weapon: "도끼", trait: "수호", color: "#e67b5a", hp: 138, atk: 22, speed: 0.92, skillAmp: 14, defense: 15, skill: "소방 진압", artFile: "055_Estelle.png" },
-  { name: "칼라", cost: 4, role: "사격", weapon: "석궁", trait: "정밀", color: "#78c6d0", hp: 82, atk: 33, speed: 1.1, skillAmp: 15, defense: 4, skill: "갈고리 사격", artFile: "054_Karla.png" },
-  { name: "아비게일", cost: 5, role: "암살", weapon: "도끼", trait: "기습", color: "#bd6c94", hp: 96, atk: 42, speed: 1.14, skillAmp: 18, defense: 7, skill: "차원 절단", artFile: "067_Abigail.png" },
-  { name: "케네스", cost: 5, role: "난투", weapon: "도끼", trait: "맹공", color: "#b9814f", hp: 124, atk: 39, speed: 1.02, skillAmp: 16, defense: 10, skill: "불굴의 돌진", artFile: "071_Kenneth.png" },
-  { name: "샬럿", cost: 5, role: "지원", weapon: "아르카나", trait: "리듬", color: "#f3c7d7", hp: 90, atk: 18, speed: 1.02, skillAmp: 40, defense: 5, skill: "빛의 축복", artFile: "073_Charlotte.png" }
-);
+import rosterData from "./data/roster.json" with { type: "json" };
 
-const costOverridesByColor = {
-  "#ef5a56": 1,
-  "#75c878": 1,
-  "#e4824d": 1,
-  "#ff7c76": 1,
-  "#6aa9ff": 2,
-  "#ff8ec7": 2,
-  "#39c0a2": 2,
-  "#d9b06f": 2,
-  "#aa89ff": 3,
-  "#f0bd54": 3,
-  "#91d5f6": 3,
-  "#98db85": 3,
-  "#d0d4d8": 4,
-  "#8ed8ff": 4,
-  "#ffb15f": 4,
-  "#9c8174": 5,
-  "#d8c3b8": 5,
-};
+const roster = rosterData.map((unit) => ({ ...unit }));
 
-const artByColor = {
-  "#ef5a56": "001_Jackie.png",
-  "#6aa9ff": "002_Aya.png",
-  "#75c878": "003_Hyunwoo.png",
-  "#aa89ff": "012_Hyejin.png",
-  "#f0bd54": "011_Yuki.png",
-  "#ff8ec7": "008_Hart.png",
-  "#d0d4d8": "017_Shoichi.png",
-  "#e4824d": "010_Li_Dailin.png",
-  "#8ed8ff": "014_Sissela.png",
-  "#39c0a2": "020_Lenox.png",
-  "#ff7c76": "021_Rozzi.png",
-  "#d9b06f": "045_Mai.png",
-  "#91d5f6": "050_Elena.png",
-  "#9c8174": "059_Isaac.png",
-  "#98db85": "051_Priya.png",
-  "#ffb15f": "058_Haze.png",
-  "#d8c3b8": "040_Chloe.png",
-};
+import balanceData from "./data/balance.json" with { type: "json" };
+import traitRulesData from "./data/traits.json" with { type: "json" };
+import bossRosterData from "./data/bosses.json" with { type: "json" };
+import bossPatternsData from "./data/boss-patterns.json" with { type: "json" };
 
-for (const unit of roster) {
-  unit.cost = costOverridesByColor[unit.color] || unit.cost;
-  unit.art = unit.artFile ? `./assets/characters/${unit.artFile}` : artByColor[unit.color] ? `./assets/characters/${artByColor[unit.color]}` : "";
-}
-
-const balance = {
-  tier: {
-    hp: [1, 1.62, 2.55],
-    atk: [1, 1.55, 2.35],
-    skillAmp: [1, 1.5, 2.25],
-    defense: [1, 1.35, 1.9],
-    costBonus: [0, 2, 5],
-  },
-  shop: {
-    baseSize: 3,
-    maxSize: 5,
-    rerollCost: 2,
-    locked: false,
-    stockByCost: { 1: 29, 2: 22, 3: 18, 4: 10, 5: 9 },
-    costOdds: {
-      1: [100, 0, 0, 0, 0],
-      2: [80, 20, 0, 0, 0],
-      3: [75, 25, 0, 0, 0],
-      4: [55, 30, 15, 0, 0],
-      5: [45, 33, 20, 2, 0],
-      6: [30, 40, 25, 5, 0],
-      7: [19, 30, 40, 10, 1],
-      8: [15, 20, 32, 30, 3],
-      9: [10, 17, 25, 33, 15],
-    },
-  },
-  player: {
-    startHp: 100,
-    startGold: 1,
-    maxLevel: 9,
-    levelXp: [0, 2, 6, 10, 20, 36, 48, 76, 80],
-    combatXp: 2,
-    buyXpCost: 4,
-    buyXpAmount: 4,
-  },
-  battle: {
-    columns: 8,
-    enemySlots: 16,
-    maxFieldEnemies: 11,
-    meleeRange: 1,
-    rangedRange: 4,
-    baseIncome: 1,
-    winIncome: 1,
-    maxInterest: 5,
-    interestStep: 10,
-    bossInterval: 15,
-    enemyBaseHpScale: 0.85,
-    enemyBaseAtkScale: 0.85,
-    enemyHpRoundGrowth: 0.019,
-    enemyAtkRoundGrowth: 0.013,
-    enemyStageHpGrowth: 0.09,
-    enemyStageAtkGrowth: 0.1,
-    enemyHpScaleCap: 3.05,
-    enemyAtkScaleCap: 2.55,
-    tickMs: 520,
-    maxTicks: 32,
-    manaPerAttack: 34,
-    manaPerHit: 16,
-    basicDamageMultiplier: 0.68,
-    hpWeight: 0.32,
-    atkWeight: 4,
-    skillWeight: 1.4,
-    defenseWeight: 2.6,
-    supportBonus: 14,
-    tankHpWeight: 0.16,
-    tierWeight: 10,
-    varianceMin: 0.92,
-    varianceMax: 1.12,
-  },
-};
-
-const traitRules = {
-  "맹공": {
-    tiers: [
-      { need: 2, text: "난투형 공격력 +18%", apply: (s) => (s.atk *= 1.18) },
-      { need: 4, text: "난투형 공격력 +45%", apply: (s) => (s.atk *= 1.45) },
-      { need: 6, text: "난투형 공격력 +80%", apply: (s) => (s.atk *= 1.8) },
-      { need: 8, text: "난투형 공격력 +125%", apply: (s) => (s.atk *= 2.25) },
-    ],
-  },
-  "정밀": {
-    tiers: [
-      { need: 2, text: "사격형 치명 기대값 +22%", apply: (s) => (s.atk *= 1.22) },
-      { need: 4, text: "사격형 치명 기대값 +52%", apply: (s) => (s.atk *= 1.52) },
-      { need: 6, text: "사격형 치명 기대값 +90%", apply: (s) => (s.atk *= 1.9) },
-      { need: 8, text: "사격형 치명 기대값 +140%", apply: (s) => (s.atk *= 2.4) },
-    ],
-  },
-  "수호": {
-    tiers: [
-      { need: 2, text: "방패형 체력 +24%", apply: (s) => (s.hp *= 1.24) },
-      { need: 4, text: "방패형 체력 +60%, 방어 +12%", apply: (s) => { s.hp *= 1.6; s.defense *= 1.12; } },
-      { need: 6, text: "방패형 체력 +100%, 방어 +24%", apply: (s) => { s.hp *= 2; s.defense *= 1.24; } },
-      { need: 8, text: "방패형 체력 +155%, 방어 +38%", apply: (s) => { s.hp *= 2.55; s.defense *= 1.38; } },
-    ],
-  },
-  "주술": {
-    tiers: [
-      { need: 2, text: "술법형 스킬 피해 +25%", apply: (s) => (s.skillAmp *= 1.25) },
-      { need: 4, text: "술법형 스킬 피해 +62%", apply: (s) => (s.skillAmp *= 1.62) },
-      { need: 6, text: "술법형 스킬 피해 +105%", apply: (s) => (s.skillAmp *= 2.05) },
-      { need: 8, text: "술법형 스킬 피해 +170%", apply: (s) => (s.skillAmp *= 2.7) },
-    ],
-  },
-  "결투": {
-    tiers: [
-      { need: 2, text: "검객형 공격 속도 +20%", apply: (s) => (s.speed *= 1.2) },
-      { need: 4, text: "검객형 공격 속도 +48%, 공격 +12%", apply: (s) => { s.speed *= 1.48; s.atk *= 1.12; } },
-      { need: 6, text: "검객형 공격 속도 +82%, 공격 +26%", apply: (s) => { s.speed *= 1.82; s.atk *= 1.26; } },
-      { need: 8, text: "검객형 공격 속도 +125%, 공격 +44%", apply: (s) => { s.speed *= 2.25; s.atk *= 1.44; } },
-    ],
-  },
-  "리듬": {
-    tiers: [
-      { need: 2, text: "지원형 회복량 +35%", apply: (s) => (s.heal *= 1.35) },
-      { need: 4, text: "지원형 회복량 +80%, 스킬 피해 +10%", apply: (s) => { s.heal *= 1.8; s.skillAmp *= 1.1; } },
-      { need: 6, text: "지원형 회복량 +135%, 스킬 피해 +22%", apply: (s) => { s.heal *= 2.35; s.skillAmp *= 1.22; } },
-      { need: 8, text: "지원형 회복량 +210%, 스킬 피해 +40%", apply: (s) => { s.heal *= 3.1; s.skillAmp *= 1.4; } },
-    ],
-  },
-  "기습": {
-    tiers: [
-      { need: 2, text: "암살형 첫 피해 +30%", apply: (s) => (s.atk *= 1.3) },
-      { need: 4, text: "암살형 첫 피해 +75%, 공격 속도 +18%", apply: (s) => { s.atk *= 1.75; s.speed *= 1.18; } },
-      { need: 6, text: "암살형 첫 피해 +125%, 공격 속도 +34%", apply: (s) => { s.atk *= 2.25; s.speed *= 1.34; } },
-      { need: 8, text: "암살형 첫 피해 +190%, 공격 속도 +55%", apply: (s) => { s.atk *= 2.9; s.speed *= 1.55; } },
-    ],
-  },
-};
-
-const bossRoster = [
-  { name: "변이 곰", pattern: "bear", role: "방패", weapon: "발톱", trait: "수호", color: "#9b6a48", maxHp: 450, atk: 26, speed: 0.82, skillAmp: 14, defense: 10, skill: "육중한 포효", art: "./assets/bosses/boss_mutant_bear.png" },
-  { name: "알파", pattern: "alpha", role: "난투", weapon: "VF 병기", trait: "맹공", color: "#d89b5f", maxHp: 700, atk: 38, speed: 0.92, skillAmp: 24, defense: 14, skill: "전방 제압", art: "./assets/bosses/boss_alpha.png" },
-  { name: "오메가", pattern: "omega", role: "방패", weapon: "VF 병기", trait: "수호", color: "#aa89ff", maxHp: 960, atk: 50, speed: 0.9, skillAmp: 34, defense: 19, skill: "섬멸 충격파", art: "./assets/bosses/boss_omega.png" },
-  { name: "위클라인", pattern: "wickeline", role: "술법", weapon: "투척", trait: "주술", color: "#7bd0b0", maxHp: 1080, atk: 48, speed: 1.02, skillAmp: 54, defense: 17, skill: "위험 물질 투척", art: "./assets/bosses/boss_wickeline.png" },
-  { name: "하나", pattern: "hana", role: "술법", weapon: "아르카나", trait: "주술", color: "#8ed8ff", maxHp: 1160, atk: 55, speed: 1.02, skillAmp: 58, defense: 18, skill: "오메가 호출", art: "./assets/bosses/boss_hana.png" },
-  { name: "나쟈", pattern: "nadja", role: "술법", weapon: "아르카나", trait: "주술", color: "#ef5a56", maxHp: 1450, atk: 68, speed: 1.04, skillAmp: 72, defense: 22, skill: "최종 실험", art: "./assets/bosses/boss_nadja.png" },
-];
-
+const balance = structuredClone(balanceData);
+const traitRules = structuredClone(traitRulesData);
+const bossRoster = bossRosterData.map((boss) => ({ ...boss }));
+const bossPatterns = structuredClone(bossPatternsData);
 const rankingStorageKey = "lumia-tactics-rankings";
 const rankingConfig = window.LUMIA_TACTICS_CONFIG?.supabase || {};
 const bgmConfig = window.LUMIA_TACTICS_CONFIG?.bgm || {};
@@ -747,7 +525,9 @@ function applySynergy(unit, counts) {
   };
   const rule = traitRules[unit.trait];
   const tier = activeTraitTier(rule, counts[unit.trait] || 0);
-  if (tier) tier.apply(stats);
+  for (const effect of tier?.effects || []) {
+    if (effect.stat in stats) stats[effect.stat] *= effect.multiply;
+  }
   return stats;
 }
 
@@ -1169,9 +949,9 @@ function currentBossInfo() {
 function makeBossUnit(stage) {
   const base = bossRoster[(stage - 1) % bossRoster.length];
   const bossIndex = Math.max(0, stage - 1);
-  const hpScale = 1 + bossIndex * 0.34;
-  const powerScale = 1 + bossIndex * 0.16;
-  const defenseScale = 1 + bossIndex * 0.1;
+  const hpScale = 1 + bossIndex * balance.battle.bossHpGrowth;
+  const powerScale = 1 + bossIndex * balance.battle.bossPowerGrowth;
+  const defenseScale = 1 + bossIndex * balance.battle.bossDefenseGrowth;
   return {
     ...base,
     id: crypto.randomUUID(),
@@ -1198,9 +978,8 @@ function makeEnemies() {
   }
 
   const segmentRound = ((state.round - 1) % balance.battle.bossInterval) + 1;
-  const countByRound = [1, 2, 2, 3, 3, 4, 4];
   const allyCount = Math.max(1, boardUnits().length);
-  const baselineCount = countByRound[segmentRound - 1] || 4;
+  const baselineCount = balance.battle.enemySegmentCounts[segmentRound - 1] || 4;
   const segmentPressure = (segmentRound >= 8 ? 1 : 0) + (segmentRound >= 12 ? 1 : 0);
   const stagePressure = Math.floor(stage / 2);
   const count = Math.min(balance.battle.maxFieldEnemies, Math.max(baselineCount, allyCount) + segmentPressure + stagePressure);
@@ -1214,7 +993,6 @@ function makeEnemies() {
     balance.battle.enemyAtkScaleCap,
     balance.battle.enemyBaseAtkScale + state.round * balance.battle.enemyAtkRoundGrowth + stage * balance.battle.enemyStageAtkGrowth
   );
-  const spawnOrder = [11, 12, 10, 13, 9, 14, 3, 4, 2, 5, 1, 6, 0, 7, 8, 15];
   Array.from({ length: count }, (_, i) => {
     const unit = makeUnit(sample(candidates), stage >= 2 && Math.random() > 0.88 ? 2 : 1);
     unit.maxHp = Math.round((unit.maxHp + stage * 14) * hpScale);
@@ -1222,7 +1000,7 @@ function makeEnemies() {
     unit.atk = Math.max(3, Math.round((unit.atk + stage * 2) * atkScale));
     unit.skillAmp = Math.max(2, Math.round((unit.skillAmp + stage * 2) * atkScale));
     unit.defense = Math.max(0, Math.round((unit.defense + stage) * hpScale));
-    slots[spawnOrder[i] ?? i] = unit;
+    slots[balance.battle.enemySpawnOrder[i] ?? i] = unit;
   });
   return slots;
 }
@@ -1460,7 +1238,8 @@ function backlineTargets(caster, enemies, count = 3) {
 }
 
 function summonOmega(caster) {
-  if (!state.combatGrid || caster.summonCount >= 1) return null;
+  const hanaPattern = bossPatterns.hana;
+  if (!state.combatGrid || caster.summonCount >= hanaPattern.summonLimit) return null;
   const emptyEnemySlots = state.enemies
     .map((unit, index) => (unit ? -1 : index))
     .filter((index) => index >= 0)
@@ -1480,11 +1259,11 @@ function summonOmega(caster) {
     cost: 5,
     boss: true,
     summoned: true,
-    maxHp: Math.round(caster.maxHp * 0.42),
-    hp: Math.round(caster.maxHp * 0.42),
-    atk: Math.round(caster.atk * 0.72),
-    skillAmp: Math.round(caster.skillAmp * 0.72),
-    defense: Math.round(caster.defense * 0.9),
+    maxHp: Math.round(caster.maxHp * hanaPattern.summonHpRatio),
+    hp: Math.round(caster.maxHp * hanaPattern.summonHpRatio),
+    atk: Math.round(caster.atk * hanaPattern.summonAtkRatio),
+    skillAmp: Math.round(caster.skillAmp * hanaPattern.summonSkillAmpRatio),
+    defense: Math.round(caster.defense * hanaPattern.summonDefenseRatio),
     summonCount: 0,
     immuneUsed: false,
     immuneTicks: 0,
@@ -1543,13 +1322,14 @@ function pickTarget(attacker, enemies) {
 function dealDamage(source, target, amount) {
   const damageFloor = Math.max(3, Math.round(amount * 0.12));
   const damage = Math.max(damageFloor, Math.round(amount - target.defense * 0.45));
+  const wickelinePattern = bossPatterns.wickeline;
   if (target.pattern === "wickeline" && target.immuneTicks > 0) {
     target.status = "immune";
     return 0;
   }
-  if (target.pattern === "wickeline" && !target.immuneUsed && (target.hp - damage) / target.maxHp <= 0.1) {
+  if (target.pattern === "wickeline" && !target.immuneUsed && (target.hp - damage) / target.maxHp <= wickelinePattern.immuneHpRatio) {
     target.immuneUsed = true;
-    target.immuneTicks = 4;
+    target.immuneTicks = wickelinePattern.immuneTicks;
     target.status = "immune";
     return 0;
   }
@@ -1586,9 +1366,10 @@ function basicAttack(attacker, enemies) {
   }
   const variance = 0.86 + Math.random() * 0.28;
   if (attacker.pattern === "nadja") {
+    const nadjaPattern = bossPatterns.nadja;
     const targets = unitsInRange(attacker, enemies, unitAttackRange(attacker))
       .sort((a, b) => distanceBetween(attacker, a) - distanceBetween(attacker, b))
-      .slice(0, 2);
+      .slice(0, nadjaPattern.basicTargetCount);
     let total = 0;
     for (const unit of targets) total += dealDamage(attacker, unit, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
     attacker.mana = Math.min(100, attacker.mana + balance.battle.manaPerAttack);
@@ -1610,40 +1391,43 @@ function basicAttack(attacker, enemies) {
 function castBossSkill(caster, allies, enemies) {
   const effects = [];
   if (caster.pattern === "bear") {
-    const targets = unitsInRange(caster, enemies, 1);
+    const pattern = bossPatterns.bear;
+    const targets = unitsInRange(caster, enemies, pattern.range);
     let total = 0;
     for (const target of targets) {
-      total += dealDamage(caster, target, caster.skillAmp * 1.35 + caster.atk * 0.35);
-      applyStun(target, 2);
+      total += dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
+      applyStun(target, pattern.stunTicks);
       effects.push(combatEffect(caster, target, "skill"));
     }
     return { message: `${caster.name} roar stun ${targets.length} / ${total}`, effects };
   }
 
   if (caster.pattern === "alpha" || caster.pattern === "omega") {
-    const isOmega = caster.pattern === "omega";
-    const targets = unitsInFront(caster, enemies, 2);
+    const pattern = bossPatterns[caster.pattern];
+    const targets = unitsInFront(caster, enemies, pattern.range);
     let total = 0;
     for (const target of targets) {
-      total += dealDamage(caster, target, caster.skillAmp * (isOmega ? 1.45 : 1.15) + caster.atk * 0.55);
-      knockBack(target, caster, isOmega ? 2 : 1);
-      applyStun(target, isOmega ? 2 : 1);
+      total += dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
+      knockBack(target, caster, pattern.knockback);
+      applyStun(target, pattern.stunTicks);
       effects.push(combatEffect(caster, target, "skill"));
     }
     return { message: `${caster.name} shockwave ${targets.length} / ${total}`, effects };
   }
 
   if (caster.pattern === "wickeline") {
-    const targets = backlineTargets(caster, enemies, 3);
+    const pattern = bossPatterns.wickeline;
+    const targets = backlineTargets(caster, enemies, pattern.targetCount);
     let total = 0;
     for (const target of targets) {
-      total += dealDamage(caster, target, caster.skillAmp * 1.4 + caster.atk * 0.4);
+      total += dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
       effects.push(combatEffect(caster, target, "skill"));
     }
     return { message: `${caster.name} toxic shots ${targets.length} / ${total}`, effects };
   }
 
   if (caster.pattern === "hana") {
+    const pattern = bossPatterns.hana;
     const omega = summonOmega(caster);
     if (omega) {
       effects.push(combatEffect(caster, omega, "skill"));
@@ -1651,15 +1435,16 @@ function castBossSkill(caster, allies, enemies) {
     }
     const target = pickTarget(caster, enemies);
     if (!target) return { message: "", effects: [] };
-    const damage = dealDamage(caster, target, caster.skillAmp * 1.2 + caster.atk * 0.45);
+    const damage = dealDamage(caster, target, caster.skillAmp * pattern.fallbackSkillAmpMultiplier + caster.atk * pattern.fallbackAtkMultiplier);
     return { message: `${caster.name} arcane hit ${damage}`, effects: [combatEffect(caster, target, "skill")] };
   }
 
   if (caster.pattern === "nadja") {
+    const pattern = bossPatterns.nadja;
     const targets = living(enemies);
     let total = 0;
     for (const target of targets) {
-      total += dealDamage(caster, target, caster.skillAmp * 0.95 + caster.atk * 0.35);
+      total += dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
       effects.push(combatEffect(caster, target, "skill"));
     }
     return { message: `${caster.name} full-map strike ${targets.length} / ${total}`, effects };
