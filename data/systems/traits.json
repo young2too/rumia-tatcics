@@ -3,51 +3,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "난투형 공격력 +18%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.18
-          }
-        ]
-      },
-      {
-        "need": 4,
-        "text": "난투형 공격력 +45%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.45
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "난투형 공격력 +80%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.8
-          }
-        ]
-      },
-      {
-        "need": 8,
-        "text": "난투형 공격력 +125%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 2.25
-          }
-        ]
-      }
-    ]
-  },
-  "정밀": {
-    "tiers": [
-      {
-        "need": 2,
-        "text": "사격형 치명 기대값 +22%",
+        "text": "난투형 공격력 +22%",
         "effects": [
           {
             "stat": "atk",
@@ -57,31 +13,75 @@
       },
       {
         "need": 4,
-        "text": "사격형 치명 기대값 +52%",
+        "text": "난투형 공격력 +55%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 1.52
+            "multiply": 1.55
           }
         ]
       },
       {
         "need": 6,
-        "text": "사격형 치명 기대값 +90%",
+        "text": "난투형 공격력 +95%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 1.9
+            "multiply": 1.95
           }
         ]
       },
       {
         "need": 8,
-        "text": "사격형 치명 기대값 +140%",
+        "text": "난투형 공격력 +145%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 2.4
+            "multiply": 2.45
+          }
+        ]
+      }
+    ]
+  },
+  "정밀": {
+    "tiers": [
+      {
+        "need": 2,
+        "text": "사격형 치명 기대값 +26%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 1.26
+          }
+        ]
+      },
+      {
+        "need": 4,
+        "text": "사격형 치명 기대값 +62%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 1.62
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "사격형 치명 기대값 +105%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 2.05
+          }
+        ]
+      },
+      {
+        "need": 8,
+        "text": "사격형 치명 기대값 +160%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 2.6
           }
         ]
       }

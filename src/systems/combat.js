@@ -569,6 +569,7 @@ function castBossSkill(caster, allies, enemies) {
 function castSkill(caster, allies, enemies) {
   caster.mana = 0;
   caster.status = "casting";
+  const roleSkills = balance.battle.roleSkills || {};
 
   if (caster.boss) {
     const bossAction = castBossSkill(caster, allies, enemies);
@@ -577,8 +578,7 @@ function castSkill(caster, allies, enemies) {
 
   if (caster.role === "지원") {
     const target = living(allies).reduce((low, unit) => (unit.hp / unit.maxHp < low.hp / low.maxHp ? unit : low), living(allies)[0]);
-    const rawHeal = Math.round((caster.skillAmp * 0.72 + 10) * caster.healPower);
-    const heal = Math.min(rawHeal, Math.round(target.maxHp * 0.12));
+    const heal = Math.round((caster.skillAmp * (roleSkills.supportHealSkillAmp ?? 0.72) + (roleSkills.supportHealFlat ?? 10)) * caster.healPower);
     target.hp = Math.min(target.maxHp, target.hp + heal);
     target.status = "healed";
     return {
@@ -598,8 +598,12 @@ function castSkill(caster, allies, enemies) {
   }
 
   if (caster.role === "방패") {
-    const rawHeal = Math.round(caster.skillAmp * 0.35 + caster.defense * 0.55 + 5);
-    const heal = Math.min(rawHeal, Math.round(caster.maxHp * 0.045));
+    const rawHeal = Math.round(
+      caster.skillAmp * (roleSkills.shieldHealSkillAmp ?? 0.35) +
+      caster.defense * (roleSkills.shieldHealDefense ?? 0.55) +
+      (roleSkills.shieldHealFlat ?? 5)
+    );
+    const heal = Math.min(rawHeal, Math.round(caster.maxHp * (roleSkills.shieldHealMaxHpRatio ?? 0.045)));
     caster.hp = Math.min(caster.maxHp, caster.hp + heal);
     caster.status = "healed";
     return {
@@ -618,7 +622,13 @@ function castSkill(caster, allies, enemies) {
       effects: [],
     };
   }
-  const scale = caster.role === "암살" ? 2.2 : caster.role === "검객" ? 1.85 : caster.role === "사격" ? 1.75 : 1.6;
+  const scale = caster.role === "\uC554\uC0B4"
+    ? (roleSkills.assassinSkillScale ?? 2.2)
+    : caster.role === "\uAC80\uAC1D"
+    ? (roleSkills.swordsmanSkillScale ?? 1.85)
+    : caster.role === "\uC0AC\uACA9"
+    ? (roleSkills.rangedSkillScale ?? 1.75)
+    : (roleSkills.defaultSkillScale ?? 1.6);
   const damage = dealDamage(caster, target, caster.atk * 0.75 + caster.skillAmp * scale + 10);
   return {
     message: `${caster.name} 스킬: ${target.name} ${damage} 피해`,
