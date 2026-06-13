@@ -154,9 +154,46 @@
       8,
       15
     ],
+    "enemyTierOddsByStage": [
+      [
+        100,
+        0,
+        0
+      ],
+      [
+        90,
+        10,
+        0
+      ],
+      [
+        78,
+        22,
+        0
+      ],
+      [
+        66,
+        32,
+        2
+      ],
+      [
+        54,
+        42,
+        4
+      ],
+      [
+        44,
+        50,
+        6
+      ],
+      [
+        35,
+        56,
+        9
+      ]
+    ],
     "meleeRange": 1,
     "rangedRange": 4,
-    "baseIncome": 1,
+    "baseIncome": 2,
     "winIncome": 1,
     "maxInterest": 5,
     "interestStep": 10,

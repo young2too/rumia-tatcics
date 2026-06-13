@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lumia Tactics</title>
-    <link rel="stylesheet" href="./styles.css?v=20260613-bgm" />
+    <link rel="stylesheet" href="./styles.css?v=20260614-patch-notes" />
   </head>
   <body>
     <main class="app">
@@ -118,6 +118,23 @@
             </div>
           </div>
           <div id="rankingPanel" class="ranking-panel"></div>
+        </section>
+      </div>
+
+      <div id="patchNotesModal" class="patch-notes-modal" hidden>
+        <section class="patch-notes-dialog" role="dialog" aria-modal="true" aria-labelledby="patchNotesTitle">
+          <div class="panel-title">
+            <div>
+              <h2 id="patchNotesTitle">패치노트</h2>
+              <span id="patchNotesMeta"></span>
+            </div>
+            <button id="patchNotesClose" class="icon-button" title="닫기">닫기</button>
+          </div>
+          <div id="patchNotesBody" class="patch-notes-body"></div>
+          <label class="patch-notes-option">
+            <input id="patchNotesSkipToday" type="checkbox" />
+            <span>오늘 다시 보지 않기</span>
+          </label>
         </section>
       </div>
     </main>

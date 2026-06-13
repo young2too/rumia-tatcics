@@ -1,0 +1,19 @@
+{
+  "rankingStorageKey": "lumia-tactics-rankings",
+  "patchNotesStorageKey": "lumia-tactics-patch-notes-hidden-date",
+  "patchNotes": {
+    "enabled": true,
+    "title": "패치노트",
+    "version": "개발 빌드",
+    "date": "2026-06-14",
+    "summary": "최근 변경사항을 확인하세요.",
+    "items": [
+      "패배 피해가 살아남은 적의 별 합계 기준으로 변경되었습니다.",
+      "일반 라운드 패배 피해는 최대 20으로 제한됩니다.",
+      "적 별 등급 확률이 라운드 진행에 따라 점진적으로 상승합니다."
+    ]
+  },
+  "bgm": {
+    "volume": 0.35
+  }
+}

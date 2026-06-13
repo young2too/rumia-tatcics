@@ -1454,7 +1454,8 @@ h2 {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.ranking-modal {
+.ranking-modal,
+.patch-notes-modal {
   position: fixed;
   inset: 0;
   z-index: 30;
@@ -1465,11 +1466,13 @@ h2 {
   backdrop-filter: blur(4px);
 }
 
-.ranking-modal[hidden] {
+.ranking-modal[hidden],
+.patch-notes-modal[hidden] {
   display: none;
 }
 
-.ranking-dialog {
+.ranking-dialog,
+.patch-notes-dialog {
   width: min(520px, 100%);
   max-height: min(680px, calc(100vh - 40px));
   padding: 16px;
@@ -1481,10 +1484,81 @@ h2 {
 }
 
 .ranking-dialog .icon-button,
+.patch-notes-dialog .icon-button,
 .rank-submit button {
   padding: 0 10px;
   font-size: 13px;
   font-weight: 800;
+}
+
+.patch-notes-dialog .panel-title {
+  align-items: flex-start;
+}
+
+.patch-notes-dialog .panel-title span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.patch-notes-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.patch-notes-summary {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.patch-notes-body ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patch-notes-body li {
+  position: relative;
+  padding: 9px 10px 9px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.patch-notes-body li::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 16px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--teal);
+  box-shadow: 0 0 10px rgba(52, 197, 183, 0.55);
+}
+
+.patch-notes-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.patch-notes-option input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--teal);
 }
 
 .rank-submit {
