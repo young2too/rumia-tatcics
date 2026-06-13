@@ -49,7 +49,7 @@ const audio = createAudioController({ state, refs, bgmConfig });
 const ranking = createRankingController({ state, refs, rankingConfig, rankingStorageKey, renderRanking, render });
 const { captureDeathRecord, loadRankings, submitRanking } = ranking;
 const patchNotes = createPatchNotesController({ state, patchNotesConfig, patchNotesStorageKey, render });
-const { closePatchNotes, initPatchNotes } = patchNotes;
+const { closePatchNotes, initPatchNotes, openPatchNotes } = patchNotes;
 
 const makeUnit = (base, tier = 1) => createUnit(base, balance, tier);
 
@@ -437,6 +437,7 @@ bindUiEvents({
     loadRankings,
     submitRanking,
     closePatchNotes,
+    openPatchNotes,
   },
 });
 

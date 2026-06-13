@@ -284,6 +284,7 @@ h2 {
 }
 
 .ranking-button,
+.patch-notes-button,
 .audio-button {
   height: 38px;
   padding: 0 14px;
@@ -295,6 +296,7 @@ h2 {
 }
 
 .ranking-button:hover,
+.patch-notes-button:hover,
 .audio-button:hover {
   border-color: rgba(106, 169, 255, 0.8);
   background: rgba(106, 169, 255, 0.16);

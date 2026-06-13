@@ -33,8 +33,15 @@ export function createPatchNotesController({ state, patchNotesConfig, patchNotes
     render();
   }
 
+  function openPatchNotes() {
+    state.patchNotesOpen = true;
+    state.patchNotesSkipToday = false;
+    render();
+  }
+
   return {
     closePatchNotes,
     initPatchNotes,
+    openPatchNotes,
   };
 }

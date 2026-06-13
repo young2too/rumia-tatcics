@@ -32,6 +32,7 @@ export function createRefs() {
     detailTier: $("detailTier"),
     sellUnit: $("sellUnit"),
     bgmToggle: $("bgmToggle"),
+    patchNotesToggle: $("patchNotesToggle"),
     rankingToggle: $("rankingToggle"),
     rankingClose: $("rankingClose"),
     rankingModal: $("rankingModal"),

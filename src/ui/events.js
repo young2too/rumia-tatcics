@@ -23,6 +23,7 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   $("levelUp").addEventListener("click", actions.buyXp);
   refs.sellUnit.addEventListener("click", actions.sellSelectedUnit);
   refs.bgmToggle.addEventListener("click", actions.toggleBgm);
+  refs.patchNotesToggle.addEventListener("click", actions.openPatchNotes);
   refs.rankingToggle.addEventListener("click", () => {
     state.rankingOpen = true;
     actions.loadRankings(true);
