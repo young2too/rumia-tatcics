@@ -4,6 +4,10 @@ window.LUMIA_TACTICS_CONFIG = {
     anonKey: "sb_publishable_QW3oRV0SSjOFC0ig5mp1Kw_7Iuge0b3",
     table: "rankings",
   },
+  communityBoard: {
+    table: "board_posts",
+    commentsTable: "board_comments",
+  },
   bgm: {
     src: "./assets/audio/bgm.mp3",
     volume: 0.38,
@@ -12,15 +16,14 @@ window.LUMIA_TACTICS_CONFIG = {
   patchNotes: {
     enabled: true,
     title: "패치노트",
-    version: "20260614",
-    date: "2026-06-14",
-    summary: "대규모 패치...",
+    version: "20260615",
+    date: "2026-06-15",
+    summary: "패치알림",
     items: [
-      "연패코인을 위해 초반 체력 피해를 줄였습니다",
-      "기본 수입이 1에서 2로 증가하였습니다",
-      "난이도 변경으로 랭킹을 초기화했습니다",
-      "15라운드마다 보스가 출현합니다 90라운드가 클리어입니다",
-      "건의사항/버그리포트는 young2too13@gmail.com 으로 주세요",
+      "시너지별로 캐릭터를 추가 준비중입니다..",
+      "가볍게 글/댓글을 쓸 수 있는 게시판을 추가했습니다",
+      "잘 활용되지 못하는 암살, 지원 계열을 버프할 계획입니다",
+      "언제 테스트 완료하고 배포할지는 잘 모르겠는데 이번주 주말내에 할 예정"
     ],
   },
 };
