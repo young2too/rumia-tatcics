@@ -3,41 +3,41 @@
     "tiers": [
       {
         "need": 2,
-        "text": "난투형 공격력 +22%",
+        "text": "난투형 공격력 +18%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 1.22
+            "multiply": 1.18
           }
         ]
       },
       {
         "need": 4,
-        "text": "난투형 공격력 +55%",
+        "text": "난투형 공격력 +45%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 1.55
+            "multiply": 1.45
           }
         ]
       },
       {
         "need": 6,
-        "text": "난투형 공격력 +95%",
+        "text": "난투형 공격력 +80%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 1.95
+            "multiply": 1.8
           }
         ]
       },
       {
         "need": 8,
-        "text": "난투형 공격력 +145%",
+        "text": "난투형 공격력 +125%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 2.45
+            "multiply": 2.25
           }
         ]
       }
@@ -47,41 +47,41 @@
     "tiers": [
       {
         "need": 2,
-        "text": "사격형 치명 기대값 +26%",
+        "text": "사격형 치명 기대값 +22%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 1.26
+            "multiply": 1.22
           }
         ]
       },
       {
         "need": 4,
-        "text": "사격형 치명 기대값 +62%",
+        "text": "사격형 치명 기대값 +52%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 1.62
+            "multiply": 1.52
           }
         ]
       },
       {
         "need": 6,
-        "text": "사격형 치명 기대값 +105%",
+        "text": "사격형 치명 기대값 +90%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 2.05
+            "multiply": 1.9
           }
         ]
       },
       {
         "need": 8,
-        "text": "사격형 치명 기대값 +160%",
+        "text": "사격형 치명 기대값 +140%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 2.6
+            "multiply": 2.4
           }
         ]
       }
