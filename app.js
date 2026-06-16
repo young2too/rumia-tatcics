@@ -455,7 +455,6 @@ const combat = createCombatController({
   bossPatterns,
   roster,
   refs,
-  makeUnit,
   sample,
   boardUnits,
   addLog,

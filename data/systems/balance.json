@@ -217,6 +217,43 @@
     "enemyStageAtkGrowth": 0.1,
     "enemyHpScaleCap": 2.65,
     "enemyAtkScaleCap": 2.55,
+    "enemyBaseStatsByCost": {
+      "1": {
+        "hp": 82,
+        "atk": 18,
+        "skillAmp": 12,
+        "defense": 4,
+        "speed": 0.94
+      },
+      "2": {
+        "hp": 96,
+        "atk": 21,
+        "skillAmp": 15,
+        "defense": 6,
+        "speed": 0.98
+      },
+      "3": {
+        "hp": 112,
+        "atk": 25,
+        "skillAmp": 18,
+        "defense": 8,
+        "speed": 1.02
+      },
+      "4": {
+        "hp": 132,
+        "atk": 30,
+        "skillAmp": 22,
+        "defense": 10,
+        "speed": 1.06
+      },
+      "5": {
+        "hp": 156,
+        "atk": 36,
+        "skillAmp": 27,
+        "defense": 13,
+        "speed": 1.1
+      }
+    },
     "tickMs": 520,
     "maxTicks": 32,
     "manaPerAttack": 34,

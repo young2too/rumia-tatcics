@@ -6,7 +6,6 @@ export function createCombatController(context) {
     bossPatterns,
     roster,
     refs,
-    makeUnit,
     sample,
     boardUnits,
     addLog,
@@ -34,6 +33,40 @@ function rollEnemyTier(stage) {
     if (roll < sum) return i + 1;
   }
   return 1;
+}
+
+function enemyBaseStats(unit) {
+  const table = balance.battle.enemyBaseStatsByCost || {};
+  return table[unit.cost] || table[String(unit.cost)] || table["1"] || {
+    hp: 82,
+    atk: 18,
+    skillAmp: 12,
+    defense: 4,
+    speed: 0.94,
+  };
+}
+
+function makeEnemyUnit(base, tier, stage, hpScale, atkScale) {
+  const tierIndex = tier - 1;
+  const stats = enemyBaseStats(base);
+  const unit = {
+    ...base,
+    id: crypto.randomUUID(),
+    tier,
+    cost: base.cost,
+    maxHp: Math.round(stats.hp * balance.tier.hp[tierIndex]),
+    hp: Math.round(stats.hp * balance.tier.hp[tierIndex]),
+    atk: Math.round(stats.atk * balance.tier.atk[tierIndex]),
+    speed: stats.speed,
+    skillAmp: Math.round(stats.skillAmp * balance.tier.skillAmp[tierIndex]),
+    defense: Math.round(stats.defense * balance.tier.defense[tierIndex]),
+  };
+  unit.maxHp = Math.round((unit.maxHp + stage * 14) * hpScale);
+  unit.hp = unit.maxHp;
+  unit.atk = Math.max(3, Math.round((unit.atk + stage * 2) * atkScale));
+  unit.skillAmp = Math.max(2, Math.round((unit.skillAmp + stage * 2) * atkScale));
+  unit.defense = Math.max(0, Math.round((unit.defense + stage) * hpScale));
+  return unit;
 }
 
 function isBossRound() {
@@ -94,12 +127,7 @@ function makeEnemies() {
     balance.battle.enemyBaseAtkScale + state.round * balance.battle.enemyAtkRoundGrowth + stage * balance.battle.enemyStageAtkGrowth
   );
   Array.from({ length: count }, (_, i) => {
-    const unit = makeUnit(sample(candidates), rollEnemyTier(stage));
-    unit.maxHp = Math.round((unit.maxHp + stage * 14) * hpScale);
-    unit.hp = unit.maxHp;
-    unit.atk = Math.max(3, Math.round((unit.atk + stage * 2) * atkScale));
-    unit.skillAmp = Math.max(2, Math.round((unit.skillAmp + stage * 2) * atkScale));
-    unit.defense = Math.max(0, Math.round((unit.defense + stage) * hpScale));
+    const unit = makeEnemyUnit(sample(candidates), rollEnemyTier(stage), stage, hpScale, atkScale);
     slots[balance.battle.enemySpawnOrder[i] ?? i] = unit;
   });
   return slots;
