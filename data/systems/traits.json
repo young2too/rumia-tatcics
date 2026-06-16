@@ -227,17 +227,21 @@
     "tiers": [
       {
         "need": 2,
-        "text": "검객형 공격 속도 +20%",
+        "text": "검객형 공격 속도 +20%, 공격 +10%",
         "effects": [
           {
             "stat": "speed",
             "multiply": 1.2
+          },
+          {
+            "stat": "atk",
+            "multiply": 1.1
           }
         ]
       },
       {
         "need": 4,
-        "text": "검객형 공격 속도 +48%, 공격 +12%",
+        "text": "검객형 공격 속도 +48%, 공격 +24%",
         "effects": [
           {
             "stat": "speed",
@@ -245,13 +249,13 @@
           },
           {
             "stat": "atk",
-            "multiply": 1.12
+            "multiply": 1.24
           }
         ]
       },
       {
         "need": 6,
-        "text": "검객형 공격 속도 +82%, 공격 +26%",
+        "text": "검객형 공격 속도 +82%, 공격 +42%",
         "effects": [
           {
             "stat": "speed",
@@ -259,13 +263,13 @@
           },
           {
             "stat": "atk",
-            "multiply": 1.26
+            "multiply": 1.42
           }
         ]
       },
       {
         "need": 8,
-        "text": "검객형 공격 속도 +125%, 공격 +44%",
+        "text": "검객형 공격 속도 +125%, 공격 +68%",
         "effects": [
           {
             "stat": "speed",
@@ -273,7 +277,7 @@
           },
           {
             "stat": "atk",
-            "multiply": 1.44
+            "multiply": 1.68
           }
         ]
       }

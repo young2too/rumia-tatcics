@@ -232,7 +232,30 @@ function emptyBacklineSlots(unit) {
   const from = unitSlot(unit);
   if (!state.combatGrid || !from) return [];
   const rows = backlineJumpRows(unit);
+  const foes = living(state.combatGrid).filter((other) => other.side && other.side !== unit.side);
+  const backlineTargets = foes
+    .filter((target) => {
+      const slot = unitSlot(target);
+      return slot && rows.includes(slot.y);
+    })
+    .sort((a, b) => compareByDistanceThenHp(unit, a, b));
   const slots = [];
+  const targetSlots = backlineTargets
+    .map((target) => ({ target, slot: unitSlot(target) }))
+    .filter(({ slot }) => slot);
+  for (const { target, slot: targetSlot } of targetSlots) {
+    for (const step of hexNeighborSteps(targetSlot.y)) {
+      const x = targetSlot.x + step.x;
+      const y = targetSlot.y + step.y;
+      const index = slotIndexFor(unit.side, x, y, true);
+      if (index < 0 || state.combatGrid[index]) continue;
+      const slot = { index, x, y, distance: Math.abs(x - from.x), rowPriority: rows.indexOf(targetSlot.y), target };
+      if (!slots.some((item) => item.index === index)) slots.push(slot);
+    }
+  }
+  if (slots.length) {
+    return slots.sort((a, b) => a.rowPriority - b.rowPriority || distanceBetween(unit, a.target) - distanceBetween(unit, b.target) || a.distance - b.distance || a.index - b.index);
+  }
   for (const y of rows) {
     for (let x = 0; x < balance.battle.columns; x++) {
       const index = slotIndexFor(unit.side, x, y, true);

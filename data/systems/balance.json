@@ -219,39 +219,39 @@
     "enemyAtkScaleCap": 2.55,
     "enemyBaseStatsByCost": {
       "1": {
-        "hp": 82,
-        "atk": 18,
-        "skillAmp": 12,
-        "defense": 4,
-        "speed": 0.94
+        "hp": 91,
+        "atk": 22,
+        "skillAmp": 10,
+        "defense": 5,
+        "speed": 1.08
       },
       "2": {
-        "hp": 96,
-        "atk": 21,
-        "skillAmp": 15,
+        "hp": 95,
+        "atk": 23,
+        "skillAmp": 13,
         "defense": 6,
-        "speed": 0.98
+        "speed": 1.03
       },
       "3": {
-        "hp": 112,
+        "hp": 95,
         "atk": 25,
-        "skillAmp": 18,
-        "defense": 8,
-        "speed": 1.02
+        "skillAmp": 16,
+        "defense": 6,
+        "speed": 1.04
       },
       "4": {
-        "hp": 132,
-        "atk": 30,
-        "skillAmp": 22,
-        "defense": 10,
-        "speed": 1.06
+        "hp": 94,
+        "atk": 25,
+        "skillAmp": 23,
+        "defense": 6,
+        "speed": 1.05
       },
       "5": {
-        "hp": 156,
-        "atk": 36,
-        "skillAmp": 27,
-        "defense": 13,
-        "speed": 1.1
+        "hp": 103,
+        "atk": 32,
+        "skillAmp": 25,
+        "defense": 8,
+        "speed": 1.06
       }
     },
     "tickMs": 520,
