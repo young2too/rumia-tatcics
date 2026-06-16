@@ -192,6 +192,39 @@ function isBacklineDiver(unit) {
   return unit.trait === "기습" || unit.role === "암살";
 }
 
+function backlineJumpRows(unit) {
+  return unit.side === "ally" ? [0, 1] : [5, 4];
+}
+
+function emptyBacklineSlots(unit) {
+  const from = unitSlot(unit);
+  if (!state.combatGrid || !from) return [];
+  const rows = backlineJumpRows(unit);
+  const slots = [];
+  for (const y of rows) {
+    for (let x = 0; x < balance.battle.columns; x++) {
+      const index = slotIndexFor(unit.side, x, y, true);
+      if (index < 0 || state.combatGrid[index]) continue;
+      slots.push({ index, x, y, distance: Math.abs(x - from.x), rowPriority: rows.indexOf(y) });
+    }
+  }
+  return slots.sort((a, b) => a.rowPriority - b.rowPriority || a.distance - b.distance || a.index - b.index);
+}
+
+function placeBacklineDivers(units) {
+  let moved = 0;
+  for (const unit of units.filter(isBacklineDiver)) {
+    const from = unitSlot(unit);
+    const to = emptyBacklineSlots(unit)[0];
+    if (!from || !to) continue;
+    state.combatGrid[from.index] = null;
+    state.combatGrid[to.index] = unit;
+    unit.status = "moving";
+    moved += 1;
+  }
+  return moved;
+}
+
 function backlineDepthFor(attacker, target) {
   const slot = unitSlot(target);
   if (!slot) return -1;
@@ -224,41 +257,50 @@ function moveToward(attacker, target) {
   const from = unitSlot(attacker);
   const to = unitSlot(target);
   if (!from || !to) return false;
-  const currentDistance = distanceBetween(attacker, target);
-  const even = from.y % 2 === 0;
-  const steps = even
-    ? [
-        { x: 1, y: 0 },
-        { x: -1, y: 0 },
-        { x: 0, y: -1 },
-        { x: -1, y: -1 },
-        { x: 0, y: 1 },
-        { x: -1, y: 1 },
-      ]
-    : [
-        { x: 1, y: 0 },
-        { x: -1, y: 0 },
-        { x: 1, y: -1 },
-        { x: 0, y: -1 },
-        { x: 1, y: 1 },
-        { x: 0, y: 1 },
-      ];
+  const arr = state.combatGrid || (attacker.side === "enemy" ? state.enemies : state.board);
+  const range = unitAttackRange(attacker);
+  const visited = new Set([from.index]);
+  const parents = new Map();
+  const queue = [{ x: from.x, y: from.y, index: from.index }];
+  let best = { ...from, distance: hexDistanceSlots(from, to) };
+  let goal = null;
 
-  for (const step of steps) {
-    const nextX = from.x + step.x;
-    const nextY = from.y + step.y;
-    const nextIndex = slotIndexFor(attacker.side, nextX, nextY, Boolean(state.combatGrid));
-    if (nextIndex < 0) continue;
-    const arr = state.combatGrid || (attacker.side === "enemy" ? state.enemies : state.board);
-    if (arr[nextIndex]) continue;
-    const nextDistance = hexDistanceSlots({ x: nextX, y: nextY }, to);
-    if (nextDistance >= currentDistance) continue;
-    arr[from.index] = null;
-    arr[nextIndex] = attacker;
-    attacker.status = "moving";
-    return true;
+  for (let cursor = 0; cursor < queue.length; cursor++) {
+    const current = queue[cursor];
+    const currentDistance = hexDistanceSlots(current, to);
+    if (currentDistance < best.distance) best = { ...current, distance: currentDistance };
+    if (current.index !== from.index && currentDistance <= range) {
+      goal = current;
+      break;
+    }
+
+    const nextSlots = hexNeighborSteps(current.y)
+      .map((step) => ({ x: current.x + step.x, y: current.y + step.y }))
+      .map((slot) => ({ ...slot, index: slotIndexFor(attacker.side, slot.x, slot.y, Boolean(state.combatGrid)) }))
+      .filter((slot) => slot.index >= 0 && !visited.has(slot.index) && !arr[slot.index])
+      .sort((a, b) => hexDistanceSlots(a, to) - hexDistanceSlots(b, to));
+
+    for (const slot of nextSlots) {
+      visited.add(slot.index);
+      parents.set(slot.index, current.index);
+      queue.push(slot);
+    }
   }
-  return false;
+
+  const destination = goal || (best.index !== from.index ? best : null);
+  if (!destination) return false;
+
+  let nextIndex = destination.index;
+  while (parents.get(nextIndex) !== from.index) {
+    nextIndex = parents.get(nextIndex);
+    if (nextIndex == null) return false;
+  }
+
+  if (arr[nextIndex]) return false;
+  arr[from.index] = null;
+  arr[nextIndex] = attacker;
+  attacker.status = "moving";
+  return true;
 }
 
 function removeDeadUnits(units) {
@@ -352,18 +394,20 @@ function backlineTargets(caster, enemies, count = 3) {
 
 function summonOmega(caster) {
   const hanaPattern = bossPatterns.hana;
-  if (!state.combatGrid || caster.summonCount >= hanaPattern.summonLimit) return null;
-  const emptyEnemySlots = state.enemies
-    .map((unit, index) => (unit ? -1 : index))
-    .filter((index) => index >= 0)
-    .sort((a, b) => {
-      const casterSlot = unitSlot(caster);
-      if (!casterSlot) return a - b;
-      const slotA = { x: a % balance.battle.columns, y: Math.floor(a / balance.battle.columns) };
-      const slotB = { x: b % balance.battle.columns, y: Math.floor(b / balance.battle.columns) };
-      return hexDistanceSlots(slotA, casterSlot) - hexDistanceSlots(slotB, casterSlot);
-    });
-  const index = emptyEnemySlots[0];
+  const casterSlot = unitSlot(caster);
+  if (!state.combatGrid || !casterSlot) return null;
+  const range = hanaPattern.summonRange || 1;
+  const emptySlots = [];
+  for (let y = 0; y < 6; y++) {
+    for (let x = 0; x < balance.battle.columns; x++) {
+      const index = slotIndexFor(caster.side, x, y, true);
+      if (index < 0 || state.combatGrid[index]) continue;
+      const distance = hexDistanceSlots({ x, y }, casterSlot);
+      if (distance > 0 && distance <= range) emptySlots.push({ index, distance, y });
+    }
+  }
+  emptySlots.sort((a, b) => a.distance - b.distance || a.y - b.y || a.index - b.index);
+  const index = emptySlots[0]?.index;
   if (index == null) return null;
   const omega = {
     ...bossRoster.find((boss) => boss.pattern === "omega"),
@@ -569,6 +613,7 @@ function castBossSkill(caster, allies, enemies) {
 function castSkill(caster, allies, enemies) {
   caster.mana = 0;
   caster.status = "casting";
+  const roleSkills = balance.battle.roleSkills || {};
 
   if (caster.boss) {
     const bossAction = castBossSkill(caster, allies, enemies);
@@ -576,14 +621,18 @@ function castSkill(caster, allies, enemies) {
   }
 
   if (caster.role === "지원") {
-    const target = living(allies).reduce((low, unit) => (unit.hp / unit.maxHp < low.hp / low.maxHp ? unit : low), living(allies)[0]);
-    const rawHeal = Math.round((caster.skillAmp * 0.72 + 10) * caster.healPower);
-    const heal = Math.min(rawHeal, Math.round(target.maxHp * 0.12));
-    target.hp = Math.min(target.maxHp, target.hp + heal);
-    target.status = "healed";
+    const targets = living(allies)
+      .slice()
+      .sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))
+      .slice(0, roleSkills.supportHealTargets ?? 2);
+    const heal = Math.round((caster.skillAmp * (roleSkills.supportHealSkillAmp ?? 0.72) + (roleSkills.supportHealFlat ?? 10)) * caster.healPower);
+    for (const target of targets) {
+      target.hp = Math.min(target.maxHp, target.hp + heal);
+      target.status = "healed";
+    }
     return {
-      message: `${caster.name} 스킬: ${target.name} ${heal} 회복`,
-      effects: [combatEffect(caster, target, "heal")],
+      message: `${caster.name} 스킬: ${targets.length}명 ${heal} 회복`,
+      effects: targets.map((target) => combatEffect(caster, target, "heal")),
     };
   }
 
@@ -598,8 +647,12 @@ function castSkill(caster, allies, enemies) {
   }
 
   if (caster.role === "방패") {
-    const rawHeal = Math.round(caster.skillAmp * 0.35 + caster.defense * 0.55 + 5);
-    const heal = Math.min(rawHeal, Math.round(caster.maxHp * 0.045));
+    const rawHeal = Math.round(
+      caster.skillAmp * (roleSkills.shieldHealSkillAmp ?? 0.35) +
+      caster.defense * (roleSkills.shieldHealDefense ?? 0.55) +
+      (roleSkills.shieldHealFlat ?? 5)
+    );
+    const heal = Math.min(rawHeal, Math.round(caster.maxHp * (roleSkills.shieldHealMaxHpRatio ?? 0.045)));
     caster.hp = Math.min(caster.maxHp, caster.hp + heal);
     caster.status = "healed";
     return {
@@ -618,7 +671,13 @@ function castSkill(caster, allies, enemies) {
       effects: [],
     };
   }
-  const scale = caster.role === "암살" ? 2.2 : caster.role === "검객" ? 1.85 : caster.role === "사격" ? 1.75 : 1.6;
+  const scale = caster.role === "\uC554\uC0B4"
+    ? (roleSkills.assassinSkillScale ?? 2.2)
+    : caster.role === "\uAC80\uAC1D"
+    ? (roleSkills.swordsmanSkillScale ?? 1.85)
+    : caster.role === "\uC0AC\uACA9"
+    ? (roleSkills.rangedSkillScale ?? 1.75)
+    : (roleSkills.defaultSkillScale ?? 1.6);
   const damage = dealDamage(caster, target, caster.atk * 0.75 + caster.skillAmp * scale + 10);
   return {
     message: `${caster.name} 스킬: ${target.name} ${damage} 피해`,
@@ -695,8 +754,10 @@ async function simulate() {
   state.board.forEach((unit, index) => {
     if (unit) state.combatGrid[16 + index] = unit;
   });
+  const diverCount = placeBacklineDivers([...allies, ...state.enemies.filter(Boolean)]);
   const boss = living(state.enemies).find((unit) => unit.boss);
   addLog(boss ? `보스전 시작: ${boss.name} 출현!` : `전투 시작: 아군 ${allies.length}명 vs 야생 실험체 ${living(state.enemies).length}명`);
+  if (diverCount) addLog(`기습 전개: 암살형 ${diverCount}명이 후열로 진입.`);
   render();
 
   let tick = 0;

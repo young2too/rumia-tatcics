@@ -27,7 +27,7 @@
     "atkMultiplier": 0.4
   },
   "hana": {
-    "summonLimit": 1,
+    "summonRange": 1,
     "summonHpRatio": 0.42,
     "summonAtkRatio": 0.72,
     "summonSkillAmpRatio": 0.72,

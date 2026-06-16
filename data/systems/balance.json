@@ -101,13 +101,20 @@
         25,
         33,
         15
+      ],
+      "10": [
+        5,
+        10,
+        20,
+        40,
+        25
       ]
     }
   },
   "player": {
     "startHp": 100,
     "startGold": 1,
-    "maxLevel": 9,
+    "maxLevel": 10,
     "levelXp": [
       0,
       2,
@@ -116,7 +123,8 @@
       20,
       36,
       48,
-      76,
+      56,
+      68,
       80
     ],
     "combatXp": 2,
@@ -203,17 +211,30 @@
     "bossDefenseGrowth": 0.1,
     "enemyBaseHpScale": 0.85,
     "enemyBaseAtkScale": 0.85,
-    "enemyHpRoundGrowth": 0.019,
+    "enemyHpRoundGrowth": 0.015,
     "enemyAtkRoundGrowth": 0.013,
-    "enemyStageHpGrowth": 0.09,
+    "enemyStageHpGrowth": 0.065,
     "enemyStageAtkGrowth": 0.1,
-    "enemyHpScaleCap": 3.05,
+    "enemyHpScaleCap": 2.65,
     "enemyAtkScaleCap": 2.55,
     "tickMs": 520,
     "maxTicks": 32,
     "manaPerAttack": 34,
     "manaPerHit": 16,
     "basicDamageMultiplier": 0.68,
+    "roleSkills": {
+      "supportHealTargets": 2,
+      "supportHealSkillAmp": 1.05,
+      "supportHealFlat": 18,
+      "shieldHealSkillAmp": 0.42,
+      "shieldHealDefense": 0.72,
+      "shieldHealFlat": 8,
+      "shieldHealMaxHpRatio": 0.085,
+      "assassinSkillScale": 2.2,
+      "swordsmanSkillScale": 1.85,
+      "rangedSkillScale": 2,
+      "defaultSkillScale": 1.6
+    },
     "hpWeight": 0.32,
     "atkWeight": 4,
     "skillWeight": 1.4,

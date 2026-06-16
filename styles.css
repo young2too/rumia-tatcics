@@ -284,6 +284,7 @@ h2 {
 }
 
 .ranking-button,
+.community-board-button,
 .patch-notes-button,
 .audio-button {
   height: 38px;
@@ -296,6 +297,7 @@ h2 {
 }
 
 .ranking-button:hover,
+.community-board-button:hover,
 .patch-notes-button:hover,
 .audio-button:hover {
   border-color: rgba(106, 169, 255, 0.8);
@@ -1457,10 +1459,11 @@ h2 {
 }
 
 .ranking-modal,
+.community-board-modal,
 .patch-notes-modal {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 2000;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -1469,11 +1472,13 @@ h2 {
 }
 
 .ranking-modal[hidden],
+.community-board-modal[hidden],
 .patch-notes-modal[hidden] {
   display: none;
 }
 
 .ranking-dialog,
+.community-board-dialog,
 .patch-notes-dialog {
   width: min(520px, 100%);
   max-height: min(680px, calc(100vh - 40px));
@@ -1486,6 +1491,7 @@ h2 {
 }
 
 .ranking-dialog .icon-button,
+.community-board-dialog .icon-button,
 .patch-notes-dialog .icon-button,
 .rank-submit button {
   padding: 0 10px;
@@ -1495,6 +1501,278 @@ h2 {
 
 .patch-notes-dialog .panel-title {
   align-items: flex-start;
+}
+
+.community-board-dialog .panel-title {
+  align-items: flex-start;
+}
+
+.community-board-dialog .panel-title span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.community-board-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.community-board-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.community-board-tabs button,
+.community-board-toolbar button,
+.community-board-pages button,
+.community-board-form-actions button,
+.community-board-back {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.community-board-tabs button.active {
+  border-color: rgba(52, 197, 183, 0.68);
+  background: rgba(52, 197, 183, 0.12);
+  color: #d7fffb;
+}
+
+.community-board-toolbar,
+.community-board-pages,
+.community-board-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.community-board-toolbar span,
+.community-board-pages span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.community-board-toolbar button,
+.community-board-form-actions button[type="submit"] {
+  padding: 0 12px;
+  background: rgba(240, 189, 84, 0.16);
+  border-color: rgba(240, 189, 84, 0.42);
+  color: #ffe3a0;
+}
+
+.community-board-list {
+  display: grid;
+  gap: 7px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.community-board-row {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+}
+
+.community-board-row:hover {
+  border-color: rgba(52, 197, 183, 0.54);
+  background: rgba(52, 197, 183, 0.08);
+}
+
+.community-board-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.community-board-row span,
+.community-board-detail article span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.community-board-empty,
+.community-board-notice {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.community-board-notice {
+  border: 1px solid rgba(240, 189, 84, 0.24);
+  background: rgba(240, 189, 84, 0.07);
+  color: #ffe3a0;
+}
+
+.community-board-form {
+  display: grid;
+  gap: 10px;
+}
+
+.community-board-form label {
+  display: grid;
+  gap: 5px;
+}
+
+.community-board-form label span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.community-board-form input,
+.community-board-form select,
+.community-board-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: inherit;
+  padding: 9px;
+}
+
+.community-board-form select {
+  color: var(--text);
+  background-color: #1b2023;
+}
+
+.community-board-form option {
+  color: var(--text);
+  background: #1b2023;
+}
+
+.community-board-form textarea {
+  resize: vertical;
+  min-height: 160px;
+}
+
+.community-board-detail {
+  display: grid;
+  gap: 10px;
+}
+
+.community-board-back {
+  width: fit-content;
+  padding: 0 12px;
+}
+
+.community-board-detail article {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.community-board-detail article strong {
+  font-size: 16px;
+}
+
+.community-board-detail article p {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.community-comments {
+  display: grid;
+  gap: 9px;
+  padding-top: 4px;
+}
+
+.community-comments-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.community-comments-head strong {
+  font-size: 14px;
+}
+
+.community-comments-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.community-comment-list {
+  display: grid;
+  gap: 7px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.community-comment {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.community-comment strong {
+  font-size: 13px;
+}
+
+.community-comment span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.community-comment p {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.community-comment-form {
+  display: grid;
+  grid-template-columns: minmax(82px, 112px) 1fr auto;
+  gap: 7px;
+  align-items: stretch;
+}
+
+.community-comment-form input {
+  min-width: 0;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: inherit;
+  padding: 8px;
+}
+
+.community-comment-form button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(240, 189, 84, 0.42);
+  border-radius: 7px;
+  background: rgba(240, 189, 84, 0.16);
+  color: #ffe3a0;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .patch-notes-dialog .panel-title span {
@@ -1732,5 +2010,9 @@ h2 {
 
   .bench {
     grid-template-columns: repeat(4, 1fr);
+  }
+
+  .community-comment-form {
+    grid-template-columns: 1fr;
   }
 }

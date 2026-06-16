@@ -1,10 +1,11 @@
-import { balance, bgmConfig, bossPatterns, bossRoster, patchNotesConfig, patchNotesStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
+import { balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, patchNotesConfig, patchNotesStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
 import { createUnitPool, makeUnit as createUnit, sample, sellValue, sleep } from "./src/core/units.js";
 import { createCombatController } from "./src/systems/combat.js";
 import { createProgressionController } from "./src/systems/progression.js";
 import { createShopController } from "./src/systems/shop.js";
 import { createTraitController } from "./src/systems/traits.js";
 import { createAudioController } from "./src/ui/audio.js";
+import { createCommunityBoardController } from "./src/ui/communityBoard.js";
 import { $, createRefs } from "./src/ui/dom.js";
 import { bindUiEvents } from "./src/ui/events.js";
 import { createPatchNotesController } from "./src/ui/patchNotes.js";
@@ -42,6 +43,21 @@ const state = {
   patchNotesSkipToday: false,
   deathRecord: null,
   rankingSubmitted: false,
+  communityBoardOpen: false,
+  communityBoardTab: communityBoardConfig.categories?.[0]?.id || "free",
+  communityBoardPage: 1,
+  communityBoardPosts: [],
+  communityBoardPost: null,
+  communityBoardComments: [],
+  communityBoardTotal: 0,
+  communityBoardLoaded: false,
+  communityBoardLoading: false,
+  communityBoardSaving: false,
+  communityBoardCommentsLoading: false,
+  communityBoardCommentSaving: false,
+  communityBoardError: "",
+  communityBoardCommentError: "",
+  communityBoardMode: "list",
 };
 
 const refs = createRefs();
@@ -50,6 +66,13 @@ const ranking = createRankingController({ state, refs, rankingConfig, rankingSto
 const { captureDeathRecord, loadRankings, submitRanking } = ranking;
 const patchNotes = createPatchNotesController({ state, patchNotesConfig, patchNotesStorageKey, render });
 const { closePatchNotes, initPatchNotes, openPatchNotes } = patchNotes;
+const communityBoard = createCommunityBoardController({
+  state,
+  refs,
+  boardConfig: communityBoardConfig,
+  storageKey: communityBoardStorageKey,
+  render,
+});
 
 const makeUnit = (base, tier = 1) => createUnit(base, balance, tier);
 
@@ -74,6 +97,10 @@ function selectedUnit() {
 
 function boardLimit() {
   return state.level;
+}
+
+function unitRange(unit) {
+  return ["사격", "술법", "지원"].includes(unit.role) ? balance.battle.rangedRange : balance.battle.meleeRange;
 }
 
 const progression = createProgressionController({ state, balance, addLog, render, boardLimit });
@@ -116,7 +143,7 @@ function unitNode(unit, source, index, compact = false) {
   node.querySelector(".name").textContent = unit.name;
   node.querySelector(".meta").textContent = compact ? unit.role : `${unit.role} · ${unit.trait}`;
   node.querySelector(".stars").textContent = "★".repeat(unit.tier);
-  node.title = `${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}`;
+  node.title = `${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}`;
   node.addEventListener("dragstart", () => {
     state.dragging = { source, index };
     document.body.classList.add("dragging-unit");
@@ -338,6 +365,7 @@ function renderUnitDetail() {
     ["HP", `${Math.max(0, Math.round(unit.hp))} / ${unit.maxHp}`],
     ["공격", unit.atk],
     ["공속", unit.speed.toFixed(2)],
+    ["사거리", `${unit.range || unitRange(unit)}칸`],
     ["스증", unit.skillAmp],
     ["방어", unit.defense],
     ["마나", `${Math.round(unit.mana || 0)} / 100`],
@@ -398,6 +426,7 @@ function render() {
   renderUnitDetail();
   renderRanking();
   renderPatchNotes();
+  communityBoard.renderCommunityBoard();
 }
 
 const combat = createCombatController({
@@ -441,6 +470,7 @@ bindUiEvents({
   },
 });
 
+communityBoard.bindCommunityBoardEvents();
 addLog("상점에서 캐릭터를 영입하고 보드로 드래그하세요.");
 loadRankings();
 initPatchNotes();

@@ -1,16 +1,48 @@
 {
   "rankingStorageKey": "lumia-tactics-rankings",
+  "communityBoardStorageKey": "lumia-tactics-community-posts",
   "patchNotesStorageKey": "lumia-tactics-patch-notes-hidden-date",
+  "communityBoard": {
+    "enabled": true,
+    "title": "게시판",
+    "table": "board_posts",
+    "commentsTable": "board_comments",
+    "pageSize": 10,
+    "limits": {
+      "nickname": 12,
+      "title": 40,
+      "content": 1000,
+      "comment": 200
+    },
+    "categories": [
+      {
+        "id": "free",
+        "label": "자유"
+      },
+      {
+        "id": "guide",
+        "label": "공략"
+      },
+      {
+        "id": "suggestion",
+        "label": "건의사항"
+      }
+    ]
+  },
   "patchNotes": {
     "enabled": true,
     "title": "패치노트",
-    "version": "개발 빌드",
-    "date": "2026-06-14",
-    "summary": "최근 변경사항을 확인하세요.",
+    "version": "로스터 확장 및 대규모 패치",
+    "date": "2026-06-22",
+    "summary": "로스터를 확장하고 역할군별 8시너지 기반을 정리했습니다.",
     "items": [
-      "패배 피해가 살아남은 적의 별 합계 기준으로 변경되었습니다.",
-      "일반 라운드 패배 피해는 최대 20으로 제한됩니다.",
-      "적 별 등급 확률이 라운드 진행에 따라 점진적으로 상승합니다."
+      "로스터를 확장했습니다 지원을 제외한 모든 역할군은 8종이 가능합니다.",
+      "클로에는 정밀/사격 5코스트로, 캐시는 기습/암살 1코스트로, 마이는 수호/방패 2코스트로, 수아는 맹공/난투 2코스트로 변경했습니다.",
+      "하트, 아이작, 매그너스, 키아라, 바바라, 니키, 마커스, 에스텔, 칼라는 비활성 로스터로 보관됩니다.",
+      "하나 보스는 이제 마나가 찰 때마다 자기 주위 빈칸에 오메가를 몇 마리든 소환합니다.(기존 1체한정 해제)",
+      "암살형 캐릭터는 전투 시작 시 적 후열의 빈칸으로 순간이동해 전투를 시작합니다.",
+      "자유, 공략, 건의사항을 남길 수 있는 게시판을 시험 운영합니다.",
+      "찾아낸 버그: 사격 시너지로 증가한 수치가 스킬 피해량에도 적용되어 이를 수정하고 있습니다."
     ]
   },
   "bgm": {

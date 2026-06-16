@@ -18,6 +18,7 @@
           <button id="bgmToggle" class="audio-button" title="배경음악 켜기">BGM</button>
           <button id="patchNotesToggle" class="patch-notes-button" title="패치노트 보기">패치노트</button>
           <button id="rankingToggle" class="ranking-button" title="랭킹 보기">랭킹</button>
+          <button id="communityBoardToggle" class="community-board-button" title="게시판 보기">게시판</button>
         </div>
         <div class="stats">
           <div><span>라운드</span><strong id="round">1</strong></div>
@@ -136,6 +137,19 @@
             <input id="patchNotesSkipToday" type="checkbox" />
             <span>오늘 다시 보지 않기</span>
           </label>
+        </section>
+      </div>
+
+      <div id="communityBoardModal" class="community-board-modal" hidden>
+        <section class="community-board-dialog" role="dialog" aria-modal="true" aria-labelledby="communityBoardTitle">
+          <div class="panel-title">
+            <div>
+              <h2 id="communityBoardTitle">게시판</h2>
+              <span id="communityBoardMeta"></span>
+            </div>
+            <button id="communityBoardClose" class="icon-button" title="닫기">닫기</button>
+          </div>
+          <div id="communityBoardPanel" class="community-board-panel"></div>
         </section>
       </div>
     </main>

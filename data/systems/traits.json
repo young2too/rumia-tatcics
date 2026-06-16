@@ -3,109 +3,33 @@
     "tiers": [
       {
         "need": 2,
-        "text": "난투형 공격력 +18%",
+        "text": "난투형 공격력 +20%, 체력 +8%, 방어 +6%",
         "effects": [
           {
             "stat": "atk",
+            "multiply": 1.2
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.08
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.06
+          }
+        ]
+      },
+      {
+        "need": 4,
+        "text": "난투형 공격력 +48%, 체력 +18%, 방어 +12%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 1.48
+          },
+          {
+            "stat": "hp",
             "multiply": 1.18
-          }
-        ]
-      },
-      {
-        "need": 4,
-        "text": "난투형 공격력 +45%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.45
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "난투형 공격력 +80%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.8
-          }
-        ]
-      },
-      {
-        "need": 8,
-        "text": "난투형 공격력 +125%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 2.25
-          }
-        ]
-      }
-    ]
-  },
-  "정밀": {
-    "tiers": [
-      {
-        "need": 2,
-        "text": "사격형 치명 기대값 +22%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.22
-          }
-        ]
-      },
-      {
-        "need": 4,
-        "text": "사격형 치명 기대값 +52%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.52
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "사격형 치명 기대값 +90%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.9
-          }
-        ]
-      },
-      {
-        "need": 8,
-        "text": "사격형 치명 기대값 +140%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 2.4
-          }
-        ]
-      }
-    ]
-  },
-  "수호": {
-    "tiers": [
-      {
-        "need": 2,
-        "text": "방패형 체력 +24%",
-        "effects": [
-          {
-            "stat": "hp",
-            "multiply": 1.24
-          }
-        ]
-      },
-      {
-        "need": 4,
-        "text": "방패형 체력 +60%, 방어 +12%",
-        "effects": [
-          {
-            "stat": "hp",
-            "multiply": 1.6
           },
           {
             "stat": "defense",
@@ -115,11 +39,109 @@
       },
       {
         "need": 6,
-        "text": "방패형 체력 +100%, 방어 +24%",
+        "text": "난투형 공격력 +82%, 체력 +32%, 방어 +20%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 1.82
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.32
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.2
+          }
+        ]
+      },
+      {
+        "need": 8,
+        "text": "난투형 공격력 +125%, 체력 +52%, 방어 +32%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 2.25
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.52
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.32
+          }
+        ]
+      }
+    ]
+  },
+  "정밀": {
+    "tiers": [
+      {
+        "need": 2,
+        "text": "사격형 치명 기대값 +26%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 1.26
+          }
+        ]
+      },
+      {
+        "need": 4,
+        "text": "사격형 치명 기대값 +62%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 1.62
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "사격형 치명 기대값 +105%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 2.05
+          }
+        ]
+      },
+      {
+        "need": 8,
+        "text": "사격형 치명 기대값 +160%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 2.6
+          }
+        ]
+      }
+    ]
+  },
+  "수호": {
+    "tiers": [
+      {
+        "need": 2,
+        "text": "방패형 체력 +30%, 방어 +10%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 2
+            "multiply": 1.3
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.1
+          }
+        ]
+      },
+      {
+        "need": 4,
+        "text": "방패형 체력 +75%, 방어 +24%",
+        "effects": [
+          {
+            "stat": "hp",
+            "multiply": 1.75
           },
           {
             "stat": "defense",
@@ -128,16 +150,30 @@
         ]
       },
       {
-        "need": 8,
-        "text": "방패형 체력 +155%, 방어 +38%",
+        "need": 6,
+        "text": "방패형 체력 +125%, 방어 +42%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 2.55
+            "multiply": 2.25
           },
           {
             "stat": "defense",
-            "multiply": 1.38
+            "multiply": 1.42
+          }
+        ]
+      },
+      {
+        "need": 8,
+        "text": "방패형 체력 +190%, 방어 +65%",
+        "effects": [
+          {
+            "stat": "hp",
+            "multiply": 2.9
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.65
           }
         ]
       }
@@ -147,41 +183,41 @@
     "tiers": [
       {
         "need": 2,
-        "text": "술법형 스킬 피해 +25%",
+        "text": "술법형 스킬 피해 +35%",
         "effects": [
           {
             "stat": "skillAmp",
-            "multiply": 1.25
+            "multiply": 1.35
           }
         ]
       },
       {
         "need": 4,
-        "text": "술법형 스킬 피해 +62%",
+        "text": "술법형 스킬 피해 +80%",
         "effects": [
           {
             "stat": "skillAmp",
-            "multiply": 1.62
+            "multiply": 1.8
           }
         ]
       },
       {
         "need": 6,
-        "text": "술법형 스킬 피해 +105%",
+        "text": "술법형 스킬 피해 +135%",
         "effects": [
           {
             "stat": "skillAmp",
-            "multiply": 2.05
+            "multiply": 2.35
           }
         ]
       },
       {
         "need": 8,
-        "text": "술법형 스킬 피해 +170%",
+        "text": "술법형 스킬 피해 +220%",
         "effects": [
           {
             "stat": "skillAmp",
-            "multiply": 2.7
+            "multiply": 3.2
           }
         ]
       }
