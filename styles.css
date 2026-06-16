@@ -271,6 +271,8 @@ h2 {
 }
 
 .arena-head {
+  position: relative;
+  z-index: 900;
   padding: 16px 16px 12px;
 }
 
@@ -536,6 +538,39 @@ h2 {
   animation-name: shield-pop;
 }
 
+.damage-number {
+  position: absolute;
+  z-index: 950;
+  translate: -50% -50%;
+  pointer-events: none;
+  color: #ffd6a4;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 #2d1111,
+    0 0 5px rgba(0, 0, 0, 0.86),
+    0 0 10px rgba(239, 90, 86, 0.55);
+  animation: damage-float 820ms cubic-bezier(0.15, 0.78, 0.2, 1) forwards;
+}
+
+.damage-number.critical {
+  color: #fff2a8;
+  font-size: 16px;
+  text-shadow:
+    0 1px 0 #3a2200,
+    0 0 5px rgba(0, 0, 0, 0.9),
+    0 0 13px rgba(240, 189, 84, 0.8);
+}
+
+.damage-number.positive {
+  color: #aef0a5;
+  text-shadow:
+    0 1px 0 #0b2615,
+    0 0 5px rgba(0, 0, 0, 0.82),
+    0 0 12px rgba(117, 200, 120, 0.65);
+}
+
 @keyframes projectile-flight {
   0% {
     opacity: 0;
@@ -551,6 +586,24 @@ h2 {
   100% {
     opacity: 0;
     transform: translate(var(--dx), var(--dy)) rotate(var(--angle)) scale(1.65);
+  }
+}
+
+@keyframes damage-float {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.82);
+  }
+  16% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.08);
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.94);
   }
 }
 
@@ -1247,7 +1300,7 @@ h2 {
   width: 168px;
   height: 214px;
   display: block;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .cell .unit.boss-unit .portrait {
@@ -1260,6 +1313,7 @@ h2 {
   display: block;
   min-height: 0;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .cell .unit.boss-unit .portrait img {
@@ -1274,6 +1328,7 @@ h2 {
   filter:
     drop-shadow(0 10px 8px rgba(0, 0, 0, 0.62))
     drop-shadow(0 0 18px rgba(170, 137, 255, 0.34));
+  pointer-events: none;
 }
 
 .cell .unit.boss-unit.boss-bear {
@@ -1902,6 +1957,11 @@ h2 {
 .ranking-empty {
   color: var(--muted);
   font-size: 12px;
+}
+
+.rank-entry.submitted {
+  border: 1px solid rgba(111, 203, 255, 0.55);
+  background: rgba(111, 203, 255, 0.1);
 }
 
 .rank-entry strong {

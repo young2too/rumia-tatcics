@@ -1,5 +1,6 @@
 export function createRankingController({ state, refs, rankingConfig, rankingStorageKey, renderRanking, render }) {
   let memoryRankings = [];
+  const rankingLimit = Number(rankingConfig.limit) || 100;
 
   function localRankingEntries() {
     try {
@@ -42,7 +43,22 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
       stage: Number(entry.stage) || 1,
       board: Array.isArray(entry.board) ? entry.board : [],
       createdAt: entry.createdAt || entry.created_at || new Date().toISOString(),
+      isSubmittedEntry: Boolean(entry.isSubmittedEntry),
     };
+  }
+
+  function sortRankingEntries(entries) {
+    return entries
+      .map(normalizeRankingEntry)
+      .sort((a, b) => b.stage - a.stage || new Date(a.createdAt) - new Date(b.createdAt));
+  }
+
+  function rememberSubmittedEntry(entry) {
+    if (!entry) return false;
+    const savedEntry = normalizeRankingEntry({ ...entry, isSubmittedEntry: true });
+    if (state.rankingEntries.some((ranking) => ranking.id === savedEntry.id)) return false;
+    state.rankingEntries = [savedEntry, ...state.rankingEntries];
+    return true;
   }
 
   async function loadRankings(force = false) {
@@ -57,9 +73,10 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
         return;
       }
 
-      const response = await fetch(rankingEndpoint("?select=id,nickname,stage,board,created_at&order=stage.desc,created_at.asc&limit=50"), {
-        headers: rankingHeaders(),
-      });
+      const response = await fetch(
+        rankingEndpoint(`?select=id,nickname,stage,board,created_at&order=stage.desc,created_at.asc&limit=${rankingLimit}`),
+        { headers: rankingHeaders() },
+      );
       if (!response.ok) throw new Error(`랭킹 조회 실패 (${response.status})`);
       const rows = await response.json();
       state.rankingEntries = rows.map(normalizeRankingEntry);
@@ -111,7 +128,7 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
       if (rankingBackendEnabled()) {
         const response = await fetch(rankingEndpoint(), {
           method: "POST",
-          headers: rankingHeaders({ Prefer: "return=minimal" }),
+          headers: rankingHeaders({ Prefer: "return=representation" }),
           body: JSON.stringify({
             nickname: entry.name,
             stage: entry.stage,
@@ -119,23 +136,26 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
           }),
         });
         if (!response.ok) throw new Error(`랭킹 등록 실패 (${response.status})`);
+        const rows = await response.json();
+        const savedEntry = normalizeRankingEntry(rows[0] || entry);
         state.rankingSubmitted = true;
         refs.rankName.value = "";
         await loadRankings(true);
+        const shownOutsideSortedList = rememberSubmittedEntry(savedEntry);
+        state.rankingError = shownOutsideSortedList
+          ? "랭킹 등록 완료. 상위 목록 밖의 기록이라 방금 등록한 기록을 맨 위에 함께 표시합니다."
+          : "랭킹 등록 완료.";
         render();
         return;
       }
       throw new Error("서버 랭킹 설정이 없습니다.");
     } catch (error) {
-      const local = [entry, ...localRankingEntries()]
-        .map(normalizeRankingEntry)
-        .sort((a, b) => b.stage - a.stage || new Date(a.createdAt) - new Date(b.createdAt))
-        .slice(0, 20);
+      const local = sortRankingEntries([entry, ...localRankingEntries()]).slice(0, 20);
       saveLocalRankingEntries(local);
       state.rankingEntries = local;
       state.rankingError = rankingBackendEnabled()
-        ? "서버 등록에 실패해 이 브라우저에 임시 저장했습니다."
-        : "서버 설정 전이라 이 브라우저에 임시 저장했습니다.";
+        ? "서버 등록에 실패해서 브라우저에 임시 저장했습니다."
+        : "서버 설정 없이 브라우저에 임시 저장했습니다.";
       state.rankingSubmitted = true;
       refs.rankName.value = "";
       console.warn(error);

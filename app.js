@@ -322,8 +322,8 @@ function renderRanking() {
     : entries.length
     ? entries
         .map((entry, index) => `
-          <div class="rank-entry">
-            <strong><span>${index + 1}. ${entry.name}</span><b>${entry.stage}라운드</b></strong>
+          <div class="rank-entry ${entry.isSubmittedEntry ? "submitted" : ""}">
+            <strong><span>${entry.isSubmittedEntry ? "등록됨" : `${index + 1}.`} ${entry.name}</span><b>${entry.stage}라운드</b></strong>
             <div class="rank-board">
               ${entry.board.map((unit) => `
                 <span class="rank-unit" title="${unit.name}">

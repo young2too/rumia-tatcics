@@ -199,6 +199,94 @@
         9
       ]
     ],
+    "enemyComposition": {
+      "roleGroups": {
+        "frontline": [
+          "방패",
+          "난투",
+          "검객"
+        ],
+        "dealer": [
+          "사격",
+          "술법",
+          "암살",
+          "검객",
+          "난투"
+        ],
+        "support": [
+          "지원"
+        ]
+      },
+      "dealerRoles": [
+        "사격",
+        "술법",
+        "암살",
+        "검객",
+        "난투"
+      ],
+      "supportRoles": [
+        "지원"
+      ],
+      "defensiveRoles": [
+        "방패",
+        "지원"
+      ],
+      "maxSameUnit": 2,
+      "maxSupportRatio": 0.25,
+      "maxDefensiveRatio": 0.5,
+      "minDealersByEnemyCount": [
+        {
+          "count": 1,
+          "min": 1
+        },
+        {
+          "count": 5,
+          "min": 2
+        },
+        {
+          "count": 8,
+          "min": 4
+        }
+      ],
+      "templates": [
+        {
+          "id": "balanced",
+          "weight": 5,
+          "roles": {
+            "frontline": 0.35,
+            "dealer": 0.45,
+            "support": 0.2
+          }
+        },
+        {
+          "id": "rush",
+          "weight": 3,
+          "roles": {
+            "frontline": 0.25,
+            "dealer": 0.6,
+            "support": 0.15
+          }
+        },
+        {
+          "id": "fortress",
+          "weight": 2,
+          "roles": {
+            "frontline": 0.5,
+            "dealer": 0.35,
+            "support": 0.15
+          }
+        },
+        {
+          "id": "backline",
+          "weight": 3,
+          "roles": {
+            "frontline": 0.3,
+            "dealer": 0.55,
+            "support": 0.15
+          }
+        }
+      ]
+    },
     "meleeRange": 1,
     "rangedRange": 4,
     "baseIncome": 2,

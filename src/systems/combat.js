@@ -69,6 +69,15 @@ function makeEnemyUnit(base, tier, stage, hpScale, atkScale) {
   return unit;
 }
 
+function baseCritStats(unit) {
+  const base = roster.find((entry) => entry.name === unit.name);
+  return {
+    critChance: base?.critChance ?? 0,
+    critDamage: base?.critDamage ?? 1.5,
+    openingCritMultiplier: base?.openingCritMultiplier ?? 1,
+  };
+}
+
 function isBossRound() {
   return state.round % balance.battle.bossInterval === 0;
 }
@@ -102,6 +111,119 @@ function makeBossUnit(stage) {
   };
 }
 
+function weightedSample(items, weightKey = "weight") {
+  const total = items.reduce((sum, item) => sum + Math.max(0, item[weightKey] ?? 1), 0);
+  if (total <= 0) return sample(items);
+  let roll = Math.random() * total;
+  for (const item of items) {
+    roll -= Math.max(0, item[weightKey] ?? 1);
+    if (roll <= 0) return item;
+  }
+  return items.at(-1);
+}
+
+function enemyCompositionConfig() {
+  return balance.battle.enemyComposition || {};
+}
+
+function pickEnemyCompositionTemplate() {
+  const config = enemyCompositionConfig();
+  const templates = config.templates?.length ? config.templates : [
+    { id: "random", weight: 1, roles: { dealer: 1 } },
+  ];
+  return weightedSample(templates);
+}
+
+function minDealersForCount(count) {
+  const rules = enemyCompositionConfig().minDealersByEnemyCount || [];
+  return rules
+    .filter((rule) => count >= rule.count)
+    .reduce((max, rule) => Math.max(max, rule.min), 0);
+}
+
+function targetGroupCounts(count, template) {
+  const roles = template.roles || { dealer: 1 };
+  const entries = Object.entries(roles).filter(([, ratio]) => ratio > 0);
+  const raw = entries.map(([group, ratio]) => {
+    const value = ratio * count;
+    return { group, count: Math.floor(value), remainder: value % 1 };
+  });
+  let assigned = raw.reduce((sum, item) => sum + item.count, 0);
+  for (const item of raw.sort((a, b) => b.remainder - a.remainder)) {
+    if (assigned >= count) break;
+    item.count += 1;
+    assigned += 1;
+  }
+  const counts = Object.fromEntries(raw.map((item) => [item.group, item.count]));
+  const config = enemyCompositionConfig();
+  const supportMax = Math.floor(count * (config.maxSupportRatio ?? 1));
+  if (counts.support > supportMax) {
+    const overflow = counts.support - supportMax;
+    counts.support = supportMax;
+    counts.dealer = (counts.dealer || 0) + overflow;
+  }
+  const minDealers = minDealersForCount(count);
+  if ((counts.dealer || 0) < minDealers) {
+    const need = minDealers - (counts.dealer || 0);
+    const fromSupport = Math.min(need, counts.support || 0);
+    counts.support = (counts.support || 0) - fromSupport;
+    counts.dealer = (counts.dealer || 0) + fromSupport;
+    const remaining = need - fromSupport;
+    if (remaining > 0) {
+      counts.frontline = Math.max(0, (counts.frontline || 0) - remaining);
+      counts.dealer = (counts.dealer || 0) + remaining;
+    }
+  }
+  return counts;
+}
+
+function roleMatchesGroup(unit, group) {
+  const groups = enemyCompositionConfig().roleGroups || {};
+  return (groups[group] || []).includes(unit.role);
+}
+
+function countRoles(units, roles) {
+  return units.filter((unit) => roles.includes(unit.role)).length;
+}
+
+function canAddEnemy(picked, candidate, countByName, count) {
+  const config = enemyCompositionConfig();
+  const maxSameUnit = config.maxSameUnit ?? Infinity;
+  if ((countByName[candidate.name] || 0) >= maxSameUnit) return false;
+
+  const next = [...picked, candidate];
+  const supportRoles = config.supportRoles || [];
+  const defensiveRoles = config.defensiveRoles || [];
+  const maxSupport = Math.floor(count * (config.maxSupportRatio ?? 1));
+  const maxDefensive = Math.ceil(count * (config.maxDefensiveRatio ?? 1));
+  if (supportRoles.length && countRoles(next, supportRoles) > maxSupport) return false;
+  if (defensiveRoles.length && countRoles(next, defensiveRoles) > maxDefensive) return false;
+  return true;
+}
+
+function chooseEnemyBase(candidates, group, picked, countByName, count) {
+  const groupCandidates = candidates.filter((unit) => roleMatchesGroup(unit, group));
+  const pools = [groupCandidates, candidates];
+  for (const pool of pools) {
+    const available = pool.filter((unit) => canAddEnemy(picked, unit, countByName, count));
+    if (available.length) return sample(available);
+  }
+  return sample(candidates);
+}
+
+function enemyGroupsForCount(count) {
+  const template = pickEnemyCompositionTemplate();
+  const counts = targetGroupCounts(count, template);
+  const groups = [];
+  for (const [group, groupCount] of Object.entries(counts)) {
+    for (let i = 0; i < groupCount; i++) groups.push(group);
+  }
+  return groups.sort((a, b) => {
+    const priority = { frontline: 0, dealer: 1, support: 2 };
+    return (priority[a] ?? 9) - (priority[b] ?? 9) || Math.random() - 0.5;
+  });
+}
+
 function makeEnemies() {
   const stage = enemyDifficultyStage();
   const slots = Array(balance.battle.enemySlots).fill(null);
@@ -126,8 +248,14 @@ function makeEnemies() {
     balance.battle.enemyAtkScaleCap,
     balance.battle.enemyBaseAtkScale + state.round * balance.battle.enemyAtkRoundGrowth + stage * balance.battle.enemyStageAtkGrowth
   );
+  const groups = enemyGroupsForCount(count);
+  const picked = [];
+  const countByName = {};
   Array.from({ length: count }, (_, i) => {
-    const unit = makeEnemyUnit(sample(candidates), rollEnemyTier(stage), stage, hpScale, atkScale);
+    const base = chooseEnemyBase(candidates, groups[i] || "dealer", picked, countByName, count);
+    const unit = makeEnemyUnit(base, rollEnemyTier(stage), stage, hpScale, atkScale);
+    picked.push(base);
+    countByName[base.name] = (countByName[base.name] || 0) + 1;
     slots[balance.battle.enemySpawnOrder[i] ?? i] = unit;
   });
   return slots;
@@ -612,8 +740,8 @@ function weaponEffectKind(unit, type = "attack") {
   return "slash";
 }
 
-function combatEffect(from, to, type = "attack") {
-  return { from: from.id, to: to.id, type, weapon: from.weapon, kind: weaponEffectKind(from, type) };
+function combatEffect(from, to, type = "attack", value = null) {
+  return { from: from.id, to: to.id, type, weapon: from.weapon, kind: weaponEffectKind(from, type), value };
 }
 
 function basicAttackDamage(attacker, baseAmount) {
@@ -645,12 +773,16 @@ function basicAttack(attacker, enemies) {
       .slice(0, nadjaPattern.basicTargetCount);
     let total = 0;
     const hit = basicAttackDamage(attacker, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
-    for (const unit of targets) total += dealDamage(attacker, unit, hit.amount);
+    const damages = targets.map((unit) => {
+      const damage = dealDamage(attacker, unit, hit.amount);
+      total += damage;
+      return { unit, damage };
+    });
     attacker.mana = Math.min(100, attacker.mana + balance.battle.manaPerAttack);
     attacker.status = "attacking";
     return {
       message: `${attacker.name} basic cleave ${total}${hit.critical ? " 치명" : ""}`,
-      effects: targets.map((unit) => combatEffect(attacker, unit, "attack")),
+      effects: damages.map(({ unit, damage }) => combatEffect(attacker, unit, "attack", { amount: damage, critical: hit.critical })),
     };
   }
   const hit = basicAttackDamage(attacker, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
@@ -659,7 +791,7 @@ function basicAttack(attacker, enemies) {
   attacker.status = "attacking";
   return {
     message: `${attacker.name} → ${target.name} ${damage} 피해${hit.critical ? " (치명)" : ""}`,
-    effects: [combatEffect(attacker, target, "attack")],
+    effects: [combatEffect(attacker, target, "attack", { amount: damage, critical: hit.critical })],
   };
 }
 
@@ -670,9 +802,10 @@ function castBossSkill(caster, allies, enemies) {
     const targets = unitsInRange(caster, enemies, pattern.range);
     let total = 0;
     for (const target of targets) {
-      total += dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
+      const damage = dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
+      total += damage;
       applyStun(target, pattern.stunTicks);
-      effects.push(combatEffect(caster, target, "skill"));
+      effects.push(combatEffect(caster, target, "skill", { amount: damage }));
     }
     return { message: `${caster.name} roar stun ${targets.length} / ${total}`, effects };
   }
@@ -682,10 +815,11 @@ function castBossSkill(caster, allies, enemies) {
     const targets = unitsInFront(caster, enemies, pattern.range);
     let total = 0;
     for (const target of targets) {
-      total += dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
+      const damage = dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
+      total += damage;
       knockBack(target, caster, pattern.knockback);
       applyStun(target, pattern.stunTicks);
-      effects.push(combatEffect(caster, target, "skill"));
+      effects.push(combatEffect(caster, target, "skill", { amount: damage }));
     }
     return { message: `${caster.name} shockwave ${targets.length} / ${total}`, effects };
   }
@@ -695,8 +829,9 @@ function castBossSkill(caster, allies, enemies) {
     const targets = backlineTargets(caster, enemies, pattern.targetCount);
     let total = 0;
     for (const target of targets) {
-      total += dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
-      effects.push(combatEffect(caster, target, "skill"));
+      const damage = dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
+      total += damage;
+      effects.push(combatEffect(caster, target, "skill", { amount: damage }));
     }
     return { message: `${caster.name} toxic shots ${targets.length} / ${total}`, effects };
   }
@@ -711,7 +846,7 @@ function castBossSkill(caster, allies, enemies) {
     const target = pickTarget(caster, enemies);
     if (!target) return { message: "", effects: [] };
     const damage = dealDamage(caster, target, caster.skillAmp * pattern.fallbackSkillAmpMultiplier + caster.atk * pattern.fallbackAtkMultiplier);
-    return { message: `${caster.name} arcane hit ${damage}`, effects: [combatEffect(caster, target, "skill")] };
+    return { message: `${caster.name} arcane hit ${damage}`, effects: [combatEffect(caster, target, "skill", { amount: damage })] };
   }
 
   if (caster.pattern === "nadja") {
@@ -719,8 +854,9 @@ function castBossSkill(caster, allies, enemies) {
     const targets = living(enemies);
     let total = 0;
     for (const target of targets) {
-      total += dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
-      effects.push(combatEffect(caster, target, "skill"));
+      const damage = dealDamage(caster, target, caster.skillAmp * pattern.skillAmpMultiplier + caster.atk * pattern.atkMultiplier);
+      total += damage;
+      effects.push(combatEffect(caster, target, "skill", { amount: damage }));
     }
     return { message: `${caster.name} full-map strike ${targets.length} / ${total}`, effects };
   }
@@ -750,17 +886,22 @@ function castSkill(caster, allies, enemies) {
     }
     return {
       message: `${caster.name} 스킬: ${targets.length}명 ${heal} 회복`,
-      effects: targets.map((target) => combatEffect(caster, target, "heal")),
+      effects: targets.map((target) => combatEffect(caster, target, "heal", { amount: heal })),
     };
   }
 
   if (caster.role === "술법") {
     const targets = living(enemies);
     let total = 0;
-    for (const target of targets) total += dealDamage(caster, target, caster.skillAmp * 0.75 + 10);
+    const effects = [];
+    for (const target of targets) {
+      const damage = dealDamage(caster, target, caster.skillAmp * 0.75 + 10);
+      total += damage;
+      effects.push(combatEffect(caster, target, "skill", { amount: damage }));
+    }
     return {
       message: `${caster.name} 스킬: 광역 ${total} 피해`,
-      effects: targets.map((target) => combatEffect(caster, target, "skill")),
+      effects,
     };
   }
 
@@ -775,7 +916,7 @@ function castSkill(caster, allies, enemies) {
     caster.status = "healed";
     return {
       message: `${caster.name} 스킬: ${heal} 보호막`,
-      effects: [combatEffect(caster, caster, "shield")],
+      effects: [combatEffect(caster, caster, "shield", { amount: heal })],
     };
   }
 
@@ -799,7 +940,7 @@ function castSkill(caster, allies, enemies) {
   const damage = dealDamage(caster, target, caster.atk * 0.75 + caster.skillAmp * scale + 10);
   return {
     message: `${caster.name} 스킬: ${target.name} ${damage} 피해`,
-    effects: [combatEffect(caster, target, "skill")],
+    effects: [combatEffect(caster, target, "skill", { amount: damage })],
   };
 }
 
@@ -835,6 +976,17 @@ function playCombatEffects(effects) {
     projectile.style.setProperty("--angle", `${Math.atan2(endY - startY, endX - startX)}rad`);
     field.append(projectile);
     projectile.addEventListener("animationend", () => projectile.remove(), { once: true });
+
+    if (effect.value?.amount > 0) {
+      const number = document.createElement("span");
+      const isPositive = effect.type === "heal" || effect.type === "shield";
+      number.className = `damage-number ${isPositive ? "positive" : "damage"} ${effect.value.critical ? "critical" : ""}`;
+      number.textContent = `${isPositive ? "+" : ""}${Math.round(effect.value.amount)}`;
+      number.style.left = `${toRect.left + toRect.width / 2 - fieldRect.left}px`;
+      number.style.top = `${toRect.top + Math.max(0, toRect.height * 0.16) - fieldRect.top}px`;
+      field.append(number);
+      number.addEventListener("animationend", () => number.remove(), { once: true });
+    }
   }
 }
 
@@ -854,6 +1006,7 @@ async function simulate() {
   const traitCounts = activeTraits();
   state.enemies = makeEnemies();
   allies.forEach((unit) => {
+    const critBase = baseCritStats(unit);
     unit.combatBase = {
       maxHp: unit.maxHp,
       hp: unit.hp,
@@ -861,7 +1014,13 @@ async function simulate() {
       speed: unit.speed,
       skillAmp: unit.skillAmp,
       defense: unit.defense,
+      critChance: critBase.critChance,
+      critDamage: critBase.critDamage,
+      openingCritMultiplier: critBase.openingCritMultiplier,
     };
+    unit.critChance = critBase.critChance;
+    unit.critDamage = critBase.critDamage;
+    unit.openingCritMultiplier = critBase.openingCritMultiplier;
   });
   allies.forEach((unit) => prepareCombatUnit(unit, "ally", traitCounts));
   state.enemies.filter(Boolean).forEach((unit) => prepareCombatUnit(unit, "enemy"));
@@ -932,6 +1091,9 @@ async function simulate() {
       unit.speed = unit.combatBase.speed;
       unit.skillAmp = unit.combatBase.skillAmp;
       unit.defense = unit.combatBase.defense;
+      unit.critChance = unit.combatBase.critChance;
+      unit.critDamage = unit.combatBase.critDamage;
+      unit.openingCritMultiplier = unit.combatBase.openingCritMultiplier;
       delete unit.combatBase;
     }
     unit.hp = unit.maxHp;
