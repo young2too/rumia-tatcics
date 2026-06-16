@@ -26,11 +26,16 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       skillAmp: unit.skillAmp,
       defense: unit.defense,
       heal: 1,
+      critChance: unit.critChance ?? 0,
+      critDamage: unit.critDamage ?? 1.5,
+      openingCritMultiplier: unit.openingCritMultiplier ?? 1,
     };
     const rule = traitRules[unit.trait];
     const tier = activeTraitTier(rule, counts[unit.trait] || 0);
     for (const effect of tier?.effects || []) {
-      if (effect.stat in stats) stats[effect.stat] *= effect.multiply;
+      if (!(effect.stat in stats)) continue;
+      if (Number.isFinite(effect.multiply)) stats[effect.stat] *= effect.multiply;
+      if (Number.isFinite(effect.add)) stats[effect.stat] += effect.add;
     }
     return stats;
   }

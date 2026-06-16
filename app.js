@@ -109,6 +109,22 @@ const { addXp, buyXp, grantRoundIncome, levelXpLabel, xpToNextLevel } = progress
 const traits = createTraitController({ state, traitRules, boardUnits });
 const { activeTraits, activeTraitTier, applySynergy, nextTraitNeed } = traits;
 
+function unitDetailStats(unit) {
+  if (state.selected?.source !== "board") {
+    return {
+      hp: unit.maxHp,
+      atk: unit.atk,
+      speed: unit.speed,
+      skillAmp: unit.skillAmp,
+      defense: unit.defense,
+      critChance: unit.critChance ?? 0,
+      critDamage: unit.critDamage ?? 1.5,
+      openingCritMultiplier: unit.openingCritMultiplier ?? 1,
+    };
+  }
+  return applySynergy(unit, activeTraits());
+}
+
 const shop = createShopController({
   state,
   balance,
@@ -361,15 +377,18 @@ function renderUnitDetail() {
     return;
   }
 
+  const effective = unitDetailStats(unit);
   const stats = [
     ["HP", `${Math.max(0, Math.round(unit.hp))} / ${unit.maxHp}`],
-    ["공격", unit.atk],
-    ["공속", unit.speed.toFixed(2)],
+    ["공격", Math.round(effective.atk)],
+    ["공속", effective.speed.toFixed(2)],
     ["사거리", `${unit.range || unitRange(unit)}칸`],
-    ["스증", unit.skillAmp],
-    ["방어", unit.defense],
+    ["스증", Math.round(effective.skillAmp)],
+    ["방어", Math.round(effective.defense)],
     ["마나", `${Math.round(unit.mana || 0)} / 100`],
   ];
+  if (effective.critChance > 0) stats.push(["치명", `${Math.round(effective.critChance * 100)}%`]);
+  if (effective.openingCritMultiplier > 1) stats.push(["첫 치명", `${Math.round(effective.openingCritMultiplier * 100)}%`]);
   refs.detailTier.textContent = `${"★".repeat(unit.tier)} · ${unit.cost}코`;
   refs.sellUnit.disabled = state.busy;
   refs.sellUnit.textContent = `${sellValue(unit)}크레딧에 판매`;

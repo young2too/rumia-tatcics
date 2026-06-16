@@ -339,21 +339,29 @@
     "tiers": [
       {
         "need": 2,
-        "text": "암살형 첫 피해 +30%",
+        "text": "암살형 첫 평타 치명 180%, 치명 확률 +15%",
         "effects": [
           {
-            "stat": "atk",
-            "multiply": 1.3
+            "stat": "openingCritMultiplier",
+            "add": 0.8
+          },
+          {
+            "stat": "critChance",
+            "add": 0.15
           }
         ]
       },
       {
         "need": 4,
-        "text": "암살형 첫 피해 +75%, 공격 속도 +18%",
+        "text": "암살형 첫 평타 치명 220%, 치명 확률 +25%, 공격 속도 +18%",
         "effects": [
           {
-            "stat": "atk",
-            "multiply": 1.75
+            "stat": "openingCritMultiplier",
+            "add": 1.2
+          },
+          {
+            "stat": "critChance",
+            "add": 0.25
           },
           {
             "stat": "speed",
@@ -363,11 +371,15 @@
       },
       {
         "need": 6,
-        "text": "암살형 첫 피해 +125%, 공격 속도 +34%",
+        "text": "암살형 첫 평타 치명 260%, 치명 확률 +35%, 공격 속도 +34%",
         "effects": [
           {
-            "stat": "atk",
-            "multiply": 2.25
+            "stat": "openingCritMultiplier",
+            "add": 1.6
+          },
+          {
+            "stat": "critChance",
+            "add": 0.35
           },
           {
             "stat": "speed",
@@ -377,11 +389,15 @@
       },
       {
         "need": 8,
-        "text": "암살형 첫 피해 +190%, 공격 속도 +55%",
+        "text": "암살형 첫 평타 치명 320%, 치명 확률 +50%, 공격 속도 +55%",
         "effects": [
           {
-            "stat": "atk",
-            "multiply": 2.9
+            "stat": "openingCritMultiplier",
+            "add": 2.2
+          },
+          {
+            "stat": "critChance",
+            "add": 0.5
           },
           {
             "stat": "speed",

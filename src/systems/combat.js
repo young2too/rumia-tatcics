@@ -196,6 +196,10 @@ function backlineJumpRows(unit) {
   return unit.side === "ally" ? [0, 1] : [5, 4];
 }
 
+function enemyBacklineRows(attacker) {
+  return attacker.side === "ally" ? [0, 1] : [5, 4];
+}
+
 function emptyBacklineSlots(unit) {
   const from = unitSlot(unit);
   if (!state.combatGrid || !from) return [];
@@ -257,6 +261,7 @@ function moveToward(attacker, target) {
   const from = unitSlot(attacker);
   const to = unitSlot(target);
   if (!from || !to) return false;
+  if (hexDistanceSlots(from, to) <= unitAttackRange(attacker)) return false;
   const arr = state.combatGrid || (attacker.side === "enemy" ? state.enemies : state.board);
   const range = unitAttackRange(attacker);
   const visited = new Set([from.index]);
@@ -440,6 +445,9 @@ function prepareCombatUnit(unit, side, counts = {}) {
     skillAmp: unit.skillAmp,
     defense: unit.defense,
     heal: 1,
+    critChance: unit.critChance ?? 0,
+    critDamage: unit.critDamage ?? 1.5,
+    openingCritMultiplier: unit.openingCritMultiplier ?? 1,
   };
   unit.side = side;
   unit.mana = 0;
@@ -450,18 +458,64 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.skillAmp = Math.round(stats.skillAmp);
   unit.defense = Math.round(stats.defense);
   unit.healPower = stats.heal;
+  unit.critChance = Math.max(0, Math.min(1, stats.critChance ?? 0));
+  unit.critDamage = Math.max(1, stats.critDamage ?? 1.5);
+  unit.openingCritMultiplier = Math.max(1, stats.openingCritMultiplier ?? 1);
   unit.range = unitAttackRange(unit);
   unit.status = "";
   unit.stunTicks = 0;
   unit.immuneTicks = unit.immuneTicks || 0;
   unit.focusTargetId = null;
   unit.hasPickedOpeningTarget = false;
+  unit.hasUsedOpeningCrit = false;
   return unit;
 }
 
 function pickTarget(attacker, enemies) {
   const alive = living(enemies);
   if (!alive.length) return null;
+
+  if (isBacklineDiver(attacker)) {
+    const rows = enemyBacklineRows(attacker);
+    const reachable = alive.filter((unit) => distanceBetween(attacker, unit) <= unitAttackRange(attacker));
+    const reachableBackline = reachable.filter((unit) => {
+      const slot = unitSlot(unit);
+      return slot && rows.includes(slot.y);
+    });
+    const candidates = reachableBackline.length ? reachableBackline : reachable;
+    if (candidates.length) {
+      const target = candidates.slice().sort((a, b) => compareByDistanceThenHp(attacker, a, b))[0];
+      attacker.focusTargetId = target.id;
+      attacker.hasPickedOpeningTarget = true;
+      return target;
+    }
+
+    const backline = alive.filter((unit) => {
+      const slot = unitSlot(unit);
+      return slot && rows.includes(slot.y);
+    });
+    const target = (backline.length ? backline : alive)
+      .slice()
+      .sort((a, b) => {
+        const slotA = unitSlot(a);
+        const slotB = unitSlot(b);
+        const rowA = slotA ? rows.indexOf(slotA.y) : 99;
+        const rowB = slotB ? rows.indexOf(slotB.y) : 99;
+        if (rowA !== rowB) return rowA - rowB;
+        return compareByDistanceThenHp(attacker, a, b);
+      })[0];
+    attacker.focusTargetId = target.id;
+    attacker.hasPickedOpeningTarget = true;
+    return target;
+  }
+
+  const reachable = alive.filter((unit) => distanceBetween(attacker, unit) <= unitAttackRange(attacker));
+  if (reachable.length) {
+    const target = reachable.slice().sort((a, b) => compareByDistanceThenHp(attacker, a, b))[0];
+    attacker.focusTargetId = target.id;
+    attacker.hasPickedOpeningTarget = true;
+    return target;
+  }
 
   if (attacker.focusTargetId) {
     const focused = alive.find((unit) => unit.id === attacker.focusTargetId);
@@ -511,6 +565,17 @@ function combatEffect(from, to, type = "attack") {
   return { from: from.id, to: to.id, type, weapon: from.weapon, kind: weaponEffectKind(from, type) };
 }
 
+function basicAttackDamage(attacker, baseAmount) {
+  if (!attacker.hasUsedOpeningCrit && attacker.openingCritMultiplier > 1) {
+    attacker.hasUsedOpeningCrit = true;
+    return { amount: baseAmount * attacker.openingCritMultiplier, critical: true, opening: true };
+  }
+  if (Math.random() < (attacker.critChance || 0)) {
+    return { amount: baseAmount * (attacker.critDamage || 1.5), critical: true, opening: false };
+  }
+  return { amount: baseAmount, critical: false, opening: false };
+}
+
 function basicAttack(attacker, enemies) {
   const target = pickTarget(attacker, enemies);
   if (!target) return { message: "", effects: [] };
@@ -528,19 +593,21 @@ function basicAttack(attacker, enemies) {
       .sort((a, b) => distanceBetween(attacker, a) - distanceBetween(attacker, b))
       .slice(0, nadjaPattern.basicTargetCount);
     let total = 0;
-    for (const unit of targets) total += dealDamage(attacker, unit, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
+    const hit = basicAttackDamage(attacker, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
+    for (const unit of targets) total += dealDamage(attacker, unit, hit.amount);
     attacker.mana = Math.min(100, attacker.mana + balance.battle.manaPerAttack);
     attacker.status = "attacking";
     return {
-      message: `${attacker.name} basic cleave ${total}`,
+      message: `${attacker.name} basic cleave ${total}${hit.critical ? " 치명" : ""}`,
       effects: targets.map((unit) => combatEffect(attacker, unit, "attack")),
     };
   }
-  const damage = dealDamage(attacker, target, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
+  const hit = basicAttackDamage(attacker, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
+  const damage = dealDamage(attacker, target, hit.amount);
   attacker.mana = Math.min(100, attacker.mana + balance.battle.manaPerAttack);
   attacker.status = "attacking";
   return {
-    message: `${attacker.name} → ${target.name} ${damage} 피해`,
+    message: `${attacker.name} → ${target.name} ${damage} 피해${hit.critical ? " (치명)" : ""}`,
     effects: [combatEffect(attacker, target, "attack")],
   };
 }
@@ -823,6 +890,7 @@ async function simulate() {
     unit.immuneTicks = 0;
     unit.focusTargetId = null;
     unit.hasPickedOpeningTarget = false;
+    unit.hasUsedOpeningCrit = false;
   }
   state.board = originalBoard;
   if (win) {
