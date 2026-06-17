@@ -84,7 +84,7 @@
     "maxHp": 1450,
     "atk": 68,
     "speed": 1.04,
-    "skillAmp": 72,
+    "skillAmp": 65,
     "defense": 22,
     "skill": "최종 실험",
     "art": "./assets/bosses/boss_nadja.png"
