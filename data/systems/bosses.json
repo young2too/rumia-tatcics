@@ -54,7 +54,7 @@
     "maxHp": 1080,
     "atk": 48,
     "speed": 1.02,
-    "skillAmp": 54,
+    "skillAmp": 44,
     "defense": 17,
     "skill": "위험 물질 투척",
     "art": "./assets/bosses/boss_wickeline.png"
