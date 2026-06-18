@@ -25,6 +25,7 @@ export function createRefs() {
     enemyBoard: $("enemyBoard"),
     bench: $("bench"),
     benchCount: $("benchCount"),
+    temporaryBoosts: $("temporaryBoosts"),
     traits: $("traits"),
     log: $("log"),
     phase: $("phase"),

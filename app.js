@@ -27,6 +27,11 @@ const state = {
   lastIncome: 0,
   bench: Array(8).fill(null),
   board: Array(32).fill(null),
+  temporaryBoosts: {
+    hp: 0,
+    atk: 0,
+    skillAmp: 0,
+  },
   enemies: [],
   dragging: null,
   selected: null,
@@ -99,6 +104,14 @@ function selectedUnit() {
 
 function boardLimit() {
   return state.level;
+}
+
+function temporaryBoostConfig() {
+  return balance.battle.temporaryBoosts || { cost: 20, amount: 0.1, stats: [] };
+}
+
+function temporaryBoostPercent(stat) {
+  return Math.round((state.temporaryBoosts?.[stat] || 0) * 100);
 }
 
 function unitRange(unit) {
@@ -302,6 +315,7 @@ function renderBoard() {
 
 function renderBench() {
   refs.bench.innerHTML = "";
+  renderTemporaryBoosts();
   const occupied = state.bench.filter(Boolean).length;
   refs.benchCount.textContent = `${occupied}/8`;
   state.bench.forEach((unit, index) => {
@@ -352,6 +366,23 @@ function renderTraits() {
     `;
     refs.traits.append(row);
   }
+}
+
+function renderTemporaryBoosts() {
+  if (!refs.temporaryBoosts) return;
+  const config = temporaryBoostConfig();
+  const cost = config.cost ?? 20;
+  refs.temporaryBoosts.innerHTML = (config.stats || [])
+    .map((boost) => {
+      const current = temporaryBoostPercent(boost.id);
+      const label = current ? `${boost.label}강화 ${current}% 활성화 중` : `${boost.label}강화 ${cost}코`;
+      return `
+        <button class="temporary-boost" data-boost="${boost.id}" ${state.busy || state.gold < cost ? "disabled" : ""}>
+          <strong>${label}</strong>
+        </button>
+      `;
+    })
+    .join("");
 }
 
 function renderTraitRosterModal() {
@@ -555,6 +586,18 @@ bindUiEvents({
   balance,
   actions: {
     addLog,
+    buyTemporaryBoost(stat) {
+      const config = temporaryBoostConfig();
+      const boost = (config.stats || []).find((item) => item.id === stat);
+      const cost = config.cost ?? 20;
+      const amount = config.amount ?? 0.1;
+      if (!boost || state.busy) return;
+      if (state.gold < cost) return addLog(`${boost.label} 강화에는 ${cost}크레딧이 필요합니다.`);
+      state.gold -= cost;
+      state.temporaryBoosts[stat] = (state.temporaryBoosts[stat] || 0) + amount;
+      addLog(`${boost.label} 강화 구매: 다음 전투 ${boost.label} +${temporaryBoostPercent(stat)}%.`);
+      render();
+    },
     rollShop,
     render,
     simulate: combat.simulate,

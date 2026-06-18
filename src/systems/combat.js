@@ -640,6 +640,12 @@ function prepareCombatUnit(unit, side, counts = {}) {
     lifeSteal: unit.lifeSteal ?? 0,
     damageReduction: unit.damageReduction ?? 0,
   };
+  if (side === "ally") {
+    const boosts = state.temporaryBoosts || {};
+    stats.hp *= 1 + (boosts.hp || 0);
+    stats.atk *= 1 + (boosts.atk || 0);
+    stats.skillAmp *= 1 + (boosts.skillAmp || 0);
+  }
   unit.side = side;
   unit.mana = 0;
   unit.maxHp = Math.round(stats.hp);
@@ -1154,6 +1160,11 @@ async function simulate() {
     unit.hasUsedOpeningCrit = false;
   }
   state.board = originalBoard;
+  state.temporaryBoosts = {
+    hp: 0,
+    atk: 0,
+    skillAmp: 0,
+  };
   if (win) {
     grantRoundIncome(true);
     addLog(`승리! 생존 ${survivors}명.`);

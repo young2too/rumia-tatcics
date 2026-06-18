@@ -393,6 +393,24 @@
     "manaPerAttack": 34,
     "manaPerHit": 16,
     "basicDamageMultiplier": 0.68,
+    "temporaryBoosts": {
+      "cost": 20,
+      "amount": 0.1,
+      "stats": [
+        {
+          "id": "hp",
+          "label": "체력"
+        },
+        {
+          "id": "atk",
+          "label": "공격"
+        },
+        {
+          "id": "skillAmp",
+          "label": "스증"
+        }
+      ]
+    },
     "roleSkills": {
       "supportHealTargets": 2,
       "supportHealSkillAmp": 1.05,

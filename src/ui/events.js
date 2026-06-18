@@ -21,6 +21,10 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
 
   $("battle").addEventListener("click", actions.simulate);
   $("levelUp").addEventListener("click", actions.buyXp);
+  refs.temporaryBoosts?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-boost]");
+    if (button) actions.buyTemporaryBoost(button.dataset.boost);
+  });
   refs.sellUnit.addEventListener("click", actions.sellSelectedUnit);
   refs.bgmToggle.addEventListener("click", actions.toggleBgm);
   refs.patchNotesToggle.addEventListener("click", actions.openPatchNotes);
