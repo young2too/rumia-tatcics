@@ -345,12 +345,12 @@
     "bossCycleDefenseGrowth": 0.9,
     "enemyBaseHpScale": 0.85,
     "enemyBaseAtkScale": 0.85,
-    "enemyHpRoundGrowth": 0.015,
-    "enemyAtkRoundGrowth": 0.013,
-    "enemyStageHpGrowth": 0.065,
-    "enemyStageAtkGrowth": 0.1,
-    "enemyHpScaleCap": 2.65,
-    "enemyAtkScaleCap": 2.55,
+    "enemyHpRoundGrowth": 0.017,
+    "enemyAtkRoundGrowth": 0.015,
+    "enemyStageHpGrowth": 0.08,
+    "enemyStageAtkGrowth": 0.125,
+    "enemyHpScaleCap": 3.05,
+    "enemyAtkScaleCap": 3,
     "enemyBaseStatsByCost": {
       "1": {
         "hp": 91,
