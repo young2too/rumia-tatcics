@@ -1,16 +1,21 @@
+import { tierStatMultiplier } from "./tier.js";
+
 export function makeUnit(base, balance, tier = 1) {
-  const tierIndex = tier - 1;
+  const hpMultiplier = tierStatMultiplier(balance, base.cost, tier, "hp");
+  const atkMultiplier = tierStatMultiplier(balance, base.cost, tier, "atk");
+  const skillAmpMultiplier = tierStatMultiplier(balance, base.cost, tier, "skillAmp");
+  const defenseMultiplier = tierStatMultiplier(balance, base.cost, tier, "defense");
   return {
     ...base,
     id: crypto.randomUUID(),
     tier,
     cost: base.cost,
-    maxHp: Math.round(base.hp * balance.tier.hp[tierIndex]),
-    hp: Math.round(base.hp * balance.tier.hp[tierIndex]),
-    atk: Math.round(base.atk * balance.tier.atk[tierIndex]),
+    maxHp: Math.round(base.hp * hpMultiplier),
+    hp: Math.round(base.hp * hpMultiplier),
+    atk: Math.round(base.atk * atkMultiplier),
     speed: base.speed,
-    skillAmp: Math.round(base.skillAmp * balance.tier.skillAmp[tierIndex]),
-    defense: Math.round(base.defense * balance.tier.defense[tierIndex]),
+    skillAmp: Math.round(base.skillAmp * skillAmpMultiplier),
+    defense: Math.round(base.defense * defenseMultiplier),
   };
 }
 

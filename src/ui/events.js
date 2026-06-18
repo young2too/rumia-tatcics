@@ -50,4 +50,12 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   refs.patchNotesSkipToday.addEventListener("change", () => {
     state.patchNotesSkipToday = refs.patchNotesSkipToday.checked;
   });
+  refs.traits.addEventListener("click", (event) => {
+    const trait = event.target.closest(".trait")?.dataset.trait;
+    if (trait) actions.openTraitRoster(trait);
+  });
+  refs.traitRosterClose.addEventListener("click", actions.closeTraitRoster);
+  refs.traitRosterModal.addEventListener("click", (event) => {
+    if (event.target === refs.traitRosterModal) actions.closeTraitRoster();
+  });
 }

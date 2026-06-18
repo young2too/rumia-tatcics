@@ -227,57 +227,89 @@
     "tiers": [
       {
         "need": 2,
-        "text": "검객형 공격 속도 +20%, 공격 +10%",
+        "text": "검객형 공격 속도 +24%, 공격 +16%, 체력 +6%, 방어 +4%",
         "effects": [
           {
             "stat": "speed",
-            "multiply": 1.2
+            "multiply": 1.24
           },
           {
             "stat": "atk",
-            "multiply": 1.1
+            "multiply": 1.16
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.06
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.04
           }
         ]
       },
       {
         "need": 4,
-        "text": "검객형 공격 속도 +48%, 공격 +24%",
+        "text": "검객형 공격 속도 +58%, 공격 +34%, 체력 +12%, 방어 +8%",
         "effects": [
           {
             "stat": "speed",
-            "multiply": 1.48
+            "multiply": 1.58
           },
           {
             "stat": "atk",
-            "multiply": 1.24
+            "multiply": 1.34
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.12
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.08
           }
         ]
       },
       {
         "need": 6,
-        "text": "검객형 공격 속도 +82%, 공격 +42%",
+        "text": "검객형 공격 속도 +100%, 공격 +58%, 체력 +20%, 방어 +14%",
         "effects": [
           {
             "stat": "speed",
-            "multiply": 1.82
+            "multiply": 2
           },
           {
             "stat": "atk",
-            "multiply": 1.42
+            "multiply": 1.58
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.2
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.14
           }
         ]
       },
       {
         "need": 8,
-        "text": "검객형 공격 속도 +125%, 공격 +68%",
+        "text": "검객형 공격 속도 +145%, 공격 +90%, 체력 +32%, 방어 +22%",
         "effects": [
           {
             "stat": "speed",
-            "multiply": 2.25
+            "multiply": 2.45
           },
           {
             "stat": "atk",
-            "multiply": 1.68
+            "multiply": 1.9
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.32
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.22
           }
         ]
       }

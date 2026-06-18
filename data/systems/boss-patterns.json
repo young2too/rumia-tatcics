@@ -28,16 +28,16 @@
   },
   "hana": {
     "summonRange": 1,
-    "summonHpRatio": 0.42,
-    "summonAtkRatio": 0.72,
-    "summonSkillAmpRatio": 0.72,
-    "summonDefenseRatio": 0.9,
-    "fallbackSkillAmpMultiplier": 1.2,
-    "fallbackAtkMultiplier": 0.45
+    "summonHpRatio": 0.52,
+    "summonAtkRatio": 0.82,
+    "summonSkillAmpRatio": 0.82,
+    "summonDefenseRatio": 1,
+    "fallbackSkillAmpMultiplier": 1.35,
+    "fallbackAtkMultiplier": 0.55
   },
   "nadja": {
     "basicTargetCount": 2,
-    "skillAmpMultiplier": 0.95,
-    "atkMultiplier": 0.35
+    "skillAmpMultiplier": 0.72,
+    "atkMultiplier": 0.25
   }
 }

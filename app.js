@@ -58,6 +58,8 @@ const state = {
   communityBoardError: "",
   communityBoardCommentError: "",
   communityBoardMode: "list",
+  traitRosterOpen: false,
+  traitRosterTrait: "",
 };
 
 const refs = createRefs();
@@ -159,7 +161,7 @@ function unitNode(unit, source, index, compact = false) {
   node.querySelector(".name").textContent = unit.name;
   node.querySelector(".meta").textContent = compact ? unit.role : `${unit.role} · ${unit.trait}`;
   node.querySelector(".stars").textContent = "★".repeat(unit.tier);
-  node.title = `${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}`;
+  node.title = `${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}${unit.skillTooltip ? ` - ${unit.skillTooltip}` : ""}`;
   node.addEventListener("dragstart", () => {
     state.dragging = { source, index };
     document.body.classList.add("dragging-unit");
@@ -295,6 +297,7 @@ function renderBench() {
 
 function renderTraits() {
   const counts = activeTraits();
+  const ownedNames = new Set([...state.board, ...state.bench].filter(Boolean).map((unit) => unit.name));
   refs.traits.innerHTML = "";
   for (const [trait, rule] of Object.entries(traitRules)) {
     const count = counts[trait] || 0;
@@ -302,11 +305,59 @@ function renderTraits() {
     const nextNeed = nextTraitNeed(rule, count);
     const labelCount = Math.min(count, nextNeed);
     const tierText = activeTier ? activeTier.text : `다음 단계: ${rule.tiers[0].text}`;
+    const traitUnits = roster
+      .filter((unit) => unit.trait === trait)
+      .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name, "ko"));
     const row = document.createElement("div");
     row.className = `trait ${activeTier ? "active" : ""}`;
-    row.innerHTML = `<strong><span>${trait}</span><span>${labelCount}/${nextNeed}</span></strong><p>${tierText}</p>`;
+    row.dataset.trait = trait;
+    row.innerHTML = `
+      <strong><span>${trait}</span><span>${labelCount}/${nextNeed}<i>상세</i></span></strong>
+      <p>${tierText}</p>
+      <div class="trait-roster" aria-label="${trait} 유닛 보유 현황">
+        ${traitUnits.map((unit) => {
+          const owned = ownedNames.has(unit.name);
+          return `
+            <span class="trait-unit ${owned ? "owned" : "missing"}" style="--accent: ${unit.color}" title="${unit.name} · ${unit.cost}코 · ${unit.role}">
+              ${unit.art ? `<img src="${unit.art}" alt="${unit.name}">` : unit.name.slice(0, 1)}
+            </span>
+          `;
+        }).join("")}
+      </div>
+    `;
     refs.traits.append(row);
   }
+}
+
+function renderTraitRosterModal() {
+  refs.traitRosterModal.hidden = !state.traitRosterOpen;
+  const trait = state.traitRosterTrait;
+  const rule = traitRules[trait];
+  const counts = activeTraits();
+  const count = counts[trait] || 0;
+  const nextNeed = rule ? nextTraitNeed(rule, count) : 0;
+  const ownedNames = new Set([...state.board, ...state.bench].filter(Boolean).map((unit) => unit.name));
+  const traitUnits = roster
+    .filter((unit) => unit.trait === trait)
+    .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name, "ko"));
+
+  refs.traitRosterTitle.textContent = trait ? `${trait} 유닛` : "시너지 유닛";
+  refs.traitRosterMeta.textContent = trait ? `${Math.min(count, nextNeed)}/${nextNeed} 활성 · 초록: 보유 / 빨강: 미보유` : "";
+  refs.traitRosterPanel.innerHTML = traitUnits.length
+    ? traitUnits.map((unit) => {
+        const owned = ownedNames.has(unit.name);
+        return `
+          <div class="trait-roster-entry ${owned ? "owned" : "missing"}">
+            <span class="portrait" style="--accent: ${unit.color}">${unit.art ? `<img src="${unit.art}" alt="">` : unit.name.slice(0, 1)}</span>
+            <div>
+              <strong>${unit.name}</strong>
+              <small>${unit.cost}코 · ${unit.role} · ${unit.weapon}</small>
+            </div>
+            <b>${owned ? "보유" : "미보유"}</b>
+          </div>
+        `;
+      }).join("")
+    : `<div class="trait-roster-empty">표시할 유닛이 없습니다.</div>`;
 }
 
 function renderRanking() {
@@ -406,6 +457,7 @@ function renderUnitDetail() {
     <div class="detail-skill">
       <span>스킬</span>
       <strong>${unit.skill}</strong>
+      ${unit.skillTooltip ? `<p>${unit.skillTooltip}</p>` : ""}
     </div>
   `;
 }
@@ -445,6 +497,7 @@ function render() {
   renderUnitDetail();
   renderRanking();
   renderPatchNotes();
+  renderTraitRosterModal();
   communityBoard.renderCommunityBoard();
 }
 
@@ -485,6 +538,15 @@ bindUiEvents({
     submitRanking,
     closePatchNotes,
     openPatchNotes,
+    openTraitRoster(trait) {
+      state.traitRosterTrait = trait;
+      state.traitRosterOpen = true;
+      render();
+    },
+    closeTraitRoster() {
+      state.traitRosterOpen = false;
+      render();
+    },
   },
 });
 

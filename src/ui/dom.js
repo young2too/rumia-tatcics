@@ -51,5 +51,10 @@ export function createRefs() {
     patchNotesBody: $("patchNotesBody"),
     patchNotesClose: $("patchNotesClose"),
     patchNotesSkipToday: $("patchNotesSkipToday"),
+    traitRosterModal: $("traitRosterModal"),
+    traitRosterTitle: $("traitRosterTitle"),
+    traitRosterMeta: $("traitRosterMeta"),
+    traitRosterPanel: $("traitRosterPanel"),
+    traitRosterClose: $("traitRosterClose"),
   };
 }

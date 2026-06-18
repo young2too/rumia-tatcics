@@ -1,3 +1,5 @@
+import { tierStatMultiplier } from "../core/tier.js";
+
 export function createCombatController(context) {
   const {
     state,
@@ -47,19 +49,22 @@ function enemyBaseStats(unit) {
 }
 
 function makeEnemyUnit(base, tier, stage, hpScale, atkScale) {
-  const tierIndex = tier - 1;
   const stats = enemyBaseStats(base);
+  const hpMultiplier = tierStatMultiplier(balance, base.cost, tier, "hp");
+  const atkMultiplier = tierStatMultiplier(balance, base.cost, tier, "atk");
+  const skillAmpMultiplier = tierStatMultiplier(balance, base.cost, tier, "skillAmp");
+  const defenseMultiplier = tierStatMultiplier(balance, base.cost, tier, "defense");
   const unit = {
     ...base,
     id: crypto.randomUUID(),
     tier,
     cost: base.cost,
-    maxHp: Math.round(stats.hp * balance.tier.hp[tierIndex]),
-    hp: Math.round(stats.hp * balance.tier.hp[tierIndex]),
-    atk: Math.round(stats.atk * balance.tier.atk[tierIndex]),
+    maxHp: Math.round(stats.hp * hpMultiplier),
+    hp: Math.round(stats.hp * hpMultiplier),
+    atk: Math.round(stats.atk * atkMultiplier),
     speed: stats.speed,
-    skillAmp: Math.round(stats.skillAmp * balance.tier.skillAmp[tierIndex]),
-    defense: Math.round(stats.defense * balance.tier.defense[tierIndex]),
+    skillAmp: Math.round(stats.skillAmp * skillAmpMultiplier),
+    defense: Math.round(stats.defense * defenseMultiplier),
   };
   unit.maxHp = Math.round((unit.maxHp + stage * 14) * hpScale);
   unit.hp = unit.maxHp;
@@ -91,9 +96,10 @@ function currentBossInfo() {
 function makeBossUnit(stage) {
   const base = bossRoster[(stage - 1) % bossRoster.length];
   const bossIndex = Math.max(0, stage - 1);
-  const hpScale = 1 + bossIndex * balance.battle.bossHpGrowth;
-  const powerScale = 1 + bossIndex * balance.battle.bossPowerGrowth;
-  const defenseScale = 1 + bossIndex * balance.battle.bossDefenseGrowth;
+  const bossCycle = Math.floor(bossIndex / bossRoster.length);
+  const hpScale = (1 + bossIndex * balance.battle.bossHpGrowth) * (1 + bossCycle * (balance.battle.bossCycleHpGrowth ?? 0));
+  const powerScale = (1 + bossIndex * balance.battle.bossPowerGrowth) * (1 + bossCycle * (balance.battle.bossCyclePowerGrowth ?? 0));
+  const defenseScale = (1 + bossIndex * balance.battle.bossDefenseGrowth) * (1 + bossCycle * (balance.battle.bossCycleDefenseGrowth ?? 0));
   return {
     ...base,
     id: crypto.randomUUID(),

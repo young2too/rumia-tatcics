@@ -26,6 +26,49 @@
       5
     ]
   },
+  "tierByCost": {
+    "1": {
+      "hp": [1, 1.62, 2.55],
+      "atk": [1, 1.55, 2.35],
+      "skillAmp": [1, 1.5, 2.25],
+      "defense": [1, 1.35, 1.9]
+    },
+    "2": {
+      "hp": [1, 1.65, 2.65],
+      "atk": [1, 1.58, 2.45],
+      "skillAmp": [1, 1.52, 2.35],
+      "defense": [1, 1.38, 2]
+    },
+    "3": {
+      "hp": [1, 1.72, 2.85],
+      "atk": [1, 1.65, 2.65],
+      "skillAmp": [1, 1.6, 2.55],
+      "defense": [1, 1.42, 2.15]
+    },
+    "4": {
+      "hp": [1, 1.88, 3.35],
+      "atk": [1, 1.78, 3.1],
+      "skillAmp": [1, 1.75, 3.05],
+      "defense": [1, 1.52, 2.45]
+    },
+    "5": {
+      "hp": [1, 2.1, 3.6],
+      "atk": [1, 1.9, 3.35],
+      "skillAmp": [1, 1.9, 3.35],
+      "defense": [1, 1.6, 2.45]
+    }
+  },
+  "tierPowerTargets": {
+    "formula": "hp * 0.32 + atk * 4 + skillAmp * 1.4 + defense * 6 + speed * 22",
+    "notes": "PvE 기준 체급표. 고코스트 3성은 강하지만 자동승리 기물이 되지 않도록 5코 3성 평균을 4코 3성의 약 1.25배 선으로 둔다.",
+    "targets": {
+      "1": [238, 345, 505],
+      "2": [247, 368, 554],
+      "3": [258, 400, 623],
+      "4": [267, 448, 755],
+      "5": [309, 556, 937]
+    }
+  },
   "shop": {
     "baseSize": 3,
     "maxSize": 5,
@@ -297,6 +340,9 @@
     "bossHpGrowth": 0.34,
     "bossPowerGrowth": 0.16,
     "bossDefenseGrowth": 0.1,
+    "bossCycleHpGrowth": 1.55,
+    "bossCyclePowerGrowth": 1.4,
+    "bossCycleDefenseGrowth": 0.9,
     "enemyBaseHpScale": 0.85,
     "enemyBaseAtkScale": 0.85,
     "enemyHpRoundGrowth": 0.015,

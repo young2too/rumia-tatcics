@@ -51,11 +51,11 @@
     "weapon": "투척",
     "trait": "주술",
     "color": "#7bd0b0",
-    "maxHp": 1080,
-    "atk": 48,
+    "maxHp": 1120,
+    "atk": 50,
     "speed": 1.02,
-    "skillAmp": 54,
-    "defense": 17,
+    "skillAmp": 58,
+    "defense": 18,
     "skill": "위험 물질 투척",
     "art": "./assets/bosses/boss_wickeline.png"
   },
@@ -69,7 +69,7 @@
     "maxHp": 1160,
     "atk": 55,
     "speed": 1.02,
-    "skillAmp": 58,
+    "skillAmp": 44,
     "defense": 18,
     "skill": "오메가 호출",
     "art": "./assets/bosses/boss_hana.png"
@@ -84,7 +84,7 @@
     "maxHp": 1450,
     "atk": 68,
     "speed": 1.04,
-    "skillAmp": 72,
+    "skillAmp": 65,
     "defense": 22,
     "skill": "최종 실험",
     "art": "./assets/bosses/boss_nadja.png"

@@ -399,6 +399,7 @@ h2 {
 .projectile {
   position: absolute;
   z-index: 7;
+  opacity: 0;
   --angle: 0rad;
   width: 14px;
   height: 14px;
@@ -541,6 +542,7 @@ h2 {
 .damage-number {
   position: absolute;
   z-index: 950;
+  opacity: 0;
   translate: -50% -50%;
   pointer-events: none;
   color: #ffd6a4;
@@ -1179,6 +1181,14 @@ h2 {
   font-size: 12px;
 }
 
+.detail-skill p {
+  margin: 6px 0 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
 .detail-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1472,11 +1482,18 @@ h2 {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 
 .trait.active {
   border-color: rgba(52, 197, 183, 0.65);
   background: rgba(52, 197, 183, 0.08);
+}
+
+.trait:hover {
+  border-color: rgba(240, 189, 84, 0.58);
+  background: rgba(240, 189, 84, 0.06);
 }
 
 .trait strong {
@@ -1486,10 +1503,84 @@ h2 {
   font-size: 13px;
 }
 
+.trait strong span:last-child {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.trait strong i {
+  min-height: 22px;
+  padding: 3px 8px;
+  border: 1px solid rgba(240, 189, 84, 0.68);
+  border-radius: 6px;
+  color: #ffe0a2;
+  background: linear-gradient(180deg, rgba(240, 189, 84, 0.2), rgba(240, 189, 84, 0.08));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 0 rgba(0, 0, 0, 0.28);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.trait:hover strong i {
+  border-color: rgba(240, 189, 84, 0.95);
+  background: rgba(240, 189, 84, 0.24);
+}
+
+.trait:active strong i {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.32);
+}
+
 .trait p {
   color: var(--muted);
   margin-top: 3px;
   font-size: 12px;
+}
+
+.trait-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.trait-unit {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(239, 90, 86, 0.9);
+  border-radius: 5px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 62%, #ffffff 8%), rgba(0, 0, 0, 0.22)),
+    var(--accent);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.trait-unit.owned {
+  border-color: rgba(117, 200, 120, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(10, 16, 14, 0.65),
+    0 0 8px rgba(117, 200, 120, 0.22);
+}
+
+.trait-unit.missing {
+  border-color: rgba(239, 90, 86, 0.9);
+  filter: grayscale(0.45) saturate(0.72);
+  opacity: 0.72;
+}
+
+.trait-unit img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .log-wrap {
@@ -1515,7 +1606,8 @@ h2 {
 
 .ranking-modal,
 .community-board-modal,
-.patch-notes-modal {
+.patch-notes-modal,
+.trait-roster-modal {
   position: fixed;
   inset: 0;
   z-index: 2000;
@@ -1528,13 +1620,15 @@ h2 {
 
 .ranking-modal[hidden],
 .community-board-modal[hidden],
-.patch-notes-modal[hidden] {
+.patch-notes-modal[hidden],
+.trait-roster-modal[hidden] {
   display: none;
 }
 
 .ranking-dialog,
 .community-board-dialog,
-.patch-notes-dialog {
+.patch-notes-dialog,
+.trait-roster-dialog {
   width: min(520px, 100%);
   max-height: min(680px, calc(100vh - 40px));
   padding: 16px;
@@ -1548,6 +1642,7 @@ h2 {
 .ranking-dialog .icon-button,
 .community-board-dialog .icon-button,
 .patch-notes-dialog .icon-button,
+.trait-roster-dialog .icon-button,
 .rank-submit button {
   padding: 0 10px;
   font-size: 13px;
@@ -1567,6 +1662,79 @@ h2 {
   color: var(--muted);
   font-size: 12px;
   margin-top: 4px;
+}
+
+.trait-roster-dialog {
+  width: min(420px, 100%);
+}
+
+.trait-roster-dialog .panel-title {
+  align-items: flex-start;
+}
+
+.trait-roster-dialog .panel-title span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.trait-roster-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.trait-roster-entry {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(239, 90, 86, 0.42);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.trait-roster-entry.owned {
+  border-color: rgba(117, 200, 120, 0.72);
+  background: rgba(117, 200, 120, 0.08);
+}
+
+.trait-roster-entry .portrait {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 64%, #ffffff 8%), rgba(0, 0, 0, 0.2)),
+    var(--accent);
+}
+
+.trait-roster-entry strong,
+.trait-roster-entry small {
+  display: block;
+}
+
+.trait-roster-entry small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.trait-roster-entry b {
+  color: var(--red);
+  font-size: 12px;
+}
+
+.trait-roster-entry.owned b {
+  color: var(--green);
+}
+
+.trait-roster-empty {
+  padding: 12px;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  text-align: center;
 }
 
 .community-board-panel {
