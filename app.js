@@ -122,9 +122,27 @@ function unitDetailStats(unit) {
       critChance: unit.critChance ?? 0,
       critDamage: unit.critDamage ?? 1.5,
       openingCritMultiplier: unit.openingCritMultiplier ?? 1,
+      lifeSteal: unit.lifeSteal ?? 0,
+      damageReduction: unit.damageReduction ?? 0,
     };
   }
   return applySynergy(unit, activeTraits());
+}
+
+function unitStatusEffects(unit) {
+  const effects = [];
+  const stunTicks = unit.stunDisplayTicks ?? unit.stunTicks ?? 0;
+  if (stunTicks > 0) {
+    const maxTicks = Math.max(unit.stunDisplayMaxTicks || unit.stunMaxTicks || stunTicks || 1, 1);
+    effects.push({ tone: "danger", label: "기절", ratio: stunTicks / maxTicks });
+  }
+  const immuneTicks = unit.immuneDisplayTicks ?? unit.immuneTicks ?? 0;
+  if (immuneTicks > 0 || unit.status === "immune") {
+    const maxTicks = Math.max(unit.immuneDisplayMaxTicks || unit.immuneMaxTicks || immuneTicks || 1, 1);
+    const ticks = Math.max(immuneTicks, unit.status === "immune" ? 1 : 0);
+    effects.push({ tone: "guard", label: "면역", ratio: ticks / maxTicks });
+  }
+  return effects;
 }
 
 const shop = createShopController({
@@ -161,6 +179,13 @@ function unitNode(unit, source, index, compact = false) {
   node.querySelector(".name").textContent = unit.name;
   node.querySelector(".meta").textContent = compact ? unit.role : `${unit.role} · ${unit.trait}`;
   node.querySelector(".stars").textContent = "★".repeat(unit.tier);
+  node.querySelector(".status-badges").innerHTML = unitStatusEffects(unit)
+    .map((effect) => `
+      <b class="${effect.tone}" style="--status: ${Math.max(0, Math.min(100, Math.round(effect.ratio * 100)))}%">
+        <span>${effect.label}</span><i></i>
+      </b>
+    `)
+    .join("");
   node.title = `${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}${unit.skillTooltip ? ` - ${unit.skillTooltip}` : ""}`;
   node.addEventListener("dragstart", () => {
     state.dragging = { source, index };
@@ -440,6 +465,8 @@ function renderUnitDetail() {
   ];
   if (effective.critChance > 0) stats.push(["치명", `${Math.round(effective.critChance * 100)}%`]);
   if (effective.openingCritMultiplier > 1) stats.push(["첫 치명", `${Math.round(effective.openingCritMultiplier * 100)}%`]);
+  if (effective.lifeSteal > 0) stats.push(["흡혈", `${Math.round(effective.lifeSteal * 100)}%`]);
+  if (effective.damageReduction > 0) stats.push(["피해감소", `${Math.round(effective.damageReduction * 100)}%`]);
   refs.detailTier.textContent = `${"★".repeat(unit.tier)} · ${unit.cost}코`;
   refs.sellUnit.disabled = state.busy;
   refs.sellUnit.textContent = `${sellValue(unit)}크레딧에 판매`;

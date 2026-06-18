@@ -400,7 +400,6 @@
       "shieldHealSkillAmp": 0.42,
       "shieldHealDefense": 0.72,
       "shieldHealFlat": 8,
-      "shieldHealMaxHpRatio": 0.085,
       "assassinSkillScale": 1.8,
       "swordsmanSkillScale": 1.85,
       "rangedSkillScale": 2,

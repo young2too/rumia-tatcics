@@ -537,7 +537,11 @@ function unitsInFront(source, targets, range) {
 }
 
 function applyStun(unit, ticks) {
-  unit.stunTicks = Math.max(unit.stunTicks || 0, ticks);
+  const duration = Math.max(unit.stunTicks || 0, ticks);
+  unit.stunTicks = duration;
+  unit.stunMaxTicks = Math.max(unit.stunMaxTicks || 0, duration);
+  unit.stunDisplayTicks = duration;
+  unit.stunDisplayMaxTicks = Math.max(unit.stunDisplayMaxTicks || 0, duration);
   unit.status = "stunned";
 }
 
@@ -633,6 +637,8 @@ function prepareCombatUnit(unit, side, counts = {}) {
     critChance: unit.critChance ?? 0,
     critDamage: unit.critDamage ?? 1.5,
     openingCritMultiplier: unit.openingCritMultiplier ?? 1,
+    lifeSteal: unit.lifeSteal ?? 0,
+    damageReduction: unit.damageReduction ?? 0,
   };
   unit.side = side;
   unit.mana = 0;
@@ -646,10 +652,14 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.critChance = Math.max(0, Math.min(1, stats.critChance ?? 0));
   unit.critDamage = Math.max(1, stats.critDamage ?? 1.5);
   unit.openingCritMultiplier = Math.max(1, stats.openingCritMultiplier ?? 1);
+  unit.lifeSteal = Math.max(0, stats.lifeSteal ?? 0);
+  unit.damageReduction = Math.max(0, Math.min(0.8, stats.damageReduction ?? 0));
   unit.range = unitAttackRange(unit);
   unit.status = "";
   unit.stunTicks = 0;
+  unit.stunMaxTicks = 0;
   unit.immuneTicks = unit.immuneTicks || 0;
+  unit.immuneMaxTicks = unit.immuneTicks || 0;
   unit.focusTargetId = null;
   unit.hasPickedOpeningTarget = false;
   unit.hasUsedOpeningCrit = false;
@@ -717,7 +727,8 @@ function pickTarget(attacker, enemies) {
 
 function dealDamage(source, target, amount) {
   const damageFloor = Math.max(3, Math.round(amount * 0.12));
-  const damage = Math.max(damageFloor, Math.round(amount - target.defense * 0.45));
+  const reducedAmount = amount * (1 - Math.max(0, Math.min(0.8, target.damageReduction || 0)));
+  const damage = Math.max(damageFloor, Math.round(reducedAmount - target.defense * 0.45));
   const wickelinePattern = bossPatterns.wickeline;
   if (target.pattern === "wickeline" && target.immuneTicks > 0) {
     target.status = "immune";
@@ -726,6 +737,9 @@ function dealDamage(source, target, amount) {
   if (target.pattern === "wickeline" && !target.immuneUsed && (target.hp - damage) / target.maxHp <= wickelinePattern.immuneHpRatio) {
     target.immuneUsed = true;
     target.immuneTicks = wickelinePattern.immuneTicks;
+    target.immuneMaxTicks = wickelinePattern.immuneTicks;
+    target.immuneDisplayTicks = wickelinePattern.immuneTicks;
+    target.immuneDisplayMaxTicks = wickelinePattern.immuneTicks;
     target.status = "immune";
     return 0;
   }
@@ -748,6 +762,13 @@ function weaponEffectKind(unit, type = "attack") {
 
 function combatEffect(from, to, type = "attack", value = null) {
   return { from: from.id, to: to.id, type, weapon: from.weapon, kind: weaponEffectKind(from, type), value };
+}
+
+function applyLifeSteal(attacker, damage) {
+  if (!attacker.lifeSteal || damage <= 0 || attacker.hp <= 0) return 0;
+  const heal = Math.max(1, Math.round(damage * attacker.lifeSteal));
+  attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
+  return heal;
 }
 
 function basicAttackDamage(attacker, baseAmount) {
@@ -793,11 +814,14 @@ function basicAttack(attacker, enemies) {
   }
   const hit = basicAttackDamage(attacker, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
   const damage = dealDamage(attacker, target, hit.amount);
+  const lifeStealHeal = applyLifeSteal(attacker, damage);
   attacker.mana = Math.min(100, attacker.mana + balance.battle.manaPerAttack);
   attacker.status = "attacking";
+  const effects = [combatEffect(attacker, target, "attack", { amount: damage, critical: hit.critical })];
+  if (lifeStealHeal) effects.push(combatEffect(attacker, attacker, "heal", { amount: lifeStealHeal }));
   return {
     message: `${attacker.name} → ${target.name} ${damage} 피해${hit.critical ? " (치명)" : ""}`,
-    effects: [combatEffect(attacker, target, "attack", { amount: damage, critical: hit.critical })],
+    effects,
   };
 }
 
@@ -917,7 +941,7 @@ function castSkill(caster, allies, enemies) {
       caster.defense * (roleSkills.shieldHealDefense ?? 0.55) +
       (roleSkills.shieldHealFlat ?? 5)
     );
-    const heal = Math.min(rawHeal, Math.round(caster.maxHp * (roleSkills.shieldHealMaxHpRatio ?? 0.045)));
+    const heal = rawHeal;
     caster.hp = Math.min(caster.maxHp, caster.hp + heal);
     caster.status = "healed";
     return {
@@ -1023,6 +1047,8 @@ async function simulate() {
       critChance: critBase.critChance,
       critDamage: critBase.critDamage,
       openingCritMultiplier: critBase.openingCritMultiplier,
+      lifeSteal: unit.lifeSteal ?? 0,
+      damageReduction: unit.damageReduction ?? 0,
     };
     unit.critChance = critBase.critChance;
     unit.critDamage = critBase.critDamage;
@@ -1073,6 +1099,8 @@ async function simulate() {
 
     for (const unit of [...living(allies), ...living(state.enemies)]) {
       if (unit.immuneTicks > 0) unit.immuneTicks -= 1;
+      if (unit.immuneTicks <= 0) unit.immuneMaxTicks = 0;
+      if (unit.stunTicks <= 0) unit.stunMaxTicks = 0;
     }
 
     addLog(tickLogs.slice(0, 3).join(" / "));
@@ -1080,6 +1108,12 @@ async function simulate() {
     render();
     playCombatEffects(effects);
     await sleep(balance.battle.tickMs);
+    for (const unit of [...living(allies), ...living(state.enemies)]) {
+      if (unit.stunDisplayTicks > 0) unit.stunDisplayTicks -= 1;
+      if (unit.stunDisplayTicks <= 0) unit.stunDisplayMaxTicks = 0;
+      if (unit.immuneDisplayTicks > 0) unit.immuneDisplayTicks -= 1;
+      if (unit.immuneDisplayTicks <= 0) unit.immuneDisplayMaxTicks = 0;
+    }
   }
 
   const win = living(allies).length > 0 && living(state.enemies).length === 0;
@@ -1100,13 +1134,21 @@ async function simulate() {
       unit.critChance = unit.combatBase.critChance;
       unit.critDamage = unit.combatBase.critDamage;
       unit.openingCritMultiplier = unit.combatBase.openingCritMultiplier;
+      unit.lifeSteal = unit.combatBase.lifeSteal;
+      unit.damageReduction = unit.combatBase.damageReduction;
       delete unit.combatBase;
     }
     unit.hp = unit.maxHp;
     unit.mana = 0;
     unit.status = "";
     unit.stunTicks = 0;
+    unit.stunMaxTicks = 0;
+    unit.stunDisplayTicks = 0;
+    unit.stunDisplayMaxTicks = 0;
     unit.immuneTicks = 0;
+    unit.immuneMaxTicks = 0;
+    unit.immuneDisplayTicks = 0;
+    unit.immuneDisplayMaxTicks = 0;
     unit.focusTargetId = null;
     unit.hasPickedOpeningTarget = false;
     unit.hasUsedOpeningCrit = false;

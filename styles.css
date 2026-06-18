@@ -1026,6 +1026,69 @@ h2 {
   color: var(--gold);
 }
 
+.status-badges {
+  grid-column: 1 / 3;
+  display: grid;
+  gap: 3px;
+}
+
+.status-badges:empty {
+  display: none;
+}
+
+.status-badges b {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 14px;
+  padding: 0 5px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  color: #f7f3e8;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.status-badges b::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--status, 100%);
+  opacity: 0.72;
+  transition: width 180ms ease;
+}
+
+.status-badges b.danger::before {
+  background: linear-gradient(90deg, rgba(240, 189, 84, 0.95), rgba(239, 90, 86, 0.8));
+}
+
+.status-badges b.guard::before {
+  background: linear-gradient(90deg, rgba(142, 216, 255, 0.9), rgba(170, 137, 255, 0.78));
+}
+
+.status-badges span,
+.status-badges i {
+  position: relative;
+  z-index: 1;
+}
+
+.status-badges span {
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.status-badges i {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .hpbar {
   grid-column: 1 / 3;
   height: 5px;
@@ -1422,6 +1485,36 @@ h2 {
   top: 42px;
   font-size: 10px;
   line-height: 1;
+}
+
+.cell .unit .status-badges {
+  position: absolute;
+  left: 50%;
+  top: -29px;
+  z-index: 4;
+  display: grid;
+  width: 58px;
+  transform: translateX(-50%);
+  gap: 2px;
+  pointer-events: none;
+}
+
+.cell .unit .status-badges:empty {
+  display: none;
+}
+
+.cell .unit .status-badges b {
+  height: 13px;
+  padding: 0 4px;
+  gap: 3px;
+  border-color: rgba(0, 0, 0, 0.52);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  font-size: 9px;
+}
+
+.cell .unit.boss-unit .status-badges {
+  top: -31px;
+  width: 96px;
 }
 
 .cell .unit .hpbar,

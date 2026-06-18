@@ -3,7 +3,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "난투형 공격력 +20%, 체력 +8%, 방어 +6%",
+        "text": "난투형 공격력 +20%, 체력 +8%, 방어 +6%, 받는 피해 -6%",
         "effects": [
           {
             "stat": "atk",
@@ -16,12 +16,16 @@
           {
             "stat": "defense",
             "multiply": 1.06
+          },
+          {
+            "stat": "damageReduction",
+            "add": 0.06
           }
         ]
       },
       {
         "need": 4,
-        "text": "난투형 공격력 +48%, 체력 +18%, 방어 +12%",
+        "text": "난투형 공격력 +48%, 체력 +18%, 방어 +12%, 받는 피해 -10%",
         "effects": [
           {
             "stat": "atk",
@@ -34,12 +38,16 @@
           {
             "stat": "defense",
             "multiply": 1.12
+          },
+          {
+            "stat": "damageReduction",
+            "add": 0.1
           }
         ]
       },
       {
         "need": 6,
-        "text": "난투형 공격력 +82%, 체력 +32%, 방어 +20%",
+        "text": "난투형 공격력 +82%, 체력 +32%, 방어 +20%, 받는 피해 -16%",
         "effects": [
           {
             "stat": "atk",
@@ -52,12 +60,16 @@
           {
             "stat": "defense",
             "multiply": 1.2
+          },
+          {
+            "stat": "damageReduction",
+            "add": 0.16
           }
         ]
       },
       {
         "need": 8,
-        "text": "난투형 공격력 +125%, 체력 +52%, 방어 +32%",
+        "text": "난투형 공격력 +125%, 체력 +52%, 방어 +32%, 받는 피해 -24%",
         "effects": [
           {
             "stat": "atk",
@@ -70,6 +82,10 @@
           {
             "stat": "defense",
             "multiply": 1.32
+          },
+          {
+            "stat": "damageReduction",
+            "add": 0.24
           }
         ]
       }
@@ -227,7 +243,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "검객형 공격 속도 +24%, 공격 +16%, 체력 +6%, 방어 +4%",
+        "text": "검객형 공격 속도 +24%, 공격 +16%, 체력 +6%, 방어 +4%, 흡혈 +6%",
         "effects": [
           {
             "stat": "speed",
@@ -244,12 +260,16 @@
           {
             "stat": "defense",
             "multiply": 1.04
+          },
+          {
+            "stat": "lifeSteal",
+            "add": 0.06
           }
         ]
       },
       {
         "need": 4,
-        "text": "검객형 공격 속도 +58%, 공격 +34%, 체력 +12%, 방어 +8%",
+        "text": "검객형 공격 속도 +58%, 공격 +34%, 체력 +12%, 방어 +8%, 흡혈 +10%",
         "effects": [
           {
             "stat": "speed",
@@ -266,12 +286,16 @@
           {
             "stat": "defense",
             "multiply": 1.08
+          },
+          {
+            "stat": "lifeSteal",
+            "add": 0.1
           }
         ]
       },
       {
         "need": 6,
-        "text": "검객형 공격 속도 +100%, 공격 +58%, 체력 +20%, 방어 +14%",
+        "text": "검객형 공격 속도 +100%, 공격 +58%, 체력 +20%, 방어 +14%, 흡혈 +16%",
         "effects": [
           {
             "stat": "speed",
@@ -288,12 +312,16 @@
           {
             "stat": "defense",
             "multiply": 1.14
+          },
+          {
+            "stat": "lifeSteal",
+            "add": 0.16
           }
         ]
       },
       {
         "need": 8,
-        "text": "검객형 공격 속도 +145%, 공격 +90%, 체력 +32%, 방어 +22%",
+        "text": "검객형 공격 속도 +145%, 공격 +90%, 체력 +32%, 방어 +22%, 흡혈 +24%",
         "effects": [
           {
             "stat": "speed",
@@ -310,6 +338,10 @@
           {
             "stat": "defense",
             "multiply": 1.22
+          },
+          {
+            "stat": "lifeSteal",
+            "add": 0.24
           }
         ]
       }

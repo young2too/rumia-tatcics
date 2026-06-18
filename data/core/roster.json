@@ -178,7 +178,7 @@
     "color": "#ff7c76",
     "hp": 80,
     "atk": 30,
-    "speed": 3,
+    "speed": 1.22,
     "skillAmp": 19,
     "defense": 5,
     "skill": "더블샷",
