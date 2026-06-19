@@ -137,6 +137,7 @@ function unitDetailStats(unit) {
       openingCritMultiplier: unit.openingCritMultiplier ?? 1,
       lifeSteal: unit.lifeSteal ?? 0,
       damageReduction: unit.damageReduction ?? 0,
+      manaGain: unit.manaGain ?? 1,
     };
   }
   return applySynergy(unit, activeTraits());
@@ -498,6 +499,7 @@ function renderUnitDetail() {
   if (effective.openingCritMultiplier > 1) stats.push(["첫 치명", `${Math.round(effective.openingCritMultiplier * 100)}%`]);
   if (effective.lifeSteal > 0) stats.push(["흡혈", `${Math.round(effective.lifeSteal * 100)}%`]);
   if (effective.damageReduction > 0) stats.push(["피해감소", `${Math.round(effective.damageReduction * 100)}%`]);
+  if (effective.manaGain > 1) stats.push(["마나획득", `${Math.round(effective.manaGain * 100)}%`]);
   refs.detailTier.textContent = `${"★".repeat(unit.tier)} · ${unit.cost}코`;
   refs.sellUnit.disabled = state.busy;
   refs.sellUnit.textContent = `${sellValue(unit)}크레딧에 판매`;

@@ -199,41 +199,57 @@
     "tiers": [
       {
         "need": 2,
-        "text": "술법형 스킬 피해 +35%",
+        "text": "술법형 스킬 피해 +35%, 마나 획득량 +12%",
         "effects": [
           {
             "stat": "skillAmp",
             "multiply": 1.35
+          },
+          {
+            "stat": "manaGain",
+            "multiply": 1.12
           }
         ]
       },
       {
         "need": 4,
-        "text": "술법형 스킬 피해 +80%",
+        "text": "술법형 스킬 피해 +80%, 마나 획득량 +25%",
         "effects": [
           {
             "stat": "skillAmp",
             "multiply": 1.8
+          },
+          {
+            "stat": "manaGain",
+            "multiply": 1.25
           }
         ]
       },
       {
         "need": 6,
-        "text": "술법형 스킬 피해 +135%",
+        "text": "술법형 스킬 피해 +135%, 마나 획득량 +38%",
         "effects": [
           {
             "stat": "skillAmp",
             "multiply": 2.35
+          },
+          {
+            "stat": "manaGain",
+            "multiply": 1.38
           }
         ]
       },
       {
         "need": 8,
-        "text": "술법형 스킬 피해 +220%",
+        "text": "술법형 스킬 피해 +220%, 마나 획득량 +50%",
         "effects": [
           {
             "stat": "skillAmp",
             "multiply": 3.2
+          },
+          {
+            "stat": "manaGain",
+            "multiply": 1.5
           }
         ]
       }

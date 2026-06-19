@@ -639,6 +639,7 @@ function prepareCombatUnit(unit, side, counts = {}) {
     openingCritMultiplier: unit.openingCritMultiplier ?? 1,
     lifeSteal: unit.lifeSteal ?? 0,
     damageReduction: unit.damageReduction ?? 0,
+    manaGain: unit.manaGain ?? 1,
   };
   if (side === "ally") {
     const boosts = state.temporaryBoosts || {};
@@ -660,6 +661,7 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.openingCritMultiplier = Math.max(1, stats.openingCritMultiplier ?? 1);
   unit.lifeSteal = Math.max(0, stats.lifeSteal ?? 0);
   unit.damageReduction = Math.max(0, Math.min(0.8, stats.damageReduction ?? 0));
+  unit.manaGain = Math.max(0.1, stats.manaGain ?? 1);
   unit.range = unitAttackRange(unit);
   unit.status = "";
   unit.stunTicks = 0;
@@ -751,7 +753,8 @@ function dealDamage(source, target, amount) {
   }
   target.hp = Math.max(0, target.hp - damage);
   const manaFromHit = Math.min(balance.battle.manaPerHit, Math.max(3, Math.round(damage * 0.32)));
-  target.mana = Math.min(100, (target.mana || 0) + manaFromHit);
+  const targetManaGain = target.manaGain || 1;
+  target.mana = Math.min(100, (target.mana || 0) + Math.round(manaFromHit * targetManaGain));
   target.status = target.hp > 0 ? "hit" : "dead";
   if (target.hp <= 0) removeDeadUnits([target]);
   return damage;
@@ -811,7 +814,7 @@ function basicAttack(attacker, enemies) {
       total += damage;
       return { unit, damage };
     });
-    attacker.mana = Math.min(100, attacker.mana + balance.battle.manaPerAttack);
+    attacker.mana = Math.min(100, attacker.mana + Math.round(balance.battle.manaPerAttack * (attacker.manaGain || 1)));
     attacker.status = "attacking";
     return {
       message: `${attacker.name} basic cleave ${total}${hit.critical ? " 치명" : ""}`,
@@ -821,7 +824,7 @@ function basicAttack(attacker, enemies) {
   const hit = basicAttackDamage(attacker, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
   const damage = dealDamage(attacker, target, hit.amount);
   const lifeStealHeal = applyLifeSteal(attacker, damage);
-  attacker.mana = Math.min(100, attacker.mana + balance.battle.manaPerAttack);
+  attacker.mana = Math.min(100, attacker.mana + Math.round(balance.battle.manaPerAttack * (attacker.manaGain || 1)));
   attacker.status = "attacking";
   const effects = [combatEffect(attacker, target, "attack", { amount: damage, critical: hit.critical })];
   if (lifeStealHeal) effects.push(combatEffect(attacker, attacker, "heal", { amount: lifeStealHeal }));
@@ -1055,6 +1058,7 @@ async function simulate() {
       openingCritMultiplier: critBase.openingCritMultiplier,
       lifeSteal: unit.lifeSteal ?? 0,
       damageReduction: unit.damageReduction ?? 0,
+      manaGain: unit.manaGain ?? 1,
     };
     unit.critChance = critBase.critChance;
     unit.critDamage = critBase.critDamage;
@@ -1142,6 +1146,7 @@ async function simulate() {
       unit.openingCritMultiplier = unit.combatBase.openingCritMultiplier;
       unit.lifeSteal = unit.combatBase.lifeSteal;
       unit.damageReduction = unit.combatBase.damageReduction;
+      unit.manaGain = unit.combatBase.manaGain;
       delete unit.combatBase;
     }
     unit.hp = unit.maxHp;
