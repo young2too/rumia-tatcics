@@ -61,6 +61,7 @@ export function createCommunityBoardController({ state, refs, boardConfig, stora
       nickname: row.nickname || "익명",
       content: row.content || "",
       createdAt: row.createdAt || row.created_at || new Date().toISOString(),
+      commentCount: Number(row.commentCount ?? row.comment_count ?? 0) || 0,
     };
   }
 
@@ -112,6 +113,45 @@ export function createCommunityBoardController({ state, refs, boardConfig, stora
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
+  function attachCommentCounts(posts, counts) {
+    return posts.map((post) => ({
+      ...post,
+      commentCount: counts[post.id] || 0,
+    }));
+  }
+
+  function localCommentCounts(postIds) {
+    const ids = new Set(postIds);
+    return localComments().reduce((counts, comment) => {
+      if (ids.has(comment.postId)) counts[comment.postId] = (counts[comment.postId] || 0) + 1;
+      return counts;
+    }, {});
+  }
+
+  async function loadCommentCounts(posts) {
+    if (!posts.length) return posts;
+    const postIds = posts.map((post) => post.id);
+    if (!backendEnabled() || !boardConfig.commentsTable) return attachCommentCounts(posts, localCommentCounts(postIds));
+    try {
+      const ids = postIds.map((id) => encodeURIComponent(id)).join(",");
+      const query = `?select=post_id&post_id=in.(${ids})&hidden=eq.false&limit=1000`;
+      const response = await fetch(tableEndpoint(boardConfig.commentsTable, query), {
+        headers: headers(),
+      });
+      if (!response.ok) throw new Error(`댓글 수 조회 실패 (${response.status})`);
+      const comments = await response.json();
+      const counts = comments.reduce((map, row) => {
+        const postId = row.post_id || row.postId;
+        if (postId) map[postId] = (map[postId] || 0) + 1;
+        return map;
+      }, {});
+      return attachCommentCounts(posts, counts);
+    } catch (error) {
+      console.warn(error);
+      return attachCommentCounts(posts, localCommentCounts(postIds));
+    }
+  }
+
   async function loadPosts(force = false) {
     if (!state.communityBoardOpen) return;
     if (state.communityBoardLoading || (state.communityBoardLoaded && !force)) return;
@@ -130,12 +170,12 @@ export function createCommunityBoardController({ state, refs, boardConfig, stora
       const rows = await response.json();
       const range = response.headers.get("content-range") || "";
       const total = Number(range.split("/").at(-1)) || rows.length;
-      state.communityBoardPosts = rows.map(normalizePost);
+      state.communityBoardPosts = await loadCommentCounts(rows.map(normalizePost));
       state.communityBoardTotal = total;
     } catch (error) {
       const posts = visibleLocalPosts();
       const offset = (state.communityBoardPage - 1) * pageSize;
-      state.communityBoardPosts = posts.slice(offset, offset + pageSize);
+      state.communityBoardPosts = await loadCommentCounts(posts.slice(offset, offset + pageSize));
       state.communityBoardTotal = posts.length;
       state.communityBoardError = backendEnabled()
         ? "게시판 서버를 불러오지 못해 이 브라우저의 임시 글을 표시합니다."
@@ -363,7 +403,10 @@ export function createCommunityBoardController({ state, refs, boardConfig, stora
           : posts.length
             ? posts.map((post) => `
               <button type="button" class="community-board-row" data-board-post="${post.id}">
-                <strong>${escapeHtml(post.title)}</strong>
+                <span class="community-board-row-title">
+                  <strong>${escapeHtml(post.title)}</strong>
+                  <em>댓글 ${post.commentCount || 0}</em>
+                </span>
                 <span>${escapeHtml(post.nickname)} · ${formatDate(post.createdAt)}</span>
               </button>
             `).join("")

@@ -2016,11 +2016,29 @@ h2 {
   background: rgba(52, 197, 183, 0.08);
 }
 
+.community-board-row-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .community-board-row strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
+}
+
+.community-board-row-title em {
+  flex: 0 0 auto;
+  border: 1px solid rgba(52, 197, 183, 0.28);
+  border-radius: 999px;
+  padding: 1px 6px;
+  color: #9ee7df;
+  background: rgba(52, 197, 183, 0.1);
+  font-size: 11px;
+  font-style: normal;
 }
 
 .community-board-row span,
