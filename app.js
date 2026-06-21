@@ -222,13 +222,30 @@ function unitNode(unit, source, index, compact = false) {
   return node;
 }
 
+function ownedCopiesForShop(name) {
+  return [...state.board, ...state.bench].filter((unit) => unit?.name === name);
+}
+
+function shopCardStatus(unit) {
+  const owned = ownedCopiesForShop(unit.name);
+  if (!owned.length) return { className: "", label: "", stars: "" };
+  const tierOne = owned.filter((copy) => copy.tier === 1).length;
+  const tierTwo = owned.filter((copy) => copy.tier === 2).length;
+  if (tierOne >= 2 && tierTwo >= 2) return { className: "can-upgrade tier-3", label: "3\uC131 \uAC00\uB2A5", stars: "\u2605\u2605\u2605" };
+  if (tierOne >= 2) return { className: "can-upgrade tier-2", label: "2\uC131 \uAC00\uB2A5", stars: "\u2605\u2605" };
+  return { className: "owned", label: "", stars: "" };
+}
+
 function renderShop() {
   refs.shop.innerHTML = "";
   for (const [index, unit] of state.shop.entries()) {
+    const status = shopCardStatus(unit);
     const card = document.createElement("button");
-    card.className = "shop-card";
+    card.className = ["shop-card", status.className].filter(Boolean).join(" ");
     card.style.setProperty("--accent", unit.color);
     card.innerHTML = `
+      ${status.label ? `<span class="shop-card-badge">${status.label}</span>` : ""}
+      ${status.stars ? `<span class="shop-card-stars">${status.stars}</span>` : ""}
       <span class="portrait">${unit.art ? `<img src="${unit.art}" alt="">` : unit.name.slice(0, 1)}</span>
       <span><strong>${unit.name}</strong><small>${unit.role} · ${unit.trait} · HP ${unit.maxHp} / 공격 ${unit.atk} / 스증 ${unit.skillAmp}</small></span>
       <span class="price"><b>${unit.cost}코</b><small>풀 ${state.pool[unit.name] ?? 0}</small></span>
