@@ -71,7 +71,20 @@ function makeEnemyUnit(base, tier, stage, hpScale, atkScale) {
   unit.atk = Math.max(3, Math.round((unit.atk + stage * 2) * atkScale));
   unit.skillAmp = Math.max(2, Math.round((unit.skillAmp + stage * 2) * atkScale));
   unit.defense = Math.max(0, Math.round((unit.defense + stage) * hpScale));
+  applyEnemyRoleStatMultipliers(unit);
   return unit;
+}
+
+function applyEnemyRoleStatMultipliers(unit) {
+  const multipliers = balance.battle.enemyRoleStatMultipliers?.[unit.role];
+  if (!multipliers) return;
+  if (Number.isFinite(multipliers.hp)) {
+    unit.maxHp = Math.max(1, Math.round(unit.maxHp * multipliers.hp));
+    unit.hp = unit.maxHp;
+  }
+  if (Number.isFinite(multipliers.atk)) unit.atk = Math.max(1, Math.round(unit.atk * multipliers.atk));
+  if (Number.isFinite(multipliers.skillAmp)) unit.skillAmp = Math.max(1, Math.round(unit.skillAmp * multipliers.skillAmp));
+  if (Number.isFinite(multipliers.defense)) unit.defense = Math.max(0, Math.round(unit.defense * multipliers.defense));
 }
 
 function baseCritStats(unit) {
@@ -634,12 +647,14 @@ function prepareCombatUnit(unit, side, counts = {}) {
     skillAmp: unit.skillAmp,
     defense: unit.defense,
     heal: 1,
+    healTargets: unit.healTargets ?? (unit.role === "지원" ? 2 : 1),
     critChance: unit.critChance ?? 0,
     critDamage: unit.critDamage ?? 1.5,
     openingCritMultiplier: unit.openingCritMultiplier ?? 1,
     lifeSteal: unit.lifeSteal ?? 0,
     damageReduction: unit.damageReduction ?? 0,
     manaGain: unit.manaGain ?? 1,
+    skillTargets: unit.skillTargets ?? (unit.role === "술법" ? 3 : 1),
   };
   if (side === "ally") {
     const boosts = state.temporaryBoosts || {};
@@ -656,12 +671,14 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.skillAmp = Math.round(stats.skillAmp);
   unit.defense = Math.round(stats.defense);
   unit.healPower = stats.heal;
+  unit.healTargets = Math.max(1, Math.round(stats.healTargets ?? 1));
   unit.critChance = Math.max(0, Math.min(1, stats.critChance ?? 0));
   unit.critDamage = Math.max(1, stats.critDamage ?? 1.5);
   unit.openingCritMultiplier = Math.max(1, stats.openingCritMultiplier ?? 1);
   unit.lifeSteal = Math.max(0, stats.lifeSteal ?? 0);
   unit.damageReduction = Math.max(0, Math.min(0.8, stats.damageReduction ?? 0));
   unit.manaGain = Math.max(0.1, stats.manaGain ?? 1);
+  unit.skillTargets = Math.max(1, Math.round(stats.skillTargets ?? 1));
   unit.range = unitAttackRange(unit);
   unit.status = "";
   unit.stunTicks = 0;
@@ -914,10 +931,11 @@ function castSkill(caster, allies, enemies) {
   }
 
   if (caster.role === "지원") {
+    const healLimit = caster.healTargets >= 99 ? Infinity : Math.max(2, caster.healTargets || 2);
     const targets = living(allies)
       .slice()
       .sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))
-      .slice(0, roleSkills.supportHealTargets ?? 2);
+      .slice(0, healLimit);
     const heal = Math.round((caster.skillAmp * (roleSkills.supportHealSkillAmp ?? 0.72) + (roleSkills.supportHealFlat ?? 10)) * caster.healPower);
     for (const target of targets) {
       target.hp = Math.min(target.maxHp, target.hp + heal);
@@ -930,7 +948,11 @@ function castSkill(caster, allies, enemies) {
   }
 
   if (caster.role === "술법") {
-    const targets = living(enemies);
+    const targetLimit = caster.skillTargets >= 99 ? Infinity : Math.max(2, caster.skillTargets || 2);
+    const targets = living(enemies)
+      .slice()
+      .sort((a, b) => compareByDistanceThenHp(caster, a, b))
+      .slice(0, targetLimit);
     let total = 0;
     const effects = [];
     for (const target of targets) {
@@ -1053,12 +1075,14 @@ async function simulate() {
       speed: unit.speed,
       skillAmp: unit.skillAmp,
       defense: unit.defense,
+      healTargets: unit.healTargets ?? 1,
       critChance: critBase.critChance,
       critDamage: critBase.critDamage,
       openingCritMultiplier: critBase.openingCritMultiplier,
       lifeSteal: unit.lifeSteal ?? 0,
       damageReduction: unit.damageReduction ?? 0,
       manaGain: unit.manaGain ?? 1,
+      skillTargets: unit.skillTargets ?? 1,
     };
     unit.critChance = critBase.critChance;
     unit.critDamage = critBase.critDamage;
@@ -1141,12 +1165,14 @@ async function simulate() {
       unit.speed = unit.combatBase.speed;
       unit.skillAmp = unit.combatBase.skillAmp;
       unit.defense = unit.combatBase.defense;
+      unit.healTargets = unit.combatBase.healTargets;
       unit.critChance = unit.combatBase.critChance;
       unit.critDamage = unit.combatBase.critDamage;
       unit.openingCritMultiplier = unit.combatBase.openingCritMultiplier;
       unit.lifeSteal = unit.combatBase.lifeSteal;
       unit.damageReduction = unit.combatBase.damageReduction;
       unit.manaGain = unit.combatBase.manaGain;
+      unit.skillTargets = unit.combatBase.skillTargets;
       delete unit.combatBase;
     }
     unit.hp = unit.maxHp;

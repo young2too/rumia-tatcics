@@ -138,6 +138,8 @@ function unitDetailStats(unit) {
       lifeSteal: unit.lifeSteal ?? 0,
       damageReduction: unit.damageReduction ?? 0,
       manaGain: unit.manaGain ?? 1,
+      skillTargets: unit.skillTargets ?? 2,
+      healTargets: unit.healTargets ?? 2,
     };
   }
   return applySynergy(unit, activeTraits());
@@ -517,6 +519,8 @@ function renderUnitDetail() {
   if (effective.lifeSteal > 0) stats.push(["흡혈", `${Math.round(effective.lifeSteal * 100)}%`]);
   if (effective.damageReduction > 0) stats.push(["피해감소", `${Math.round(effective.damageReduction * 100)}%`]);
   if (effective.manaGain > 1) stats.push(["마나획득", `${Math.round(effective.manaGain * 100)}%`]);
+  if (unit.role === "술법" && effective.skillTargets > 2) stats.push(["스킬타격", effective.skillTargets >= 99 ? "전체" : `${Math.round(effective.skillTargets)}명`]);
+  if (unit.role === "지원" && effective.healTargets > 2) stats.push(["회복대상", effective.healTargets >= 99 ? "전체" : `${Math.round(effective.healTargets)}명`]);
   refs.detailTier.textContent = `${"★".repeat(unit.tier)} · ${unit.cost}코`;
   refs.sellUnit.disabled = state.busy;
   refs.sellUnit.textContent = `${sellValue(unit)}크레딧에 판매`;

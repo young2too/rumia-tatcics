@@ -413,11 +413,11 @@
     },
     "roleSkills": {
       "supportHealTargets": 2,
-      "supportHealSkillAmp": 1.05,
-      "supportHealFlat": 18,
-      "shieldHealSkillAmp": 0.42,
-      "shieldHealDefense": 0.72,
-      "shieldHealFlat": 8,
+      "supportHealSkillAmp": 1.85,
+      "supportHealFlat": 40,
+      "shieldHealSkillAmp": 0.7,
+      "shieldHealDefense": 1.05,
+      "shieldHealFlat": 16,
       "assassinSkillScale": 1.8,
       "swordsmanSkillScale": 1.85,
       "rangedSkillScale": 2,
@@ -431,6 +431,32 @@
     "tankHpWeight": 0.16,
     "tierWeight": 10,
     "varianceMin": 0.92,
-    "varianceMax": 1.12
+    "varianceMax": 1.12,
+    "enemyRoleStatMultipliers": {
+      "방패": {
+        "hp": 1.22,
+        "defense": 1.16
+      },
+      "난투": {
+        "hp": 1.25,
+        "atk": 1.2,
+        "defense": 1.12
+      },
+      "검객": {
+        "hp": 1.18,
+        "atk": 1.24
+      },
+      "사격": {
+        "atk": 1.1,
+        "skillAmp": 1.06
+      },
+      "암살": {
+        "atk": 1.14
+      },
+      "지원": {
+        "hp": 1.1,
+        "skillAmp": 1.08
+      }
+    }
   }
 }
