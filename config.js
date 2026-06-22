@@ -15,16 +15,15 @@ window.LUMIA_TACTICS_CONFIG = {
   },
   patchNotes: {
     enabled: true,
-    title: "놀러갔다오니 핫픽스",
-    version: "20260621",
-    date: "2026-06-21",
-    summary: "오자마자 핫픽스",
+    title: "\uBC38\uB7F0\uC2A4 \uD328\uCE58 \uC608\uACE0",
+    version: "20260622",
+    date: "2026-06-22",
+    summary: "\uB2E4\uC74C \uBC38\uB7F0\uC2A4 \uD328\uCE58 \uBC29\uD5A5\uC744 \uC548\uB0B4\uD569\uB2C8\uB2E4.",
     items: [
-      "\uC0C1\uC810 UI \uAC1C\uC120",
-      "엘레나를 2코로 내렸습니다",
-      "술법에 대한 의견을 받고 있습니다. 게시판을 열어주세요",
-      "갤챈에 플레이 리뷰나 후기를 써주시면 더욱 큰 감사를 합니다",
-      "아직 캐릭터 각각의 스킬들은 미구현입니다(역할별로 스킬이 같음)"
+      "\uC220\uBC95 \uAD11\uC5ED \uC5B5\uAE4C \uC644\uD654",
+      "\uB9AC\uB4EC/\uC218\uD638 \uB300\uD3ED \uAC15\uD654",
+      "\uC801 \uADFC\uB51C/\uD0F1\uCEE4 \uCCB4\uAE09 \uBCF4\uC815",
+      "\uC1FC\uC6B0/\uB2C8\uD0A4 \uB85C\uC2A4\uD130 \uC870\uC815",
     ],
   },
 };
