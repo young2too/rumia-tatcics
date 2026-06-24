@@ -139,15 +139,15 @@
     "tiers": [
       {
         "need": 2,
-        "text": "방패형 체력 +38%, 방어 +18%, 받는 피해 -12%",
+        "text": "방패형 체력 +32%, 방어 +14%, 받는 피해 -12%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 1.38
+            "multiply": 1.32
           },
           {
             "stat": "defense",
-            "multiply": 1.18
+            "multiply": 1.14
           },
           {
             "stat": "damageReduction",
@@ -157,15 +157,15 @@
       },
       {
         "need": 4,
-        "text": "방패형 체력 +95%, 방어 +38%, 받는 피해 -24%",
+        "text": "방패형 체력 +85%, 방어 +32%, 받는 피해 -24%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 1.95
+            "multiply": 1.85
           },
           {
             "stat": "defense",
-            "multiply": 1.38
+            "multiply": 1.32
           },
           {
             "stat": "damageReduction",
@@ -175,15 +175,15 @@
       },
       {
         "need": 6,
-        "text": "방패형 체력 +160%, 방어 +65%, 받는 피해 -36%",
+        "text": "방패형 체력 +145%, 방어 +56%, 받는 피해 -36%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 2.6
+            "multiply": 2.45
           },
           {
             "stat": "defense",
-            "multiply": 1.65
+            "multiply": 1.56
           },
           {
             "stat": "damageReduction",
@@ -193,15 +193,15 @@
       },
       {
         "need": 8,
-        "text": "방패형 체력 +235%, 방어 +95%, 받는 피해 -50%",
+        "text": "방패형 체력 +220%, 방어 +85%, 받는 피해 -50%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 3.35
+            "multiply": 3.2
           },
           {
             "stat": "defense",
-            "multiply": 1.95
+            "multiply": 1.85
           },
           {
             "stat": "damageReduction",
