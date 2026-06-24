@@ -139,73 +139,73 @@
     "tiers": [
       {
         "need": 2,
-        "text": "방패형 체력 +45%, 방어 +22%, 받는 피해 -14%",
+        "text": "방패형 체력 +38%, 방어 +18%, 받는 피해 -12%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 1.45
+            "multiply": 1.38
           },
           {
             "stat": "defense",
-            "multiply": 1.22
+            "multiply": 1.18
           },
           {
             "stat": "damageReduction",
-            "add": 0.14
+            "add": 0.12
           }
         ]
       },
       {
         "need": 4,
-        "text": "방패형 체력 +105%, 방어 +45%, 받는 피해 -26%",
+        "text": "방패형 체력 +95%, 방어 +38%, 받는 피해 -24%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 2.05
+            "multiply": 1.95
           },
           {
             "stat": "defense",
-            "multiply": 1.45
+            "multiply": 1.38
           },
           {
             "stat": "damageReduction",
-            "add": 0.26
+            "add": 0.24
           }
         ]
       },
       {
         "need": 6,
-        "text": "방패형 체력 +175%, 방어 +75%, 받는 피해 -38%",
+        "text": "방패형 체력 +160%, 방어 +65%, 받는 피해 -36%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 2.75
+            "multiply": 2.6
           },
           {
             "stat": "defense",
-            "multiply": 1.75
+            "multiply": 1.65
           },
           {
             "stat": "damageReduction",
-            "add": 0.38
+            "add": 0.36
           }
         ]
       },
       {
         "need": 8,
-        "text": "방패형 체력 +250%, 방어 +105%, 받는 피해 -52%",
+        "text": "방패형 체력 +235%, 방어 +95%, 받는 피해 -50%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 3.5
+            "multiply": 3.35
           },
           {
             "stat": "defense",
-            "multiply": 2.05
+            "multiply": 1.95
           },
           {
             "stat": "damageReduction",
-            "add": 0.52
+            "add": 0.5
           }
         ]
       }
