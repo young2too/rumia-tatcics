@@ -3,37 +3,15 @@
     "tiers": [
       {
         "need": 2,
-        "text": "난투형 공격력 +20%, 체력 +8%, 방어 +6%, 받는 피해 -6%",
+        "text": "??? ??? +24%, ?? +16%, ?? +12%, ?? ?? -8%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 1.2
+            "multiply": 1.24
           },
           {
             "stat": "hp",
-            "multiply": 1.08
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.06
-          },
-          {
-            "stat": "damageReduction",
-            "add": 0.06
-          }
-        ]
-      },
-      {
-        "need": 4,
-        "text": "난투형 공격력 +48%, 체력 +18%, 방어 +12%, 받는 피해 -10%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.48
-          },
-          {
-            "stat": "hp",
-            "multiply": 1.18
+            "multiply": 1.16
           },
           {
             "stat": "defense",
@@ -41,25 +19,25 @@
           },
           {
             "stat": "damageReduction",
-            "add": 0.1
+            "add": 0.08
           }
         ]
       },
       {
-        "need": 6,
-        "text": "난투형 공격력 +82%, 체력 +32%, 방어 +20%, 받는 피해 -16%",
+        "need": 4,
+        "text": "??? ??? +62%, ?? +34%, ?? +25%, ?? ?? -16%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 1.82
+            "multiply": 1.62
           },
           {
             "stat": "hp",
-            "multiply": 1.32
+            "multiply": 1.34
           },
           {
             "stat": "defense",
-            "multiply": 1.2
+            "multiply": 1.25
           },
           {
             "stat": "damageReduction",
@@ -68,24 +46,46 @@
         ]
       },
       {
-        "need": 8,
-        "text": "난투형 공격력 +125%, 체력 +52%, 방어 +32%, 받는 피해 -24%",
+        "need": 6,
+        "text": "??? ??? +110%, ?? +56%, ?? +38%, ?? ?? -24%",
         "effects": [
           {
             "stat": "atk",
-            "multiply": 2.25
+            "multiply": 2.1
           },
           {
             "stat": "hp",
-            "multiply": 1.52
+            "multiply": 1.56
           },
           {
             "stat": "defense",
-            "multiply": 1.32
+            "multiply": 1.38
           },
           {
             "stat": "damageReduction",
             "add": 0.24
+          }
+        ]
+      },
+      {
+        "need": 8,
+        "text": "??? ??? +165%, ?? +85%, ?? +55%, ?? ?? -34%",
+        "effects": [
+          {
+            "stat": "atk",
+            "multiply": 2.65
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.85
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.55
+          },
+          {
+            "stat": "damageReduction",
+            "add": 0.34
           }
         ]
       }
@@ -139,73 +139,73 @@
     "tiers": [
       {
         "need": 2,
-        "text": "방패형 체력 +30%, 방어 +10%, 받는 피해 -10%",
+        "text": "??? ?? +45%, ?? +22%, ?? ?? -14%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 1.3
+            "multiply": 1.45
           },
           {
             "stat": "defense",
-            "multiply": 1.1
+            "multiply": 1.22
           },
           {
             "stat": "damageReduction",
-            "add": 0.1
+            "add": 0.14
           }
         ]
       },
       {
         "need": 4,
-        "text": "방패형 체력 +75%, 방어 +24%, 받는 피해 -18%",
+        "text": "??? ?? +105%, ?? +45%, ?? ?? -26%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 1.75
+            "multiply": 2.05
           },
           {
             "stat": "defense",
-            "multiply": 1.24
+            "multiply": 1.45
           },
           {
             "stat": "damageReduction",
-            "add": 0.18
+            "add": 0.26
           }
         ]
       },
       {
         "need": 6,
-        "text": "방패형 체력 +125%, 방어 +42%, 받는 피해 -28%",
+        "text": "??? ?? +175%, ?? +75%, ?? ?? -38%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 2.25
+            "multiply": 2.75
           },
           {
             "stat": "defense",
-            "multiply": 1.42
+            "multiply": 1.75
           },
           {
             "stat": "damageReduction",
-            "add": 0.28
+            "add": 0.38
           }
         ]
       },
       {
         "need": 8,
-        "text": "방패형 체력 +190%, 방어 +65%, 받는 피해 -40%",
+        "text": "??? ?? +250%, ?? +105%, ?? ?? -52%",
         "effects": [
           {
             "stat": "hp",
-            "multiply": 2.9
+            "multiply": 3.5
           },
           {
             "stat": "defense",
-            "multiply": 1.65
+            "multiply": 2.05
           },
           {
             "stat": "damageReduction",
-            "add": 0.4
+            "add": 0.52
           }
         ]
       }
@@ -291,7 +291,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "검객형 공격 속도 +24%, 공격 +16%, 체력 +6%, 방어 +4%, 흡혈 +6%",
+        "text": "??? ?? ?? +24%, ?? +25%, ?? +18%, ?? +14%, ?? +8%",
         "effects": [
           {
             "stat": "speed",
@@ -299,63 +299,11 @@
           },
           {
             "stat": "atk",
-            "multiply": 1.16
+            "multiply": 1.25
           },
           {
             "stat": "hp",
-            "multiply": 1.06
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.04
-          },
-          {
-            "stat": "lifeSteal",
-            "add": 0.06
-          }
-        ]
-      },
-      {
-        "need": 4,
-        "text": "검객형 공격 속도 +58%, 공격 +34%, 체력 +12%, 방어 +8%, 흡혈 +10%",
-        "effects": [
-          {
-            "stat": "speed",
-            "multiply": 1.58
-          },
-          {
-            "stat": "atk",
-            "multiply": 1.34
-          },
-          {
-            "stat": "hp",
-            "multiply": 1.12
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.08
-          },
-          {
-            "stat": "lifeSteal",
-            "add": 0.1
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "검객형 공격 속도 +100%, 공격 +58%, 체력 +20%, 방어 +14%, 흡혈 +16%",
-        "effects": [
-          {
-            "stat": "speed",
-            "multiply": 2
-          },
-          {
-            "stat": "atk",
-            "multiply": 1.58
-          },
-          {
-            "stat": "hp",
-            "multiply": 1.2
+            "multiply": 1.18
           },
           {
             "stat": "defense",
@@ -363,13 +311,65 @@
           },
           {
             "stat": "lifeSteal",
-            "add": 0.16
+            "add": 0.08
+          }
+        ]
+      },
+      {
+        "need": 4,
+        "text": "??? ?? ?? +58%, ?? +55%, ?? +36%, ?? +28%, ?? +14%",
+        "effects": [
+          {
+            "stat": "speed",
+            "multiply": 1.58
+          },
+          {
+            "stat": "atk",
+            "multiply": 1.55
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.36
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.28
+          },
+          {
+            "stat": "lifeSteal",
+            "add": 0.14
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "??? ?? ?? +100%, ?? +95%, ?? +58%, ?? +42%, ?? +21%",
+        "effects": [
+          {
+            "stat": "speed",
+            "multiply": 2
+          },
+          {
+            "stat": "atk",
+            "multiply": 1.95
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.58
+          },
+          {
+            "stat": "defense",
+            "multiply": 1.42
+          },
+          {
+            "stat": "lifeSteal",
+            "add": 0.21
           }
         ]
       },
       {
         "need": 8,
-        "text": "검객형 공격 속도 +145%, 공격 +90%, 체력 +32%, 방어 +22%, 흡혈 +24%",
+        "text": "??? ?? ?? +145%, ?? +145%, ?? +85%, ?? +58%, ?? +30%",
         "effects": [
           {
             "stat": "speed",
@@ -377,19 +377,19 @@
           },
           {
             "stat": "atk",
-            "multiply": 1.9
+            "multiply": 2.45
           },
           {
             "stat": "hp",
-            "multiply": 1.32
+            "multiply": 1.85
           },
           {
             "stat": "defense",
-            "multiply": 1.22
+            "multiply": 1.58
           },
           {
             "stat": "lifeSteal",
-            "add": 0.24
+            "add": 0.3
           }
         ]
       }
