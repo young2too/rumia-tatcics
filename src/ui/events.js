@@ -37,6 +37,8 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     state.rankingOpen = false;
     actions.render();
   });
+  refs.rankingSortStage?.addEventListener("click", () => actions.setRankingSort("stage"));
+  refs.rankingSortRecent?.addEventListener("click", () => actions.setRankingSort("createdAt"));
   refs.rankingModal.addEventListener("click", (event) => {
     if (event.target === refs.rankingModal) {
       state.rankingOpen = false;

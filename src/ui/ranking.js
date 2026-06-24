@@ -73,8 +73,12 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
         return;
       }
 
+      const sortOrder = state.rankingSortOrder === "asc" ? "asc" : "desc";
+      const orderQuery = state.rankingSortBy === "createdAt"
+        ? `created_at.${sortOrder},stage.desc`
+        : `stage.${sortOrder},created_at.asc`;
       const response = await fetch(
-        rankingEndpoint(`?select=id,nickname,stage,board,created_at&order=stage.desc,created_at.asc&limit=${rankingLimit}`),
+        rankingEndpoint(`?select=id,nickname,stage,board,created_at&order=${orderQuery}&limit=${rankingLimit}`),
         { headers: rankingHeaders() },
       );
       if (!response.ok) throw new Error(`랭킹 조회 실패 (${response.status})`);

@@ -2379,6 +2379,39 @@ h2 {
   display: none;
 }
 
+.ranking-dialog .panel-title {
+  justify-content: flex-start;
+}
+
+.ranking-dialog .panel-title h2 {
+  margin-right: auto;
+}
+
+.ranking-sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ranking-sort-controls button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ranking-sort-controls button.active {
+  border-color: rgba(52, 197, 183, 0.68);
+  background: rgba(52, 197, 183, 0.15);
+  color: #d7fffb;
+  box-shadow: 0 0 0 1px rgba(52, 197, 183, 0.08) inset;
+}
+
 .rank-submit p {
   color: var(--muted);
   font-size: 12px;

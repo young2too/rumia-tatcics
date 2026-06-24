@@ -42,6 +42,8 @@ const state = {
   rankingLoading: false,
   rankingSaving: false,
   rankingError: "",
+  rankingSortBy: "stage",
+  rankingSortOrder: "desc",
   bgmOn: false,
   bgmError: "",
   patchNotesOpen: false,
@@ -437,11 +439,12 @@ function renderTraitRosterModal() {
 }
 
 function renderRanking() {
-  const entries = state.rankingEntries;
+  const entries = sortedRankingEntries();
   refs.rankingModal.hidden = !state.rankingOpen;
   refs.rankSubmit.hidden = !state.deathRecord || state.rankingSubmitted;
   refs.rankSave.disabled = state.rankingSaving;
   refs.rankSave.textContent = state.rankingSaving ? "등록 중" : "등록";
+  renderRankingSortControls();
   refs.rankingPanel.hidden = false;
   const status = state.rankingError ? `<div class="ranking-empty">${state.rankingError}</div>` : "";
   refs.rankingPanel.innerHTML = state.rankingLoading
@@ -464,6 +467,35 @@ function renderRanking() {
         .join("")
     : `<div class="ranking-empty">등록된 기록이 없습니다.</div>`;
   if (status) refs.rankingPanel.insertAdjacentHTML("afterbegin", status);
+}
+
+function sortedRankingEntries() {
+  const direction = state.rankingSortOrder === "asc" ? 1 : -1;
+  const byStage = state.rankingSortBy === "stage";
+  return state.rankingEntries.slice().sort((a, b) => {
+    const primaryA = byStage ? Number(a.stage) || 0 : new Date(a.createdAt).getTime() || 0;
+    const primaryB = byStage ? Number(b.stage) || 0 : new Date(b.createdAt).getTime() || 0;
+    if (primaryA !== primaryB) return (primaryA - primaryB) * direction;
+    const fallbackA = byStage ? new Date(a.createdAt).getTime() || 0 : Number(a.stage) || 0;
+    const fallbackB = byStage ? new Date(b.createdAt).getTime() || 0 : Number(b.stage) || 0;
+    if (fallbackA !== fallbackB) return byStage ? fallbackA - fallbackB : fallbackB - fallbackA;
+    return String(a.name).localeCompare(String(b.name), "ko");
+  });
+}
+
+function renderRankingSortControls() {
+  const controls = [
+    { id: "stage", ref: refs.rankingSortStage, label: "\uB77C\uC6B4\uB4DC" },
+    { id: "createdAt", ref: refs.rankingSortRecent, label: "\uCD5C\uC2E0" },
+  ];
+  for (const control of controls) {
+    if (!control.ref) continue;
+    const active = state.rankingSortBy === control.id;
+    const arrow = active && state.rankingSortOrder === "asc" ? "\u2191" : "\u2193";
+    control.ref.classList.toggle("active", active);
+    control.ref.textContent = `${control.label} ${arrow}`;
+    control.ref.title = `${control.label} \uC815\uB82C \uC804\uD658`;
+  }
 }
 
 function renderPatchNotes() {
@@ -629,6 +661,16 @@ bindUiEvents({
     toggleBgm: audio.toggleBgm,
     loadRankings,
     submitRanking,
+    setRankingSort(sortBy) {
+      if (state.rankingSortBy === sortBy) {
+        state.rankingSortOrder = state.rankingSortOrder === "desc" ? "asc" : "desc";
+      } else {
+        state.rankingSortBy = sortBy;
+        state.rankingSortOrder = "desc";
+      }
+      render();
+      loadRankings(true);
+    },
     closePatchNotes,
     openPatchNotes,
     openTraitRoster(trait) {

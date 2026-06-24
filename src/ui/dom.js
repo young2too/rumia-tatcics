@@ -43,6 +43,8 @@ export function createRefs() {
     rankingClose: $("rankingClose"),
     rankingModal: $("rankingModal"),
     rankingPanel: $("rankingPanel"),
+    rankingSortStage: $("rankingSortStage"),
+    rankingSortRecent: $("rankingSortRecent"),
     rankSubmit: $("rankSubmit"),
     rankName: $("rankName"),
     rankSave: $("rankSave"),
