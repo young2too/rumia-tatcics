@@ -15,11 +15,12 @@ window.LUMIA_TACTICS_CONFIG = {
   },
   patchNotes: {
     enabled: true,
-    title: "\uBC38\uB7F0\uC2A4 \uD328\uCE58 \uC608\uACE0",
-    version: "20260622",
-    date: "2026-06-22",
-    summary: "\uB2E4\uC74C \uBC38\uB7F0\uC2A4 \uD328\uCE58 \uBC29\uD5A5\uC744 \uC548\uB0B4\uD569\uB2C8\uB2E4.",
+    title: "\uBC38\uB7F0\uC2A4 \uD328\uCE58 \uC548\uB0B4",
+    version: "20260624",
+    date: "2026-06-24",
+    summary: "\uADFC\uB51C \uCCB4\uAE09 \uBC84\uD504 \uD56B\uD53D\uC2A4",
     items: [
+      "\uADFC\uB51C \uCCB4\uAE09 \uBC84\uD504 \uD56B\uD53D\uC2A4. \uC2DC\uB108\uC9C0 \uBC0F \uAE61\uC2A4\uD15F \uAC15\uD654",
       "\uC220\uBC95 \uAD11\uC5ED \uC5B5\uAE4C \uC644\uD654",
       "\uB9AC\uB4EC/\uC218\uD638 \uB300\uD3ED \uAC15\uD654",
       "\uC801 \uADFC\uB51C/\uD0F1\uCEE4 \uCCB4\uAE09 \uBCF4\uC815",
