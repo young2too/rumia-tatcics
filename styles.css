@@ -2381,10 +2381,12 @@ h2 {
 
 .ranking-dialog .panel-title {
   justify-content: flex-start;
+  flex-wrap: nowrap;
 }
 
 .ranking-dialog .panel-title h2 {
-  margin-right: auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .ranking-sort-controls {
@@ -2410,6 +2412,53 @@ h2 {
   background: rgba(52, 197, 183, 0.15);
   color: #d7fffb;
   box-shadow: 0 0 0 1px rgba(52, 197, 183, 0.08) inset;
+}
+
+.ranking-version-filter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ranking-version-filter select {
+  appearance: none;
+  min-width: 0;
+  width: auto;
+  max-width: 116px;
+  min-height: 28px;
+  border: 1px solid rgba(52, 197, 183, 0.45);
+  border-radius: 999px;
+  background:
+    linear-gradient(45deg, transparent 50%, #d7fffb 50%) right 10px center / 5px 5px no-repeat,
+    linear-gradient(135deg, #d7fffb 50%, transparent 50%) right 6px center / 5px 5px no-repeat,
+    rgba(52, 197, 183, 0.12);
+  color: #d7fffb;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0 22px 0 10px;
+  box-shadow: 0 0 0 1px rgba(52, 197, 183, 0.08) inset;
+}
+
+.ranking-version-filter select:hover,
+.ranking-version-filter select:focus {
+  border-color: rgba(52, 197, 183, 0.75);
+  background-color: rgba(52, 197, 183, 0.18);
+  outline: none;
+}
+
+.ranking-version-filter option {
+  color: var(--text);
+  background: #1b2023;
 }
 
 .rank-submit p {
@@ -2450,6 +2499,7 @@ h2 {
 
 .ranking-empty,
 .rank-entry {
+  position: relative;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   padding: 9px;
@@ -2463,6 +2513,24 @@ h2 {
 .rank-entry.submitted {
   border: 1px solid rgba(111, 203, 255, 0.55);
   background: rgba(111, 203, 255, 0.1);
+}
+
+.rank-version {
+  display: inline-flex;
+  width: fit-content;
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0;
+  padding: 3px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .rank-entry strong {

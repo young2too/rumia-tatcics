@@ -18,7 +18,6 @@ export const uiSettings = structuredClone(uiSettingsData);
 export const rankingStorageKey = uiSettings.rankingStorageKey;
 export const communityBoardStorageKey = uiSettings.communityBoardStorageKey;
 export const patchNotesStorageKey = uiSettings.patchNotesStorageKey;
-export const rankingConfig = window.LUMIA_TACTICS_CONFIG?.supabase || {};
 export const communityBoardConfig = {
   ...uiSettings.communityBoard,
   url: window.LUMIA_TACTICS_CONFIG?.supabase?.url,
@@ -32,4 +31,9 @@ export const bgmConfig = {
 export const patchNotesConfig = {
   ...uiSettings.patchNotes,
   ...(window.LUMIA_TACTICS_CONFIG?.patchNotes || {}),
+};
+export const rankingConfig = {
+  ...(window.LUMIA_TACTICS_CONFIG?.supabase || {}),
+  majorVersion: window.LUMIA_TACTICS_CONFIG?.ranking?.majorVersion || patchNotesConfig.version || "legacy",
+  versionColumn: window.LUMIA_TACTICS_CONFIG?.ranking?.versionColumn || "ranking_version",
 };

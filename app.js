@@ -44,6 +44,8 @@ const state = {
   rankingError: "",
   rankingSortBy: "stage",
   rankingSortOrder: "desc",
+  rankingVersionFilter: "all",
+  rankingVersions: [],
   bgmOn: false,
   bgmError: "",
   patchNotesOpen: false,
@@ -445,6 +447,7 @@ function renderRanking() {
   refs.rankSave.disabled = state.rankingSaving;
   refs.rankSave.textContent = state.rankingSaving ? "등록 중" : "등록";
   renderRankingSortControls();
+  renderRankingVersionControls();
   refs.rankingPanel.hidden = false;
   const status = state.rankingError ? `<div class="ranking-empty">${state.rankingError}</div>` : "";
   refs.rankingPanel.innerHTML = state.rankingLoading
@@ -462,6 +465,7 @@ function renderRanking() {
                 </span>
               `).join("")}
             </div>
+            ${entry.rankingVersion ? `<em class="rank-version">${entry.rankingVersion}</em>` : ""}
           </div>
         `)
         .join("")
@@ -496,6 +500,27 @@ function renderRankingSortControls() {
     control.ref.textContent = `${control.label} ${arrow}`;
     control.ref.title = `${control.label} \uC815\uB82C \uC804\uD658`;
   }
+}
+
+function renderRankingVersionControls() {
+  if (!refs.rankingVersionFilter) return;
+  const currentVersion = rankingConfig.majorVersion || patchNotesConfig.version || "";
+  const versions = Array.from(new Set([currentVersion, ...(state.rankingVersions || [])].filter(Boolean)));
+  const options = [
+    { value: "all", label: "\uD1B5\uD569\uB7AD\uD0B9" },
+    ...versions.map((version) => ({ value: version, label: version })),
+  ];
+  refs.rankingVersionFilter.innerHTML = "";
+  for (const option of options) {
+    const node = document.createElement("option");
+    node.value = option.value;
+    node.textContent = option.label;
+    refs.rankingVersionFilter.append(node);
+  }
+  if (!options.some((option) => option.value === state.rankingVersionFilter)) {
+    state.rankingVersionFilter = "all";
+  }
+  refs.rankingVersionFilter.value = state.rankingVersionFilter;
 }
 
 function renderPatchNotes() {
@@ -668,6 +693,12 @@ bindUiEvents({
         state.rankingSortBy = sortBy;
         state.rankingSortOrder = "desc";
       }
+      render();
+      loadRankings(true);
+    },
+    setRankingVersionFilter(version) {
+      state.rankingVersionFilter = version || "all";
+      state.rankingLoaded = false;
       render();
       loadRankings(true);
     },

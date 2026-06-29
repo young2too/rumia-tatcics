@@ -39,6 +39,7 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   });
   refs.rankingSortStage?.addEventListener("click", () => actions.setRankingSort("stage"));
   refs.rankingSortRecent?.addEventListener("click", () => actions.setRankingSort("createdAt"));
+  refs.rankingVersionFilter?.addEventListener("change", () => actions.setRankingVersionFilter(refs.rankingVersionFilter.value));
   refs.rankingModal.addEventListener("click", (event) => {
     if (event.target === refs.rankingModal) {
       state.rankingOpen = false;

@@ -1,6 +1,8 @@
 export function createRankingController({ state, refs, rankingConfig, rankingStorageKey, renderRanking, render }) {
   let memoryRankings = [];
   const rankingLimit = Number(rankingConfig.limit) || 100;
+  const rankingVersion = String(rankingConfig.majorVersion || window.LUMIA_TACTICS_CONFIG?.patchNotes?.version || "legacy");
+  const versionColumn = rankingConfig.versionColumn || "ranking_version";
 
   function localRankingEntries() {
     try {
@@ -36,6 +38,15 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
     };
   }
 
+  function rankingSelectFields(includeVersion = true) {
+    return ["id", "nickname", "stage", "board", "created_at", includeVersion ? versionColumn : null].filter(Boolean).join(",");
+  }
+
+  function rankingVersionQuery(includeVersion = true) {
+    if (!includeVersion || !state.rankingVersionFilter || state.rankingVersionFilter === "all") return "";
+    return `&${versionColumn}=eq.${encodeURIComponent(state.rankingVersionFilter)}`;
+  }
+
   function normalizeRankingEntry(entry) {
     return {
       id: entry.id || crypto.randomUUID(),
@@ -43,14 +54,35 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
       stage: Number(entry.stage) || 1,
       board: Array.isArray(entry.board) ? entry.board : [],
       createdAt: entry.createdAt || entry.created_at || new Date().toISOString(),
+      rankingVersion: entry.rankingVersion || entry[versionColumn] || entry.ranking_version || entry.version || "",
       isSubmittedEntry: Boolean(entry.isSubmittedEntry),
     };
+  }
+
+  function updateRankingVersions(entries = state.rankingEntries) {
+    const versions = new Set([rankingVersion, ...(state.rankingVersions || [])].filter(Boolean));
+    for (const entry of entries) {
+      const normalized = normalizeRankingEntry(entry);
+      if (normalized.rankingVersion) versions.add(normalized.rankingVersion);
+    }
+    state.rankingVersions = Array.from(versions).sort((a, b) => {
+      if (a === rankingVersion) return -1;
+      if (b === rankingVersion) return 1;
+      return String(b).localeCompare(String(a), "ko");
+    });
   }
 
   function sortRankingEntries(entries) {
     return entries
       .map(normalizeRankingEntry)
       .sort((a, b) => b.stage - a.stage || new Date(a.createdAt) - new Date(b.createdAt));
+  }
+
+  function filteredLocalRankingEntries() {
+    const entries = localRankingEntries().map(normalizeRankingEntry);
+    updateRankingVersions(entries);
+    if (!state.rankingVersionFilter || state.rankingVersionFilter === "all") return entries;
+    return entries.filter((entry) => entry.rankingVersion === state.rankingVersionFilter);
   }
 
   function rememberSubmittedEntry(entry) {
@@ -61,32 +93,58 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
     return true;
   }
 
+  function fetchRankings(includeVersion = true) {
+    const sortOrder = state.rankingSortOrder === "asc" ? "asc" : "desc";
+    const orderQuery = state.rankingSortBy === "createdAt"
+      ? `created_at.${sortOrder},stage.desc`
+      : `stage.${sortOrder},created_at.asc`;
+    return fetch(
+      rankingEndpoint(`?select=${rankingSelectFields(includeVersion)}${rankingVersionQuery(includeVersion)}&order=${orderQuery}&limit=${rankingLimit}`),
+      { headers: rankingHeaders() },
+    );
+  }
+
+  async function loadRankingVersions() {
+    updateRankingVersions();
+    if (!rankingBackendEnabled()) return;
+    try {
+      const response = await fetch(
+        rankingEndpoint(`?select=${versionColumn}&${versionColumn}=not.is.null&order=${versionColumn}.desc&limit=1000`),
+        { headers: rankingHeaders() },
+      );
+      if (!response.ok) return;
+      const rows = await response.json();
+      updateRankingVersions(rows.map((row) => ({ rankingVersion: row[versionColumn] || row.ranking_version || "" })));
+    } catch (error) {
+      console.warn(error);
+    }
+  }
+
   async function loadRankings(force = false) {
     if (state.rankingLoading || (state.rankingLoaded && !force)) return;
     state.rankingLoading = true;
     state.rankingError = "";
+    await loadRankingVersions();
     renderRanking();
 
     try {
       if (!rankingBackendEnabled()) {
-        state.rankingEntries = localRankingEntries().map(normalizeRankingEntry);
+        state.rankingEntries = filteredLocalRankingEntries();
         return;
       }
 
-      const sortOrder = state.rankingSortOrder === "asc" ? "asc" : "desc";
-      const orderQuery = state.rankingSortBy === "createdAt"
-        ? `created_at.${sortOrder},stage.desc`
-        : `stage.${sortOrder},created_at.asc`;
-      const response = await fetch(
-        rankingEndpoint(`?select=id,nickname,stage,board,created_at&order=${orderQuery}&limit=${rankingLimit}`),
-        { headers: rankingHeaders() },
-      );
+      let response = await fetchRankings(true);
+      if (!response.ok) response = await fetchRankings(false);
       if (!response.ok) throw new Error(`랭킹 조회 실패 (${response.status})`);
-      const rows = await response.json();
+      let rows = await response.json();
+      if (state.rankingVersionFilter && state.rankingVersionFilter !== "all" && !rows.some((row) => row[versionColumn] || row.ranking_version)) {
+        rows = [];
+      }
       state.rankingEntries = rows.map(normalizeRankingEntry);
+      updateRankingVersions();
     } catch (error) {
       state.rankingError = rankingBackendEnabled() ? "서버 랭킹을 불러오지 못해 로컬 기록을 표시합니다." : "";
-      state.rankingEntries = localRankingEntries().map(normalizeRankingEntry);
+      state.rankingEntries = filteredLocalRankingEntries();
       console.warn(error);
     } finally {
       state.rankingLoaded = true;
@@ -123,6 +181,7 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
       id: crypto.randomUUID(),
       name,
       ...state.deathRecord,
+      rankingVersion,
     };
     state.rankingSaving = true;
     state.rankingError = "";
@@ -130,16 +189,28 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
 
     try {
       if (rankingBackendEnabled()) {
-        const response = await fetch(rankingEndpoint(), {
+        let response = await fetch(rankingEndpoint(), {
           method: "POST",
           headers: rankingHeaders({ Prefer: "return=representation" }),
           body: JSON.stringify({
             nickname: entry.name,
             stage: entry.stage,
             board: entry.board,
+            [versionColumn]: rankingVersion,
           }),
         });
-        if (!response.ok) throw new Error(`랭킹 등록 실패 (${response.status})`);
+        if (!response.ok) {
+          response = await fetch(rankingEndpoint(), {
+            method: "POST",
+            headers: rankingHeaders({ Prefer: "return=representation" }),
+            body: JSON.stringify({
+              nickname: entry.name,
+              stage: entry.stage,
+              board: entry.board,
+            }),
+          });
+        }
+        if (!response.ok) throw new Error(`\uB7AD\uD0B9 \uB4F1\uB85D \uC2E4\uD328 (${response.status})`);
         const rows = await response.json();
         const savedEntry = normalizeRankingEntry(rows[0] || entry);
         state.rankingSubmitted = true;
