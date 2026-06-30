@@ -26,19 +26,31 @@ function enemyDifficultyStage() {
 }
 
 function enemyScale(kind) {
+  const interval = balance.battle.bossInterval;
+  const earlyEndRound = balance.battle.enemyEarlyGrowthEndRound ?? 0;
   const releaseRound = balance.battle.enemyScaleCapReleaseRound ?? Infinity;
   const cap = kind === "hp" ? balance.battle.enemyHpScaleCap : balance.battle.enemyAtkScaleCap;
   const base = kind === "hp" ? balance.battle.enemyBaseHpScale : balance.battle.enemyBaseAtkScale;
-  const roundGrowth = kind === "hp" ? balance.battle.enemyHpRoundGrowth : balance.battle.enemyAtkRoundGrowth;
-  const stageGrowth = kind === "hp" ? balance.battle.enemyStageHpGrowth : balance.battle.enemyStageAtkGrowth;
+  const earlyRoundGrowth = kind === "hp" ? balance.battle.enemyEarlyHpRoundGrowth : balance.battle.enemyEarlyAtkRoundGrowth;
+  const earlyStageGrowth = kind === "hp" ? balance.battle.enemyEarlyStageHpGrowth : balance.battle.enemyEarlyStageAtkGrowth;
+  const midRoundGrowth = kind === "hp" ? balance.battle.enemyMidHpRoundGrowth : balance.battle.enemyMidAtkRoundGrowth;
+  const midStageGrowth = kind === "hp" ? balance.battle.enemyMidStageHpGrowth : balance.battle.enemyMidStageAtkGrowth;
   const postRoundGrowth = kind === "hp" ? balance.battle.enemyPostCapHpRoundGrowth : balance.battle.enemyPostCapAtkRoundGrowth;
   const postStageGrowth = kind === "hp" ? balance.battle.enemyPostCapHpStageGrowth : balance.battle.enemyPostCapAtkStageGrowth;
   const round = state.round;
   const stage = enemyDifficultyStage();
-  if (round <= releaseRound) {
-    return Math.min(cap, base + round * roundGrowth + stage * stageGrowth);
+  const earlyStage = Math.floor((earlyEndRound - 1) / interval);
+  const earlyScale = base + earlyEndRound * earlyRoundGrowth + earlyStage * earlyStageGrowth;
+
+  if (round <= earlyEndRound) {
+    return Math.min(cap, base + round * earlyRoundGrowth + stage * earlyStageGrowth);
   }
-  const releaseStage = Math.floor((releaseRound - 1) / balance.battle.bossInterval);
+  if (round <= releaseRound) {
+    const elapsedRounds = round - earlyEndRound;
+    const elapsedStages = Math.max(0, stage - earlyStage);
+    return Math.min(cap, earlyScale + elapsedRounds * midRoundGrowth + elapsedStages * midStageGrowth);
+  }
+  const releaseStage = Math.floor((releaseRound - 1) / interval);
   return cap + (round - releaseRound) * (postRoundGrowth ?? 0) + Math.max(0, stage - releaseStage) * (postStageGrowth ?? 0);
 }
 
