@@ -242,6 +242,7 @@
         9
       ]
     ],
+    "enemyMinimumTierAfterRound": 90,
     "enemyComposition": {
       "roleGroups": {
         "frontline": [
@@ -345,12 +346,17 @@
     "bossCycleDefenseGrowth": 0.9,
     "enemyBaseHpScale": 0.85,
     "enemyBaseAtkScale": 0.85,
-    "enemyHpRoundGrowth": 0.017,
-    "enemyAtkRoundGrowth": 0.015,
-    "enemyStageHpGrowth": 0.08,
-    "enemyStageAtkGrowth": 0.125,
-    "enemyHpScaleCap": 3.05,
-    "enemyAtkScaleCap": 3,
+    "enemyHpRoundGrowth": 0.0225,
+    "enemyAtkRoundGrowth": 0.0189,
+    "enemyStageHpGrowth": 0.095,
+    "enemyStageAtkGrowth": 0.14,
+    "enemyHpScaleCap": 3.35,
+    "enemyAtkScaleCap": 3.25,
+    "enemyScaleCapReleaseRound": 90,
+    "enemyPostCapHpRoundGrowth": 0.011,
+    "enemyPostCapAtkRoundGrowth": 0.009,
+    "enemyPostCapHpStageGrowth": 0.045,
+    "enemyPostCapAtkStageGrowth": 0.055,
     "enemyBaseStatsByCost": {
       "1": {
         "hp": 91,

@@ -27,6 +27,7 @@ export function createRefs() {
     benchCount: $("benchCount"),
     temporaryBoosts: $("temporaryBoosts"),
     traits: $("traits"),
+    traitTableToggle: $("traitTableToggle"),
     log: $("log"),
     phase: $("phase"),
     unitDetail: $("unitDetail"),
@@ -60,5 +61,8 @@ export function createRefs() {
     traitRosterMeta: $("traitRosterMeta"),
     traitRosterPanel: $("traitRosterPanel"),
     traitRosterClose: $("traitRosterClose"),
+    traitTableModal: $("traitTableModal"),
+    traitTablePanel: $("traitTablePanel"),
+    traitTableClose: $("traitTableClose"),
   };
 }

@@ -61,8 +61,13 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     const trait = event.target.closest(".trait")?.dataset.trait;
     if (trait) actions.openTraitRoster(trait);
   });
+  refs.traitTableToggle?.addEventListener("click", actions.openTraitTable);
   refs.traitRosterClose.addEventListener("click", actions.closeTraitRoster);
   refs.traitRosterModal.addEventListener("click", (event) => {
     if (event.target === refs.traitRosterModal) actions.closeTraitRoster();
+  });
+  refs.traitTableClose?.addEventListener("click", actions.closeTraitTable);
+  refs.traitTableModal?.addEventListener("click", (event) => {
+    if (event.target === refs.traitTableModal) actions.closeTraitTable();
   });
 }

@@ -7,9 +7,9 @@
     "trait": "수호",
     "color": "#9b6a48",
     "maxHp": 450,
-    "atk": 26,
-    "speed": 0.82,
-    "skillAmp": 14,
+    "atk": 38,
+    "speed": 0.9,
+    "skillAmp": 24,
     "defense": 10,
     "skill": "육중한 포효",
     "art": "./assets/bosses/boss_mutant_bear.png"

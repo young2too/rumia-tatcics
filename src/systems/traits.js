@@ -1,10 +1,17 @@
 export function createTraitController({ state, traitRules, boardUnits }) {
+  function unitTraits(unit) {
+    const traits = Array.isArray(unit.traits) && unit.traits.length ? unit.traits : [unit.trait];
+    return Array.from(new Set(traits.filter(Boolean)));
+  }
+
   function activeTraits() {
     const counts = {};
     const uniqueByTrait = {};
     for (const unit of boardUnits()) {
-      uniqueByTrait[unit.trait] ||= new Set();
-      uniqueByTrait[unit.trait].add(unit.name);
+      for (const trait of unitTraits(unit)) {
+        uniqueByTrait[trait] ||= new Set();
+        uniqueByTrait[trait].add(unit.name);
+      }
     }
     for (const [trait, names] of Object.entries(uniqueByTrait)) counts[trait] = names.size;
     return counts;
@@ -34,13 +41,30 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       damageReduction: unit.damageReduction ?? 0,
       manaGain: unit.manaGain ?? 1,
       skillTargets: unit.skillTargets ?? 2,
+      rangeBonus: unit.rangeBonus ?? 0,
+      maxManaReduction: unit.maxManaReduction ?? 0,
+      extraAttackEvery: unit.extraAttackEvery ?? 0,
+      extraAttackDamageRatio: unit.extraAttackDamageRatio ?? 1,
+      basicAttackExtraTargets: unit.basicAttackExtraTargets ?? 0,
+      healReductionOnHit: unit.healReductionOnHit ?? 0,
+      healReductionTicks: unit.healReductionTicks ?? 0,
+      backlineShieldTargets: unit.backlineShieldTargets ?? 0,
+      backlineShieldRatio: unit.backlineShieldRatio ?? 0,
+      frontlineShieldTargets: unit.frontlineShieldTargets ?? 0,
+      frontlineShieldRatio: unit.frontlineShieldRatio ?? 0,
+      pullBacklineTargets: unit.pullBacklineTargets ?? 0,
+      openingMana: unit.openingMana ?? 0,
+      manaOnHitBonus: unit.manaOnHitBonus ?? 0,
     };
-    const rule = traitRules[unit.trait];
-    const tier = activeTraitTier(rule, counts[unit.trait] || 0);
-    for (const effect of tier?.effects || []) {
-      if (!(effect.stat in stats)) continue;
-      if (Number.isFinite(effect.multiply)) stats[effect.stat] *= effect.multiply;
-      if (Number.isFinite(effect.add)) stats[effect.stat] += effect.add;
+    for (const trait of unitTraits(unit)) {
+      const rule = traitRules[trait];
+      const tier = activeTraitTier(rule, counts[trait] || 0);
+      for (const effect of tier?.effects || []) {
+        if (!(effect.stat in stats)) continue;
+        if (Number.isFinite(effect.set)) stats[effect.stat] = effect.set;
+        if (Number.isFinite(effect.multiply)) stats[effect.stat] *= effect.multiply;
+        if (Number.isFinite(effect.add)) stats[effect.stat] += effect.add;
+      }
     }
     return stats;
   }

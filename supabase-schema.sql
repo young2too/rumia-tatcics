@@ -11,6 +11,12 @@ alter table public.rankings
   add column if not exists ranking_version text;
 
 alter table public.rankings
+  drop constraint if exists rankings_stage_check;
+
+alter table public.rankings
+  add constraint rankings_stage_check check (stage > 0);
+
+alter table public.rankings
   drop constraint if exists rankings_ranking_version_check;
 
 alter table public.rankings
@@ -45,3 +51,5 @@ create policy "rankings can be submitted by everyone"
       or char_length(ranking_version) between 1 and 40
     )
   );
+
+drop policy if exists "rankings can be inserted by server only" on public.rankings;

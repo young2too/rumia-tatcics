@@ -1,3 +1,5 @@
+import { clearRankingRecordsCache } from "../data/rankings.js";
+
 export function createRankingController({ state, refs, rankingConfig, rankingStorageKey, renderRanking, render }) {
   let memoryRankings = [];
   const rankingLimit = Number(rankingConfig.limit) || 100;
@@ -210,11 +212,12 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
             }),
           });
         }
-        if (!response.ok) throw new Error(`\uB7AD\uD0B9 \uB4F1\uB85D \uC2E4\uD328 (${response.status})`);
+        if (!response.ok) throw new Error(`랭킹 등록 실패 (${response.status})`);
         const rows = await response.json();
         const savedEntry = normalizeRankingEntry(rows[0] || entry);
         state.rankingSubmitted = true;
         refs.rankName.value = "";
+        clearRankingRecordsCache();
         await loadRankings(true);
         const shownOutsideSortedList = rememberSubmittedEntry(savedEntry);
         state.rankingError = shownOutsideSortedList

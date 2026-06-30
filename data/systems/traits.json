@@ -3,7 +3,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "난투형 공격력 +24%, 체력 +16%, 방어 +12%, 받는 피해 -8%",
+        "text": "맹공형 공격력 +24%, 체력 +16%, 방어 +12%, 받는 피해 -8%",
         "effects": [
           {
             "stat": "atk",
@@ -25,7 +25,7 @@
       },
       {
         "need": 4,
-        "text": "난투형 공격력 +62%, 체력 +34%, 방어 +25%, 받는 피해 -16%",
+        "text": "맹공형 공격력 +62%, 체력 +34%, 방어 +25%, 받는 피해 -16%",
         "effects": [
           {
             "stat": "atk",
@@ -47,7 +47,7 @@
       },
       {
         "need": 6,
-        "text": "난투형 공격력 +110%, 체력 +56%, 방어 +38%, 받는 피해 -24%",
+        "text": "맹공형 공격력 +110%, 체력 +56%, 방어 +38%, 받는 피해 -24%",
         "effects": [
           {
             "stat": "atk",
@@ -69,7 +69,7 @@
       },
       {
         "need": 8,
-        "text": "난투형 공격력 +165%, 체력 +85%, 방어 +55%, 받는 피해 -34%",
+        "text": "맹공형 공격력 +165%, 체력 +85%, 방어 +55%, 받는 피해 -34%",
         "effects": [
           {
             "stat": "atk",
@@ -95,41 +95,57 @@
     "tiers": [
       {
         "need": 2,
-        "text": "사격형 치명 기대값 +26%",
+        "text": "정밀형 공격력 +26%, 치명 확률 +12%",
         "effects": [
           {
             "stat": "atk",
             "multiply": 1.26
+          },
+          {
+            "stat": "critChance",
+            "add": 0.12
           }
         ]
       },
       {
         "need": 4,
-        "text": "사격형 치명 기대값 +62%",
+        "text": "정밀형 공격력 +62%, 치명 확률 +22%",
         "effects": [
           {
             "stat": "atk",
             "multiply": 1.62
+          },
+          {
+            "stat": "critChance",
+            "add": 0.22
           }
         ]
       },
       {
         "need": 6,
-        "text": "사격형 치명 기대값 +105%",
+        "text": "정밀형 공격력 +105%, 치명 확률 +35%",
         "effects": [
           {
             "stat": "atk",
             "multiply": 2.05
+          },
+          {
+            "stat": "critChance",
+            "add": 0.35
           }
         ]
       },
       {
         "need": 8,
-        "text": "사격형 치명 기대값 +160%",
+        "text": "정밀형 공격력 +160%, 치명 확률 +50%",
         "effects": [
           {
             "stat": "atk",
             "multiply": 2.6
+          },
+          {
+            "stat": "critChance",
+            "add": 0.5
           }
         ]
       }
@@ -139,7 +155,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "방패형 체력 +32%, 방어 +14%, 받는 피해 -12%",
+        "text": "수호형 체력 +32%, 방어 +14%, 받는 피해 -12%",
         "effects": [
           {
             "stat": "hp",
@@ -157,7 +173,7 @@
       },
       {
         "need": 4,
-        "text": "방패형 체력 +85%, 방어 +32%, 받는 피해 -24%",
+        "text": "수호형 체력 +85%, 방어 +32%, 받는 피해 -24%",
         "effects": [
           {
             "stat": "hp",
@@ -175,7 +191,7 @@
       },
       {
         "need": 6,
-        "text": "방패형 체력 +145%, 방어 +56%, 받는 피해 -36%",
+        "text": "수호형 체력 +145%, 방어 +56%, 받는 피해 -36%",
         "effects": [
           {
             "stat": "hp",
@@ -193,7 +209,7 @@
       },
       {
         "need": 8,
-        "text": "방패형 체력 +220%, 방어 +85%, 받는 피해 -50%",
+        "text": "수호형 체력 +220%, 방어 +85%, 받는 피해 -50%",
         "effects": [
           {
             "stat": "hp",
@@ -215,7 +231,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "술법형 스킬 피해 +35%, 마나 획득량 +12%, 스킬 3명 타격",
+        "text": "주술형 스킬 피해 +35%, 마나 획득량 +12%, 스킬 3명 타격",
         "effects": [
           {
             "stat": "skillAmp",
@@ -233,7 +249,7 @@
       },
       {
         "need": 4,
-        "text": "술법형 스킬 피해 +80%, 마나 획득량 +25%, 스킬 5명 타격",
+        "text": "주술형 스킬 피해 +80%, 마나 획득량 +25%, 스킬 5명 타격",
         "effects": [
           {
             "stat": "skillAmp",
@@ -251,7 +267,7 @@
       },
       {
         "need": 6,
-        "text": "술법형 스킬 피해 +135%, 마나 획득량 +38%, 스킬 8명 타격",
+        "text": "주술형 스킬 피해 +135%, 마나 획득량 +38%, 스킬 8명 타격",
         "effects": [
           {
             "stat": "skillAmp",
@@ -269,7 +285,7 @@
       },
       {
         "need": 8,
-        "text": "술법형 스킬 피해 +220%, 마나 획득량 +50%, 스킬 전체 타격",
+        "text": "주술형 스킬 피해 +220%, 마나 획득량 +50%, 스킬 전체 타격",
         "effects": [
           {
             "stat": "skillAmp",
@@ -291,7 +307,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "검객형 공격 속도 +24%, 공격 +25%, 체력 +18%, 방어 +14%, 흡혈 +8%",
+        "text": "결투형 공격 속도 +24%, 공격 +18%, 체력 +18%, 방어 +14%, 흡혈 +8%",
         "effects": [
           {
             "stat": "speed",
@@ -299,7 +315,7 @@
           },
           {
             "stat": "atk",
-            "multiply": 1.25
+            "multiply": 1.18
           },
           {
             "stat": "hp",
@@ -317,7 +333,7 @@
       },
       {
         "need": 4,
-        "text": "검객형 공격 속도 +58%, 공격 +55%, 체력 +36%, 방어 +28%, 흡혈 +14%",
+        "text": "결투형 공격 속도 +58%, 공격 +45%, 체력 +36%, 방어 +28%, 흡혈 +14%",
         "effects": [
           {
             "stat": "speed",
@@ -325,7 +341,7 @@
           },
           {
             "stat": "atk",
-            "multiply": 1.55
+            "multiply": 1.45
           },
           {
             "stat": "hp",
@@ -343,7 +359,7 @@
       },
       {
         "need": 6,
-        "text": "검객형 공격 속도 +100%, 공격 +95%, 체력 +58%, 방어 +42%, 흡혈 +21%",
+        "text": "결투형 공격 속도 +100%, 공격 +78%, 체력 +58%, 방어 +42%, 흡혈 +21%",
         "effects": [
           {
             "stat": "speed",
@@ -351,7 +367,7 @@
           },
           {
             "stat": "atk",
-            "multiply": 1.95
+            "multiply": 1.78
           },
           {
             "stat": "hp",
@@ -369,7 +385,7 @@
       },
       {
         "need": 8,
-        "text": "검객형 공격 속도 +145%, 공격 +145%, 체력 +85%, 방어 +58%, 흡혈 +30%",
+        "text": "결투형 공격 속도 +145%, 공격 +115%, 체력 +85%, 방어 +58%, 흡혈 +30%",
         "effects": [
           {
             "stat": "speed",
@@ -377,7 +393,7 @@
           },
           {
             "stat": "atk",
-            "multiply": 2.45
+            "multiply": 2.15
           },
           {
             "stat": "hp",
@@ -395,7 +411,347 @@
       }
     ]
   },
-  "리듬": {
+  "기습": {
+    "tiers": [
+      {
+        "need": 2,
+        "text": "기습형 첫 평타 치명 180%, 치명 확률 +15%",
+        "effects": [
+          {
+            "stat": "openingCritMultiplier",
+            "add": 0.8
+          },
+          {
+            "stat": "critChance",
+            "add": 0.15
+          }
+        ]
+      },
+      {
+        "need": 4,
+        "text": "기습형 첫 평타 치명 220%, 치명 확률 +25%, 공격 속도 +18%",
+        "effects": [
+          {
+            "stat": "openingCritMultiplier",
+            "add": 1.2
+          },
+          {
+            "stat": "critChance",
+            "add": 0.25
+          },
+          {
+            "stat": "speed",
+            "multiply": 1.18
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "기습형 첫 평타 치명 260%, 치명 확률 +35%, 공격 속도 +34%",
+        "effects": [
+          {
+            "stat": "openingCritMultiplier",
+            "add": 1.6
+          },
+          {
+            "stat": "critChance",
+            "add": 0.35
+          },
+          {
+            "stat": "speed",
+            "multiply": 1.34
+          }
+        ]
+      },
+      {
+        "need": 8,
+        "text": "기습형 첫 평타 치명 320%, 치명 확률 +50%, 공격 속도 +55%",
+        "effects": [
+          {
+            "stat": "openingCritMultiplier",
+            "add": 2.2
+          },
+          {
+            "stat": "critChance",
+            "add": 0.5
+          },
+          {
+            "stat": "speed",
+            "multiply": 1.55
+          }
+        ]
+      }
+    ]
+  },
+  "중장비": {
+    "tiers": [
+      {
+        "need": 3,
+        "text": "후열 2명에게 보호막 12%",
+        "effects": [
+          {
+            "stat": "backlineShieldTargets",
+            "set": 2
+          },
+          {
+            "stat": "backlineShieldRatio",
+            "set": 0.12
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "후열 4명에게 보호막 18%",
+        "effects": [
+          {
+            "stat": "backlineShieldTargets",
+            "set": 4
+          },
+          {
+            "stat": "backlineShieldRatio",
+            "set": 0.18
+          }
+        ]
+      }
+    ]
+  },
+  "원격": {
+    "tiers": [
+      {
+        "need": 3,
+        "text": "스킬 요구 마나 -5",
+        "effects": [
+          {
+            "stat": "maxManaReduction",
+            "set": 5
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "스킬 요구 마나 -10",
+        "effects": [
+          {
+            "stat": "maxManaReduction",
+            "set": 10
+          }
+        ]
+      },
+      {
+        "need": 9,
+        "text": "스킬 요구 마나 -20",
+        "effects": [
+          {
+            "stat": "maxManaReduction",
+            "set": 20
+          }
+        ]
+      }
+    ]
+  },
+  "장악": {
+    "tiers": [
+      {
+        "need": 3,
+        "text": "피해를 입힌 적 치유 감소 30%",
+        "effects": [
+          {
+            "stat": "healReductionOnHit",
+            "set": 0.3
+          },
+          {
+            "stat": "healReductionTicks",
+            "set": 3
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "피해를 입힌 적 치유 감소 55%",
+        "effects": [
+          {
+            "stat": "healReductionOnHit",
+            "set": 0.55
+          },
+          {
+            "stat": "healReductionTicks",
+            "set": 4
+          }
+        ]
+      }
+    ]
+  },
+  "궁술": {
+    "tiers": [
+      {
+        "need": 2,
+        "text": "사거리 +1칸",
+        "effects": [
+          {
+            "stat": "rangeBonus",
+            "set": 1
+          }
+        ]
+      },
+      {
+        "need": 4,
+        "text": "사거리 +2칸",
+        "effects": [
+          {
+            "stat": "rangeBonus",
+            "set": 2
+          }
+        ]
+      }
+    ]
+  },
+  "신속": {
+    "tiers": [
+      {
+        "need": 2,
+        "text": "4회마다 추가 공격",
+        "effects": [
+          {
+            "stat": "extraAttackEvery",
+            "set": 4
+          },
+          {
+            "stat": "extraAttackDamageRatio",
+            "set": 0.75
+          }
+        ]
+      },
+      {
+        "need": 4,
+        "text": "3회마다 추가 공격",
+        "effects": [
+          {
+            "stat": "extraAttackEvery",
+            "set": 3
+          },
+          {
+            "stat": "extraAttackDamageRatio",
+            "set": 0.8
+          }
+        ]
+      }
+    ]
+  },
+  "예술": {
+    "tiers": [
+      {
+        "need": 3,
+        "text": "전열 2명에게 보호막 14%",
+        "effects": [
+          {
+            "stat": "frontlineShieldTargets",
+            "set": 2
+          },
+          {
+            "stat": "frontlineShieldRatio",
+            "set": 0.14
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "전열 4명에게 보호막 22%",
+        "effects": [
+          {
+            "stat": "frontlineShieldTargets",
+            "set": 4
+          },
+          {
+            "stat": "frontlineShieldRatio",
+            "set": 0.22
+          }
+        ]
+      }
+    ]
+  },
+  "전술": {
+    "tiers": [
+      {
+        "need": 3,
+        "text": "적 후열 1명을 아군 진영으로 배달하고 아군이 집중 공격",
+        "effects": [
+          {
+            "stat": "pullBacklineTargets",
+            "set": 1
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "적 후열 2명을 아군 진영으로 배달하고 첫 대상을 집중 공격",
+        "effects": [
+          {
+            "stat": "pullBacklineTargets",
+            "set": 2
+          }
+        ]
+      }
+    ]
+  },
+  "돌파": {
+    "tiers": [
+      {
+        "need": 3,
+        "text": "기본 공격이 사거리 내 추가 적 1명 타격",
+        "effects": [
+          {
+            "stat": "basicAttackExtraTargets",
+            "set": 1
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "기본 공격이 사거리 내 추가 적 2명 타격",
+        "effects": [
+          {
+            "stat": "basicAttackExtraTargets",
+            "set": 2
+          }
+        ]
+      },
+      {
+        "need": 9,
+        "text": "기본 공격이 사거리 내 추가 적 3명 타격",
+        "effects": [
+          {
+            "stat": "basicAttackExtraTargets",
+            "set": 3
+          }
+        ]
+      }
+    ]
+  },
+  "반격": {
+    "tiers": [
+      {
+        "need": 3,
+        "text": "피격 시 마나 획득 +35%",
+        "effects": [
+          {
+            "stat": "manaOnHitBonus",
+            "set": 0.35
+          }
+        ]
+      },
+      {
+        "need": 6,
+        "text": "피격 시 마나 획득 +75%",
+        "effects": [
+          {
+            "stat": "manaOnHitBonus",
+            "set": 0.75
+          }
+        ]
+      }
+    ]
+  },
+  "지원": {
     "tiers": [
       {
         "need": 2,
@@ -462,78 +818,6 @@
           {
             "stat": "healTargets",
             "add": 97
-          }
-        ]
-      }
-    ]
-  },
-  "기습": {
-    "tiers": [
-      {
-        "need": 2,
-        "text": "암살형 첫 평타 치명 180%, 치명 확률 +15%",
-        "effects": [
-          {
-            "stat": "openingCritMultiplier",
-            "add": 0.8
-          },
-          {
-            "stat": "critChance",
-            "add": 0.15
-          }
-        ]
-      },
-      {
-        "need": 4,
-        "text": "암살형 첫 평타 치명 220%, 치명 확률 +25%, 공격 속도 +18%",
-        "effects": [
-          {
-            "stat": "openingCritMultiplier",
-            "add": 1.2
-          },
-          {
-            "stat": "critChance",
-            "add": 0.25
-          },
-          {
-            "stat": "speed",
-            "multiply": 1.18
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "암살형 첫 평타 치명 260%, 치명 확률 +35%, 공격 속도 +34%",
-        "effects": [
-          {
-            "stat": "openingCritMultiplier",
-            "add": 1.6
-          },
-          {
-            "stat": "critChance",
-            "add": 0.35
-          },
-          {
-            "stat": "speed",
-            "multiply": 1.34
-          }
-        ]
-      },
-      {
-        "need": 8,
-        "text": "암살형 첫 평타 치명 320%, 치명 확률 +50%, 공격 속도 +55%",
-        "effects": [
-          {
-            "stat": "openingCritMultiplier",
-            "add": 2.2
-          },
-          {
-            "stat": "critChance",
-            "add": 0.5
-          },
-          {
-            "stat": "speed",
-            "multiply": 1.55
           }
         ]
       }

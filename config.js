@@ -12,6 +12,10 @@ window.LUMIA_TACTICS_CONFIG = {
     majorVersion: "20260624",
     versionColumn: "ranking_version",
   },
+  statistics: {
+    rankingLimit: 1000,
+    cacheMinutes: 5,
+  },
   bgm: {
     src: "./assets/audio/bgm.mp3",
     volume: 0.38,
@@ -19,15 +23,15 @@ window.LUMIA_TACTICS_CONFIG = {
   },
   patchNotes: {
     enabled: true,
-    title: "\uBC38\uB7F0\uC2A4 \uD328\uCE58 \uC548\uB0B4",
+    title: "밸런스 패치 안내",
     version: "20260624",
     date: "2026-06-24",
-    summary: "\uB300\uD615\uD328\uCE58 \uC608\uACE0",
+    summary: "대형패치 예고",
     items: [
-      "\uAC74\uC758\uC0AC\uD56D \uAC8C\uC2DC\uD310\uC744 \uBCF4\uACE0 \uC758\uACAC \uC8FC\uC138\uC694",
-      "\uC0AC\uAC70\uB9AC \uC2DC\uC2A4\uD15C\uC744 \uC190\uBCF4\uB294 \uC911\uC785\uB2C8\uB2E4. \uC0AC\uAC70\uB9AC\uB97C \uAC70\uB9AC\uACC4\uC0B0 \uB9D0\uACE0 \uCE78\uC218\uB85C \uC138\uAC8C \uD574\uC57C\uACA0\uC5B4\uC694",
-      "\uBC84\uC804\uBCC4 \uB7AD\uD0B9 \uC5C5\uB370\uC774\uD2B8",
-      "\uC790\uC138\uD55C \uB0B4\uC6A9\uC740 \uAC74\uC758\uC0AC\uD56D \uAC8C\uC2DC\uD310\uC744 \uCC38\uC870\uD574\uC8FC\uC138\uC694",
+      "건의사항 게시판을 보고 의견 주세요",
+      "사거리 시스템을 손보는 중입니다. 사거리를 거리계산 말고 칸수로 세게 해야겠어요",
+      "버전별 랭킹 업데이트",
+      "자세한 내용은 건의사항 게시판을 참조해주세요",
     ],
   },
 };
