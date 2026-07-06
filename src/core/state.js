@@ -58,6 +58,7 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
     traitRosterOpen: false,
     traitRosterTrait: "",
     traitTableOpen: false,
+    showHiddenTraits: true,
   };
 
   function syncLocalTestGold() {

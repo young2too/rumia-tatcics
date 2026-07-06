@@ -71,6 +71,10 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     if (trait) actions.openTraitRoster(trait);
   });
   refs.traitTableToggle?.addEventListener("click", actions.openTraitTable);
+  refs.hiddenTraitToggle?.addEventListener("click", () => {
+    state.showHiddenTraits = !state.showHiddenTraits;
+    actions.render();
+  });
   refs.traitRosterClose.addEventListener("click", actions.closeTraitRoster);
   refs.traitRosterModal.addEventListener("click", (event) => {
     if (event.target === refs.traitRosterModal) actions.closeTraitRoster();

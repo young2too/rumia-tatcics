@@ -2820,6 +2820,39 @@ h2 {
   background: rgba(106, 169, 255, 0.16);
 }
 
+.trait-panel-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hidden-trait-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid rgba(106, 169, 255, 0.45);
+  border-radius: 7px;
+  background: rgba(106, 169, 255, 0.09);
+  color: #cfe3ff;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.hidden-trait-button:hover {
+  border-color: rgba(106, 169, 255, 0.8);
+  background: rgba(106, 169, 255, 0.16);
+}
+
+.hidden-trait-button.active {
+  border-color: rgba(117, 200, 120, 0.78);
+  background: rgba(117, 200, 120, 0.15);
+  color: #d8ffd9;
+}
+
 .trait-table-dialog {
   width: min(980px, 100%);
   max-height: min(86vh, 820px);

@@ -32,6 +32,7 @@ export function createRefs() {
     temporaryBoosts: $("temporaryBoosts"),
     traits: $("traits"),
     traitTableToggle: $("traitTableToggle"),
+    hiddenTraitToggle: $("hiddenTraitToggle"),
     log: $("log"),
     phase: $("phase"),
     unitDetail: $("unitDetail"),

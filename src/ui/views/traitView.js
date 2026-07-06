@@ -17,6 +17,23 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
     const boardNames = new Set(state.board.filter(Boolean).map((unit) => unit.name));
     const benchNames = new Set(state.bench.filter(Boolean).map((unit) => unit.name));
     refs.traits.innerHTML = "";
+    if (refs.hiddenTraitToggle) {
+      refs.hiddenTraitToggle.classList.toggle("active", state.showHiddenTraits);
+      refs.hiddenTraitToggle.textContent = state.showHiddenTraits ? "히든 ON" : "히든 OFF";
+      refs.hiddenTraitToggle.title = state.showHiddenTraits ? "달성한 히든 시너지 숨기기" : "달성한 히든 시너지 표시";
+    }
+    if (state.showHiddenTraits) {
+      for (const hidden of activeHiddenTraits()) {
+        const row = document.createElement("div");
+        row.className = "trait active hidden-trait";
+        row.dataset.trait = hidden.name;
+        row.innerHTML = `
+          <strong><span>${hidden.name}</span><span><i>상세</i></span></strong>
+          <p>효과는 상세 확인</p>
+        `;
+        refs.traits.append(row);
+      }
+    }
     for (const [trait, rule] of Object.entries(traitRules)) {
       const count = counts[trait] || 0;
       if (count <= 0) continue;
@@ -36,16 +53,6 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
             return `<span class="trait-unit ${ownership}" style="--accent: ${unit.color}" title="${displayNameFor(unit)} · ${unit.cost}코 · ${unit.role} · ${label}">${unit.art ? `<img src="${unit.art}" alt="${displayNameFor(unit)}">` : displayNameFor(unit).slice(0, 1)}</span>`;
           }).join("")}
         </div>
-      `;
-      refs.traits.append(row);
-    }
-    for (const hidden of activeHiddenTraits()) {
-      const row = document.createElement("div");
-      row.className = "trait active hidden-trait";
-      row.dataset.trait = hidden.name;
-      row.innerHTML = `
-        <strong><span>${hidden.name}</span><span><i>상세</i></span></strong>
-        <p>효과는 상세 확인</p>
       `;
       refs.traits.append(row);
     }
