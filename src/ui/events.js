@@ -1,4 +1,13 @@
 export function bindUiEvents({ $, refs, state, balance, actions }) {
+  refs.debugRecruitUnit?.addEventListener("click", () => {
+    actions.debugRecruitUnit(refs.debugUnitSearch.value);
+    refs.debugUnitSearch.value = "";
+  });
+  refs.debugUnitSearch?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    actions.debugRecruitUnit(refs.debugUnitSearch.value);
+    refs.debugUnitSearch.value = "";
+  });
   $("reroll").addEventListener("click", () => {
     if (state.busy) return;
     if (state.gold < balance.shop.rerollCost) return actions.addLog(`새로고침에는 ${balance.shop.rerollCost} 크레딧이 필요합니다.`);

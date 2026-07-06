@@ -1,0 +1,162 @@
+{
+  "운명의 가약": {
+    "requiredUnits": [
+      "케네스",
+      "가넷"
+    ],
+    "text": "가넷이 케네스를 흡수해 케네스의 시너지 적용 스탯을 1.5배로 얻고 두 스킬을 함께 사용합니다.",
+    "effect": {
+      "type": "absorb",
+      "host": "가넷",
+      "target": "케네스",
+      "statMultiplier": 1.5,
+      "dualSkill": true
+    }
+  },
+  "한국의 정": {
+    "requiredUnits": [
+      "현우",
+      "혜진",
+      "수아",
+      "요한"
+    ],
+    "text": "한국 캐릭터가 쓰러질 때마다 생존한 한국 캐릭터가 최대 체력의 20%를 회복하고 모든 기본 스탯이 10%씩 상승합니다.",
+    "effect": {
+      "type": "deathRally",
+      "healMaxHpRatio": 0.2,
+      "statMultiplier": 1.1
+    }
+  },
+  "일본 스쿼드": {
+    "requiredUnits": [
+      "리오",
+      "유키",
+      "아야",
+      "쇼이치"
+    ],
+    "text": "일본 캐릭터가 적을 처치할 때마다 생존한 일본 캐릭터가 최대 체력의 20%를 회복하고 마나가 최대치까지 회복됩니다.",
+    "effect": {
+      "type": "killRally",
+      "healMaxHpRatio": 0.2,
+      "fillMana": true
+    }
+  },
+  "예술은 폭발이다": {
+    "requiredUnits": [
+      "띠아",
+      "셀린"
+    ],
+    "text": "띠아의 기본 공격이 물감 표식을 남깁니다. 셀린이 스킬을 사용하면 모든 표식이 폭발해 표식과 주변 1칸의 적에게 추가 피해를 줍니다.",
+    "effect": {
+      "type": "paintExplosion",
+      "marker": "띠아",
+      "detonator": "셀린",
+      "range": 1,
+      "skillAmpRatio": 1.5,
+      "atkRatio": 0.5
+    }
+  },
+  "오늘의 만찬": {
+    "requiredUnits": [
+      "쇼우",
+      "일레븐"
+    ],
+    "text": "전투 시작 시 모든 아군의 최대 체력이 15% 증가합니다. 쇼우 또는 일레븐이 쓰러지면 생존 아군 전체가 최대 체력의 20%를 회복합니다.",
+    "effect": {
+      "type": "feast",
+      "teamMaxHpMultiplier": 1.15,
+      "deathHealMaxHpRatio": 0.2
+    }
+  },
+  "너의 이름은": {
+    "requiredUnits": [
+      "띠아",
+      "비앙카"
+    ],
+    "text": "띠아와 비앙카의 이름이 진짜 이름으로 표시됩니다.",
+    "effect": {
+      "type": "rename",
+      "names": {
+        "비앙카": "아피차야 차이파따마",
+        "띠아": "피라야 사하사코몰"
+      }
+    }
+  },
+  "죽어주시죠": {
+    "requiredUnits": [
+      "쇼이치",
+      "루크"
+    ],
+    "text": "쇼이치 또는 루크가 적을 처치하면 다음 표적의 인접 빈칸으로 즉시 이동합니다.",
+    "effect": {
+      "type": "killBlink",
+      "units": [
+        "쇼이치",
+        "루크"
+      ]
+    }
+  },
+  "낚시꾼과 물고기": {
+    "requiredUnits": [
+      "레녹스",
+      "이렘"
+    ],
+    "text": "이렘이 레녹스의 전술 시너지로 끌어온 적을 처치하면 공격력 +2, 스킬 증폭 +4, 최대 체력 +10을 영구히 얻습니다.",
+    "effect": {
+      "type": "tacticalGrowth",
+      "killer": "이렘",
+      "atk": 2,
+      "skillAmp": 4,
+      "maxHp": 10
+    }
+  },
+  "사냥 개시": {
+    "requiredUnits": [
+      "재키",
+      "나딘",
+      "버니스"
+    ],
+    "text": "재키, 나딘, 버니스가 적을 처치할 때마다 해당 캐릭터의 공격력이 영구적으로 1 증가합니다.",
+    "effect": {
+      "type": "killGrowth",
+      "units": [
+        "재키",
+        "나딘",
+        "버니스"
+      ],
+      "atk": 1
+    }
+  },
+  "둘이서 하나!": {
+    "requiredUnits": [
+      "데비&마를렌",
+      "클로에"
+    ],
+    "text": "전투 시작 시 데비&마를렌과 클로에가 자신의 주위 빈칸에 본체 핵심 능력치의 40%를 가진 분신을 하나씩 소환합니다. 분신은 본체와 같은 스킬을 사용합니다.",
+    "effect": {
+      "type": "cloneSummon",
+      "units": [
+        "데비&마를렌",
+        "클로에"
+      ],
+      "statRatio": 0.4
+    }
+  },
+  "익쮸클루찌브!": {
+    "requiredUnits": [
+      "마이",
+      "리오"
+    ],
+    "text": "마이와 리오를 합쳐 전투당 1회만 발동합니다. 리오의 체력이 20% 이하가 되면 마이 옆으로 이동해 어그로를 해제하고 최대 체력의 20%를 회복합니다. 마이의 체력이 20% 이하가 되면 리오 옆으로 이동해 같은 양을 회복합니다.",
+    "effect": {
+      "type": "exclusiveRescue",
+      "units": [
+        "마이",
+        "리오"
+      ],
+      "triggerHpRatio": 0.2,
+      "healMaxHpRatio": 0.2,
+      "aggroReleaseUnit": "리오"
+    }
+  }
+}

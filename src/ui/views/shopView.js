@@ -1,6 +1,6 @@
 import { traitPills } from "./traitHelpers.js";
 
-export function createShopView({ state, refs, balance, buyUnit }) {
+export function createShopView({ state, refs, balance, roster, buyUnit, displayNameFor = (unit) => unit.name }) {
   function shopCardStatus(unit) {
     const owned = [...state.board, ...state.bench].filter((copy) => copy?.name === unit.name);
     if (!owned.length) return { className: "", label: "", stars: "" };
@@ -12,6 +12,17 @@ export function createShopView({ state, refs, balance, buyUnit }) {
   }
 
   function renderShop() {
+    if (refs.debugShop) {
+      refs.debugShop.hidden = !state.debugMode;
+      refs.debugRecruitUnit.disabled = state.busy;
+      if (state.debugMode && !refs.debugUnitList.children.length) {
+        refs.debugUnitList.innerHTML = roster
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name, "ko"))
+          .map((unit) => `<option value="${unit.name}">${unit.cost}코</option>`)
+          .join("");
+      }
+    }
     refs.shop.innerHTML = "";
     for (const [index, unit] of state.shop.entries()) {
       const status = shopCardStatus(unit);
@@ -23,7 +34,7 @@ export function createShopView({ state, refs, balance, buyUnit }) {
         ${status.stars ? `<span class="shop-card-stars">${status.stars}</span>` : ""}
         <span class="portrait">${unit.art ? `<img src="${unit.art}" alt="">` : unit.name.slice(0, 1)}</span>
         <span class="shop-card-main">
-          <strong>${unit.name}</strong>
+          <strong>${displayNameFor(unit)}</strong>
           <span class="shop-card-tags">${traitPills(unit)}</span>
           <small>HP ${unit.maxHp} / 공격 ${unit.atk} / 스증 ${unit.skillAmp}</small>
         </span>

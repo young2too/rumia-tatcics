@@ -1,6 +1,6 @@
 import { traitPills, unitTraitText } from "./traitHelpers.js";
 
-export function createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, render }) {
+export function createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor = (unit) => unit.name, render }) {
   function unitRange(unit) {
     const base = ["사격", "술법", "지원"].includes(unit.role) ? balance.battle.rangedRange : balance.battle.meleeRange;
     return Math.max(1, base + Math.round(unit.rangeBonus || 0));
@@ -76,6 +76,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     node.dataset.unitId = unit.id;
     if (state.selected?.source === source && state.selected?.index === index) node.classList.add("selected");
     if (unit.status) node.classList.add(unit.status);
+    if (displayNameFor(unit) !== unit.name) node.classList.add("renamed-unit");
     if (unit.tacticalTarget) node.classList.add("tactical-target");
     if (unit.hp <= 0) node.classList.add("dead");
     node.style.setProperty("--accent", unit.color);
@@ -83,7 +84,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     node.style.setProperty("--shield", `${Math.max(0, Math.min(100, Math.round(((unit.shield || 0) / unit.maxHp) * 100)))}%`);
     node.style.setProperty("--mana", `${Math.max(0, Math.min(100, Math.round(((unit.mana || 0) / unitMaxMana(unit)) * 100)))}%`);
     node.querySelector(".portrait").innerHTML = unit.art ? `<img src="${unit.art}" alt="">` : unit.name.slice(0, 1);
-    node.querySelector(".name").textContent = unit.name;
+    node.querySelector(".name").textContent = displayNameFor(unit);
     node.querySelector(".meta").innerHTML = compact ? "" : traitPills(unit);
     node.querySelector(".stars").textContent = "★".repeat(unit.tier);
     node.querySelector(".status-badges").innerHTML = statusEffects(unit).map((effect) => `
@@ -91,7 +92,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
         <span>${effect.label}</span><i></i>
       </b>
     `).join("");
-    node.title = `${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}${unit.skillTooltip ? ` - ${unit.skillTooltip}` : ""}`;
+    node.title = `${displayNameFor(unit)} · ${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}${unit.skillTooltip ? ` - ${unit.skillTooltip}` : ""}`;
     node.addEventListener("dragstart", () => {
       state.dragging = { source, index };
       document.body.classList.add("dragging-unit");
@@ -151,7 +152,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     refs.unitDetail.innerHTML = `
       <div class="detail-head" style="--accent: ${unit.color}">
         <span class="portrait">${unit.art ? `<img src="${unit.art}" alt="">` : unit.name.slice(0, 1)}</span>
-        <div><strong>${unit.name}</strong><small>${unit.role} / ${unitTraitText(unit)} / ${unit.weapon}</small></div>
+        <div><strong>${displayNameFor(unit)}</strong><small>${unit.role} / ${unitTraitText(unit)} / ${unit.weapon}</small></div>
       </div>
       <div class="detail-stats">${stats.map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("")}</div>
       <div class="detail-skill"><span>스킬</span><strong>${unit.skill}</strong>${unit.skillTooltip ? `<p>${unit.skillTooltip}</p>` : ""}</div>

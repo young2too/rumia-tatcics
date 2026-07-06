@@ -1,8 +1,9 @@
-import { balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, patchNotesConfig, patchNotesStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
+import { balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, hiddenTraitRules, patchNotesConfig, patchNotesStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
 import { createGameState } from "./src/core/state.js";
 import { createUnitPool, makeUnit as createUnit, sample, sellValue, sleep } from "./src/core/units.js";
 import { createCombatController } from "./src/systems/combat.js";
 import { createProgressionController } from "./src/systems/progression.js";
+import { createHiddenTraitController } from "./src/systems/hiddenTraits.js";
 import { createShopController } from "./src/systems/shop.js";
 import { createTraitController } from "./src/systems/traits.js";
 import { createAudioController } from "./src/ui/audio.js";
@@ -56,12 +57,29 @@ const progression = createProgressionController({ state, balance, addLog, render
 const { addXp, buyXp, grantRoundIncome, levelXpLabel, xpToNextLevel } = progression;
 const traits = createTraitController({ state, traitRules, boardUnits });
 const { activeTraits, activeTraitTier, applySynergy, nextTraitNeed } = traits;
+const hiddenTraits = createHiddenTraitController({ hiddenTraitRules, boardUnits });
+const {
+  activeHiddenTraits,
+  applyAbsorbedStats,
+  combatAbsorptions,
+  prepareDefeatEffects,
+  prepareKillEffects,
+  prepareOpeningEffects,
+  markPaintTarget,
+  consumePaintDetonation,
+  triggerFeastEffects,
+  triggerKillUtilities,
+  triggerExclusiveRescue,
+  triggerDefeatEffects,
+  triggerKillEffects,
+  displayNameFor,
+} = hiddenTraits;
 const shop = createShopController({ state, balance, roster, makeUnit, sample, boardUnits, boardLimit, addLog, render });
-const { buyUnit, moveSelected, moveUnit, rollShop, sellSelectedUnit } = shop;
+const { buyUnit, debugRecruitUnit, moveSelected, moveUnit, rollShop, sellSelectedUnit } = shop;
 
-const unitView = createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, render });
-const shopView = createShopView({ state, refs, balance, buyUnit });
-const traitView = createTraitView({ state, refs, roster, traitRules, ownedUnits, activeTraits, activeTraitTier, nextTraitNeed });
+const unitView = createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor, render });
+const shopView = createShopView({ state, refs, balance, roster, buyUnit, displayNameFor });
+const traitView = createTraitView({ state, refs, roster, traitRules, hiddenTraitRules, ownedUnits, activeTraits, activeHiddenTraits, activeTraitTier, nextTraitNeed, displayNameFor });
 overlayView = createOverlayView({ state, refs, rankingConfig, patchNotesConfig });
 const battlefieldView = createBattlefieldView({
   state,
@@ -87,6 +105,18 @@ combat = createCombatController({
   addLog,
   activeTraits,
   applySynergy,
+  applyAbsorbedStats,
+  combatAbsorptions,
+  prepareDefeatEffects,
+  prepareKillEffects,
+  prepareOpeningEffects,
+  markPaintTarget,
+  consumePaintDetonation,
+  triggerFeastEffects,
+  triggerKillUtilities,
+  triggerExclusiveRescue,
+  triggerDefeatEffects,
+  triggerKillEffects,
   render,
   rollShop,
   addXp,
@@ -155,6 +185,7 @@ bindUiEvents({
   balance,
   actions: {
     addLog,
+    debugRecruitUnit,
     buyTemporaryBoost,
     rollShop,
     render,

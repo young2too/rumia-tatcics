@@ -271,6 +271,58 @@ h2 {
   line-height: 1;
 }
 
+.debug-shop {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px dashed rgba(106, 169, 255, 0.52);
+  border-radius: 8px;
+  background: rgba(106, 169, 255, 0.07);
+}
+
+.debug-shop[hidden] {
+  display: none;
+}
+
+.debug-shop label {
+  display: block;
+  margin-bottom: 5px;
+  color: #a9ceff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.debug-shop > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.debug-shop input,
+.debug-shop button {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid rgba(106, 169, 255, 0.34);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.debug-shop input {
+  padding: 0 9px;
+}
+
+.debug-shop button {
+  padding: 0 10px;
+  color: #bcd8ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.debug-shop button:hover:not(:disabled) {
+  border-color: rgba(106, 169, 255, 0.76);
+  background: rgba(106, 169, 255, 0.16);
+}
+
 .actions {
   display: flex;
   gap: 8px;
@@ -563,6 +615,35 @@ h2 {
     0 0 8px rgba(255, 255, 255, 0.65),
     0 0 26px rgba(106, 169, 255, 0.82);
   animation-name: shield-pop;
+}
+
+.projectile.paint-mark {
+  width: 34px;
+  height: 22px;
+  margin: -11px 0 0 -17px;
+  border: 4px solid rgba(80, 224, 203, 0.92);
+  border-right-color: rgba(255, 102, 178, 0.95);
+  border-bottom-color: rgba(255, 211, 92, 0.92);
+  background: rgba(122, 89, 255, 0.12);
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.72),
+    0 0 18px rgba(80, 224, 203, 0.64),
+    0 0 26px rgba(255, 102, 178, 0.44);
+  animation: paint-mark-pop 620ms ease-out forwards;
+}
+
+.projectile.paint-explosion {
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border: 5px solid rgba(255, 238, 145, 0.96);
+  background:
+    conic-gradient(from 25deg, #ff65ad, #ffd35c, #50e0cb, #7a59ff, #ff65ad);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.95),
+    0 0 28px rgba(255, 101, 173, 0.88),
+    0 0 44px rgba(80, 224, 203, 0.62);
+  animation: paint-explosion-pop 760ms cubic-bezier(0.12, 0.7, 0.2, 1) forwards;
 }
 
 .damage-number {
@@ -998,6 +1079,28 @@ h2 {
 .unit.moving {
   border-color: var(--teal);
   animation: unit-step 340ms ease-in-out;
+}
+
+.damage-number.paint-explosion {
+  color: #fff0a6;
+  font-size: 17px;
+  -webkit-text-stroke: 1px #6c298c;
+  text-shadow:
+    0 2px 0 #6c298c,
+    0 0 8px rgba(255, 101, 173, 0.95),
+    0 0 16px rgba(80, 224, 203, 0.8);
+}
+
+@keyframes paint-mark-pop {
+  0% { opacity: 0; transform: scale(0.35) rotate(-30deg); }
+  35% { opacity: 1; transform: scale(1.15) rotate(12deg); }
+  100% { opacity: 0; transform: scale(0.82) rotate(25deg); }
+}
+
+@keyframes paint-explosion-pop {
+  0% { opacity: 0; transform: scale(0.22) rotate(0deg); }
+  28% { opacity: 1; transform: scale(1.15) rotate(55deg); }
+  100% { opacity: 0; transform: scale(3.2) rotate(150deg); filter: blur(1px); }
 }
 
 .unit.tactical-pulled {
@@ -1678,6 +1781,12 @@ h2 {
   font-size: 13px;
 }
 
+.bench-slot .unit.renamed-unit .name {
+  font-size: 10px;
+  line-height: 1.15;
+  white-space: normal;
+}
+
 .bench-slot .unit .meta {
   align-content: start;
   max-height: 36px;
@@ -1963,6 +2072,17 @@ h2 {
   scrollbar-color: rgba(106, 169, 255, 0.48) rgba(255, 255, 255, 0.05);
 }
 
+.cell .unit.renamed-unit .name {
+  top: 49px;
+  max-width: 78px;
+  overflow: visible;
+  font-size: 8px;
+  line-height: 1.1;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
+}
+
 .traits::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -1992,6 +2112,16 @@ h2 {
   background: rgba(52, 197, 183, 0.08);
 }
 
+.trait.hidden-trait {
+  border-color: rgba(240, 189, 84, 0.82);
+  background: linear-gradient(135deg, rgba(112, 73, 24, 0.32), rgba(92, 47, 83, 0.24));
+  box-shadow: inset 0 0 18px rgba(240, 189, 84, 0.08);
+}
+
+.trait.hidden-trait strong > span:first-child {
+  color: #ffe2a3;
+}
+
 .trait:hover {
   border-color: rgba(240, 189, 84, 0.58);
   background: rgba(240, 189, 84, 0.06);
@@ -2008,6 +2138,18 @@ h2 {
   display: inline-flex;
   gap: 6px;
   align-items: center;
+}
+
+.trait strong span:last-child > b {
+  padding: 2px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .trait strong i {
@@ -2065,7 +2207,7 @@ h2 {
   font-weight: 800;
 }
 
-.trait-unit.owned {
+.trait-unit.fielded {
   border-color: rgba(117, 200, 120, 0.95);
   box-shadow:
     0 0 0 1px rgba(10, 16, 14, 0.65),
@@ -2082,6 +2224,13 @@ h2 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.trait-unit.benched {
+  border-color: rgba(240, 189, 84, 0.96);
+  box-shadow:
+    0 0 0 1px rgba(24, 18, 8, 0.68),
+    0 0 8px rgba(240, 189, 84, 0.3);
 }
 
 .log-wrap {
@@ -2197,9 +2346,14 @@ h2 {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.trait-roster-entry.owned {
+.trait-roster-entry.fielded {
   border-color: rgba(117, 200, 120, 0.72);
   background: rgba(117, 200, 120, 0.08);
+}
+
+.trait-roster-entry.benched {
+  border-color: rgba(240, 189, 84, 0.72);
+  background: rgba(240, 189, 84, 0.08);
 }
 
 .trait-roster-entry .portrait {
@@ -2213,6 +2367,17 @@ h2 {
 
 .trait-roster-entry strong {
   display: block;
+}
+
+.hidden-trait-description {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(240, 189, 84, 0.46);
+  border-radius: 8px;
+  background: rgba(240, 189, 84, 0.08);
+  color: #f7ead0;
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .trait-roster-tags {
@@ -2249,8 +2414,12 @@ h2 {
   font-size: 12px;
 }
 
-.trait-roster-entry.owned b {
+.trait-roster-entry.fielded b {
   color: var(--green);
+}
+
+.trait-roster-entry.benched b {
+  color: var(--gold);
 }
 
 .trait-roster-empty {
@@ -2730,9 +2899,14 @@ h2 {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.trait-table-unit.owned {
+.trait-table-unit.fielded {
   border-color: rgba(117, 200, 120, 0.72);
   background: rgba(117, 200, 120, 0.08);
+}
+
+.trait-table-unit.benched {
+  border-color: rgba(240, 189, 84, 0.72);
+  background: rgba(240, 189, 84, 0.08);
 }
 
 .trait-table-unit.missing {

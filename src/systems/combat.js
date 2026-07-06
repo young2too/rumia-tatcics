@@ -13,6 +13,18 @@ export function createCombatController(context) {
     addLog,
     activeTraits,
     applySynergy,
+    applyAbsorbedStats,
+    combatAbsorptions,
+    prepareDefeatEffects,
+    prepareKillEffects,
+    prepareOpeningEffects,
+    markPaintTarget,
+    consumePaintDetonation,
+    triggerFeastEffects,
+    triggerKillUtilities,
+    triggerExclusiveRescue,
+    triggerDefeatEffects,
+    triggerKillEffects,
     render,
     rollShop,
     addXp,
@@ -574,6 +586,105 @@ function hexNeighborSteps(x, y) {
   return steps;
 }
 
+function moveNextToUnit(unit, anchor) {
+  if (!state.combatGrid || unit.hp <= 0 || anchor.hp <= 0) return false;
+  const from = unitSlot(unit);
+  const anchorSlot = unitSlot(anchor);
+  if (!from || !anchorSlot) return false;
+  if (hexDistanceSlots(from, anchorSlot) === 1) return true;
+  const destination = hexNeighborSteps(anchorSlot.x, anchorSlot.y)
+    .map((step) => ({ x: anchorSlot.x + step.x, y: anchorSlot.y + step.y }))
+    .map((slot) => ({ ...slot, index: slotIndexFor(unit.side, slot.x, slot.y, true) }))
+    .filter((slot) => slot.index >= 0 && !state.combatGrid[slot.index])
+    .sort((a, b) => hexDistanceSlots(from, a) - hexDistanceSlots(from, b) || a.index - b.index)[0];
+  if (!destination) return false;
+  state.combatGrid[from.index] = null;
+  state.combatGrid[destination.index] = unit;
+  unit.status = "moving";
+  return true;
+}
+
+function resolveExclusiveRescue(target) {
+  const units = state.combatGrid?.filter(Boolean) || [];
+  const rescue = triggerExclusiveRescue(target, units);
+  if (!rescue) return;
+  moveNextToUnit(rescue.unit, rescue.partner);
+  if (rescue.releaseAggro) {
+    for (const enemy of units.filter((unit) => unit.side !== rescue.unit.side)) {
+      if (enemy.focusTargetId === rescue.unit.id) enemy.focusTargetId = null;
+      if (enemy.forcedFocusTargetId === rescue.unit.id) enemy.forcedFocusTargetId = null;
+      enemy.hasPickedOpeningTarget = false;
+    }
+  }
+  const heal = applyHeal(rescue.unit, rescue.unit.maxHp * rescue.healRatio);
+  state.pendingHiddenEffects ||= [];
+  if (heal > 0) state.pendingHiddenEffects.push(combatEffect(rescue.unit, rescue.unit, "heal", { amount: heal }));
+  addLog(`${rescue.rule.name} 발동: ${rescue.unit.name}이 ${rescue.partner.name} 옆으로 이동해 체력 ${heal} 회복${rescue.releaseAggro ? " / 어그로 해제" : ""}.`);
+}
+
+function summonHiddenClones(allies) {
+  if (!state.combatGrid) return [];
+  const summoned = [];
+  for (const owner of allies.filter((unit) => unit.hiddenCloneSummon)) {
+    const ownerSlot = unitSlot(owner);
+    if (!ownerSlot) continue;
+    const destination = hexNeighborSteps(ownerSlot.x, ownerSlot.y)
+      .map((step) => ({ x: ownerSlot.x + step.x, y: ownerSlot.y + step.y }))
+      .map((slot) => ({ ...slot, index: slotIndexFor(owner.side, slot.x, slot.y, true) }))
+      .filter((slot) => slot.index >= 0 && !state.combatGrid[slot.index])
+      .sort((a, b) => b.y - a.y || Math.abs(a.x - ownerSlot.x) - Math.abs(b.x - ownerSlot.x) || a.index - b.index)[0];
+    if (!destination) continue;
+    const ratio = Math.max(0.1, Number(owner.hiddenCloneSummon.effect.statRatio) || 0.4);
+    const clone = {
+      ...owner,
+      id: `${owner.id}-clone-${Date.now()}-${summoned.length}`,
+      name: "분신",
+      maxHp: Math.max(1, Math.round(owner.maxHp * ratio)),
+      hp: Math.max(1, Math.round(owner.maxHp * ratio)),
+      atk: Math.max(1, Math.round(owner.atk * ratio)),
+      skillAmp: Math.max(0, Math.round(owner.skillAmp * ratio)),
+      defense: Math.max(0, Math.round(owner.defense * ratio)),
+      mana: 0,
+      hiddenClone: true,
+      hiddenCloneOwnerId: owner.id,
+      combatBase: null,
+      status: "moving",
+    };
+    delete clone.hiddenCloneSummon;
+    delete clone.hiddenDefeatEffects;
+    delete clone.hiddenKillEffects;
+    delete clone.hiddenFeastEffects;
+    delete clone.hiddenKillBlink;
+    delete clone.hiddenTacticalGrowth;
+    delete clone.hiddenKillGrowth;
+    state.combatGrid[destination.index] = clone;
+    allies.push(clone);
+    summoned.push({ owner, clone });
+  }
+  return summoned;
+}
+
+function blinkNextToTarget(unit, enemies) {
+  if (!state.combatGrid || unit.hp <= 0) return null;
+  const from = unitSlot(unit);
+  const target = nearestTarget(unit, enemies);
+  const targetSlot = target ? unitSlot(target) : null;
+  if (!from || !target || !targetSlot) return null;
+  const destinations = hexNeighborSteps(targetSlot.x, targetSlot.y)
+    .map((step) => ({ x: targetSlot.x + step.x, y: targetSlot.y + step.y }))
+    .map((slot) => ({ ...slot, index: slotIndexFor(unit.side, slot.x, slot.y, true) }))
+    .filter((slot) => slot.index >= 0 && !state.combatGrid[slot.index])
+    .sort((a, b) => hexDistanceSlots(from, a) - hexDistanceSlots(from, b) || a.index - b.index);
+  const destination = destinations[0];
+  if (!destination) return null;
+  state.combatGrid[from.index] = null;
+  state.combatGrid[destination.index] = unit;
+  unit.focusTargetId = target.id;
+  unit.hasPickedOpeningTarget = true;
+  unit.status = "moving";
+  return target;
+}
+
 function unitsInRange(source, targets, range) {
   return living(targets).filter((unit) => distanceBetween(source, unit) <= range);
 }
@@ -948,6 +1059,7 @@ function dealDamage(source, target, amount) {
   if (absorbed > 0) target.shield = Math.max(0, (target.shield || 0) - absorbed);
   const hpDamage = Math.max(0, damage - absorbed);
   target.hp = Math.max(0, target.hp - hpDamage);
+  resolveExclusiveRescue(target);
   if (source?.healReductionOnHit > 0 && damage > 0 && target.hp > 0) {
     target.healReduction = Math.max(target.healReduction || 0, source.healReductionOnHit);
     target.healReductionRemainingTicks = Math.max(target.healReductionRemainingTicks || 0, source.healReductionTicks || 1);
@@ -956,7 +1068,51 @@ function dealDamage(source, target, amount) {
   const manaFromHit = Math.min(balance.battle.manaPerHit, Math.max(3, Math.round(damage * 0.32)));
   gainMana(target, manaFromHit * (1 + Math.max(0, target.manaOnHitBonus || 0)));
   target.status = target.hp > 0 ? "hit" : "dead";
-  if (target.hp <= 0) removeDeadUnits([target]);
+  if (target.hp <= 0) {
+    const units = state.combatGrid?.filter(Boolean) || [];
+    const rallies = triggerDefeatEffects(target, units);
+    if (rallies.length) {
+      const names = rallies.map(({ unit }) => unit.name).join(", ");
+      addLog(`${rallies[0].rule.name} 발동: ${target.name}의 의지를 이어받아 ${names} 강화.`);
+      state.pendingHiddenEffects ||= [];
+      for (const { unit, heal } of rallies) {
+        if (heal > 0) state.pendingHiddenEffects.push(combatEffect(unit, unit, "heal", { amount: heal }));
+      }
+    }
+    const feastRallies = triggerFeastEffects(target, units);
+    if (feastRallies.length) {
+      const names = feastRallies.map(({ unit }) => unit.name).join(", ");
+      addLog(`${feastRallies[0].rule.name} 발동: ${target.name}의 만찬을 이어받아 ${names} 회복.`);
+      state.pendingHiddenEffects ||= [];
+      for (const { unit, heal } of feastRallies) {
+        if (heal > 0) state.pendingHiddenEffects.push(combatEffect(unit, unit, "heal", { amount: heal }));
+      }
+    }
+    const killRallies = triggerKillEffects(source, units);
+    if (killRallies.length) {
+      const names = killRallies.map(({ unit }) => unit.name).join(", ");
+      addLog(`${killRallies[0].rule.name} 발동: ${source.name}의 처치로 ${names} 체력·마나 회복.`);
+      state.pendingHiddenEffects ||= [];
+      for (const { unit, heal, fillMana } of killRallies) {
+        if (fillMana) unit.mana = unitMaxMana(unit);
+        if (heal > 0) state.pendingHiddenEffects.push(combatEffect(unit, unit, "heal", { amount: heal }));
+      }
+    }
+    const killUtilities = triggerKillUtilities(source, target);
+    removeDeadUnits([target]);
+    for (const utility of killUtilities) {
+      if (utility.type === "killBlink") {
+        const nextTarget = blinkNextToTarget(source, units.filter((unit) => unit.side !== source.side));
+        if (nextTarget) addLog(`${utility.rule.name} 발동: ${source.name}이 ${nextTarget.name}의 옆으로 이동.`);
+      }
+      if (utility.type === "tacticalGrowth") {
+        addLog(`${utility.rule.name} 발동: ${source.name} 공격 +${utility.atk} / 스증 +${utility.skillAmp} / 체력 +${utility.maxHp}.`);
+      }
+      if (utility.type === "killGrowth") {
+        addLog(`${utility.rule.name} 발동: ${source.name} 공격력 영구 +${utility.atk}.`);
+      }
+    }
+  }
   return damage;
 }
 
@@ -1022,10 +1178,12 @@ function basicAttack(attacker, enemies) {
   }
   const hit = basicAttackDamage(attacker, attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier);
   const damage = dealDamage(attacker, target, hit.amount);
+  const paintMark = damage > 0 ? markPaintTarget(attacker, target) : null;
   const lifeStealHeal = applyLifeSteal(attacker, damage);
   gainMana(attacker, balance.battle.manaPerAttack);
   attacker.status = "attacking";
   const effects = [combatEffect(attacker, target, "attack", { amount: damage, critical: hit.critical })];
+  if (paintMark) effects.push({ ...combatEffect(attacker, target, "paint-mark"), kind: "paint-mark" });
   let extraMessage = "";
   if (lifeStealHeal) effects.push(combatEffect(attacker, attacker, "heal", { amount: lifeStealHeal }));
   const pierceTargets = unitsInRange(attacker, enemies, unitAttackRange(attacker))
@@ -1035,9 +1193,11 @@ function basicAttack(attacker, enemies) {
   let pierceTotal = 0;
   for (const pierceTarget of pierceTargets) {
     const pierceDamage = dealDamage(attacker, pierceTarget, hit.amount);
+    const piercePaintMark = pierceDamage > 0 ? markPaintTarget(attacker, pierceTarget) : null;
     pierceTotal += pierceDamage;
     const pierceHeal = applyLifeSteal(attacker, pierceDamage);
     effects.push(combatEffect(attacker, pierceTarget, "attack", { amount: pierceDamage, critical: hit.critical, pierce: true }));
+    if (piercePaintMark) effects.push({ ...combatEffect(attacker, pierceTarget, "paint-mark"), kind: "paint-mark" });
     if (pierceHeal) effects.push(combatEffect(attacker, attacker, "heal", { amount: pierceHeal }));
   }
   if (pierceTargets.length) extraMessage += ` / 돌파 ${pierceTargets.length}명 ${pierceTotal} 피해`;
@@ -1048,9 +1208,11 @@ function basicAttack(attacker, enemies) {
       attacker.atk * attacker.speed * variance * balance.battle.basicDamageMultiplier * attacker.extraAttackDamageRatio
     );
     const extraDamage = dealDamage(attacker, target, extraHit.amount);
+    const extraPaintMark = extraDamage > 0 ? markPaintTarget(attacker, target) : null;
     const extraHeal = applyLifeSteal(attacker, extraDamage);
     gainMana(attacker, balance.battle.manaPerAttack * 0.5);
     effects.push(combatEffect(attacker, target, "attack", { amount: extraDamage, critical: extraHit.critical, extra: true }));
+    if (extraPaintMark) effects.push({ ...combatEffect(attacker, target, "paint-mark"), kind: "paint-mark" });
     if (extraHeal) effects.push(combatEffect(attacker, attacker, "heal", { amount: extraHeal }));
     extraMessage = ` / 신속 추가타 ${extraDamage} 피해${extraHit.critical ? " (치명)" : ""}`;
   }
@@ -1129,17 +1291,10 @@ function castBossSkill(caster, allies, enemies) {
   return null;
 }
 
-function castSkill(caster, allies, enemies) {
-  caster.mana = 0;
-  caster.status = "casting";
+function castRoleSkill(caster, role, allies, enemies, restoreManaOnMove = true) {
   const roleSkills = balance.battle.roleSkills || {};
 
-  if (caster.boss) {
-    const bossAction = castBossSkill(caster, allies, enemies);
-    if (bossAction) return bossAction;
-  }
-
-  if (caster.role === "지원") {
+  if (role === "지원") {
     const healLimit = caster.healTargets >= 99 ? Infinity : Math.max(2, caster.healTargets || 2);
     const targets = living(allies)
       .slice()
@@ -1157,7 +1312,7 @@ function castSkill(caster, allies, enemies) {
     };
   }
 
-  if (caster.role === "술법") {
+  if (role === "술법") {
     const targetLimit = caster.skillTargets >= 99 ? Infinity : Math.max(2, caster.skillTargets || 2);
     const targets = living(enemies)
       .slice()
@@ -1176,7 +1331,7 @@ function castSkill(caster, allies, enemies) {
     };
   }
 
-  if (caster.role === "방패") {
+  if (role === "방패") {
     const rawHeal = Math.round(
       caster.skillAmp * (roleSkills.shieldHealSkillAmp ?? 0.35) +
       caster.defense * (roleSkills.shieldHealDefense ?? 0.55) +
@@ -1193,23 +1348,65 @@ function castSkill(caster, allies, enemies) {
   if (!target) return { message: "", effects: [] };
   if (distanceBetween(caster, target) > Math.max(unitAttackRange(caster), 2)) {
     const moved = moveToward(caster, target);
-    caster.mana = unitMaxMana(caster);
+    if (restoreManaOnMove) caster.mana = unitMaxMana(caster);
     return {
       message: moved ? `${caster.name} 스킬 사거리 접근` : `${caster.name} 대기`,
       effects: [],
     };
   }
-  const scale = caster.role === "암살"
+  const scale = role === "암살"
     ? (roleSkills.assassinSkillScale ?? 2.2)
-    : caster.role === "검객"
+    : role === "검객"
     ? (roleSkills.swordsmanSkillScale ?? 1.85)
-    : caster.role === "사격"
+    : role === "사격"
     ? (roleSkills.rangedSkillScale ?? 1.75)
     : (roleSkills.defaultSkillScale ?? 1.6);
   const damage = dealDamage(caster, target, caster.atk * 0.75 + caster.skillAmp * scale + 10);
   return {
     message: `${caster.name} 스킬: ${target.name} ${damage} 피해`,
     effects: [combatEffect(caster, target, "skill", { amount: damage })],
+  };
+}
+
+function detonatePaint(caster, enemies) {
+  const detonation = consumePaintDetonation(caster, living(enemies));
+  if (!detonation) return null;
+  const range = Number(detonation.rule.effect.range) || 1;
+  const targets = living(enemies).filter((target) =>
+    detonation.centers.some((center) => distanceBetween(center, target) <= range)
+  );
+  const amount = caster.skillAmp * (Number(detonation.rule.effect.skillAmpRatio) || 0)
+    + caster.atk * (Number(detonation.rule.effect.atkRatio) || 0);
+  let total = 0;
+  const effects = [];
+  for (const target of targets) {
+    const damage = dealDamage(caster, target, amount);
+    total += damage;
+    effects.push({
+      ...combatEffect(caster, target, "paint-explosion", { amount: damage, paintExplosion: true }),
+      kind: "paint-explosion",
+    });
+  }
+  return { message: `${detonation.rule.name}: 물감 폭발 ${targets.length}명 ${total} 피해`, effects };
+}
+
+function castSkill(caster, allies, enemies) {
+  caster.mana = 0;
+  caster.status = "casting";
+  if (caster.boss) {
+    const bossAction = castBossSkill(caster, allies, enemies);
+    if (bossAction) return bossAction;
+  }
+
+  const paint = detonatePaint(caster, enemies);
+  const primary = castRoleSkill(caster, caster.role, allies, enemies);
+  if (!caster.fusedSkillRole) {
+    return paint ? { message: `${paint.message} / ${primary.message}`, effects: [...paint.effects, ...primary.effects] } : primary;
+  }
+  const fused = castRoleSkill(caster, caster.fusedSkillRole, allies, enemies, false);
+  return {
+    message: `${paint ? `${paint.message} / ` : ""}${primary.message} / 운명의 가약: ${caster.fusedSkillName} 동시 발동 · ${fused.message}`,
+    effects: [...(paint?.effects || []), ...primary.effects, ...fused.effects],
   };
 }
 
@@ -1236,8 +1433,9 @@ function playCombatEffects(effects) {
     const projectile = document.createElement("span");
     const kind = effect.kind || effect.type;
     projectile.className = `projectile ${effect.type} ${kind}`;
-    const originX = kind === "slash" ? endX : startX;
-    const originY = kind === "slash" ? endY : startY;
+    const targetImpact = ["slash", "paint-mark", "paint-explosion"].includes(kind);
+    const originX = targetImpact ? endX : startX;
+    const originY = targetImpact ? endY : startY;
     projectile.style.left = `${originX}px`;
     projectile.style.top = `${originY}px`;
     projectile.style.setProperty("--dx", `${endX - startX}px`);
@@ -1249,7 +1447,7 @@ function playCombatEffects(effects) {
     if (effect.value?.amount > 0) {
       const number = document.createElement("span");
       const isPositive = effect.type === "heal" || effect.type === "shield";
-      number.className = `damage-number ${isPositive ? "positive" : "damage"} ${effect.value.critical ? "critical" : ""} ${effect.value.extra ? "extra" : ""}`;
+      number.className = `damage-number ${isPositive ? "positive" : "damage"} ${effect.value.critical ? "critical" : ""} ${effect.value.extra ? "extra" : ""} ${effect.value.paintExplosion ? "paint-explosion" : ""}`;
       number.textContent = `${isPositive ? "+" : ""}${Math.round(effect.value.amount).toLocaleString("ko-KR")}`;
       const extraOffset = effect.value.extra ? 18 : 0;
       number.style.left = `${toRect.left + toRect.width / 2 - fieldRect.left + extraOffset}px`;
@@ -1262,11 +1460,12 @@ function playCombatEffects(effects) {
 
 async function simulate() {
   if (state.busy) return;
-  const allies = boardUnits();
-  if (!allies.length) {
+  const boardAllies = boardUnits();
+  if (!boardAllies.length) {
     addLog("보드에 캐릭터를 배치해야 합니다.");
     return;
   }
+  const allies = boardAllies.slice();
   const battleRound = state.round;
   const originalBoard = state.board.slice();
   state.busy = true;
@@ -1312,14 +1511,32 @@ async function simulate() {
     unit.openingCritMultiplier = critBase.openingCritMultiplier;
   });
   allies.forEach((unit) => prepareCombatUnit(unit, "ally", traitCounts));
+  const absorptions = combatAbsorptions(allies);
+  for (const { rule, host, target } of absorptions) {
+    applyAbsorbedStats(host, target, rule.effect);
+    host.mana = Math.min(unitMaxMana(host), host.openingMana || 0);
+    target.hiddenAbsorbed = true;
+    const targetIndex = allies.indexOf(target);
+    if (targetIndex >= 0) allies.splice(targetIndex, 1);
+    addLog(`${rule.name} 발동: ${host.name}이 ${target.name}를 흡수했습니다.`);
+  }
+  prepareDefeatEffects(allies);
+  prepareKillEffects(allies);
+  const openingHiddenEffects = prepareOpeningEffects(allies);
+  for (const rule of openingHiddenEffects) addLog(`${rule.name} 발동.`);
+  state.pendingHiddenEffects = [];
   state.enemies.filter(Boolean).forEach((unit) => prepareCombatUnit(unit, "enemy"));
   state.combatGrid = Array(48).fill(null);
   state.enemies.forEach((unit, index) => {
     if (unit) state.combatGrid[index] = unit;
   });
   state.board.forEach((unit, index) => {
-    if (unit) state.combatGrid[16 + index] = unit;
+    if (unit && !unit.hiddenAbsorbed) state.combatGrid[16 + index] = unit;
   });
+  const hiddenClones = summonHiddenClones(allies);
+  if (hiddenClones.length) {
+    addLog(`둘이서 하나! 발동: ${hiddenClones.map(({ owner }) => owner.name).join(", ")} 분신 소환.`);
+  }
   const hasTacticalPull = allies.some((unit) => unit.pullBacklineTargets > 0);
   if (hasTacticalPull) {
     render();
@@ -1367,6 +1584,7 @@ async function simulate() {
       const action = actor.mana >= unitMaxMana(actor) ? castSkill(actor, friends, foes) : basicAttack(actor, foes);
       if (action.message) tickLogs.push(action.message);
       effects.push(...action.effects);
+      if (state.pendingHiddenEffects?.length) effects.push(...state.pendingHiddenEffects.splice(0));
     }
 
     for (const unit of [...living(allies), ...living(state.enemies)]) {
@@ -1401,7 +1619,7 @@ async function simulate() {
   state.round += 1;
   state.combatGrid = null;
   addXp(balance.player.combatXp, "전투 보상");
-  for (const unit of allies) {
+  for (const unit of boardAllies) {
     if (unit.combatBase) {
       unit.maxHp = unit.combatBase.maxHp;
       unit.atk = unit.combatBase.atk;
@@ -1451,10 +1669,27 @@ async function simulate() {
     unit.focusTargetId = null;
     unit.forcedFocusTargetId = null;
     unit.tacticalTarget = false;
+    unit.hiddenAbsorbed = false;
+    unit.hiddenDefeatHandled = false;
+    delete unit.hiddenDefeatEffects;
+    delete unit.hiddenKillEffects;
+    delete unit.hiddenFeastEffects;
+    delete unit.hiddenPaintMarker;
+    delete unit.hiddenPaintDetonator;
+    delete unit.hiddenKillBlink;
+    delete unit.hiddenTacticalGrowth;
+    delete unit.hiddenKillGrowth;
+    delete unit.hiddenCloneSummon;
+    delete unit.hiddenExclusiveRescue;
+    delete unit.hiddenExclusivePartnerId;
+    delete unit.hiddenExclusiveRescueState;
+    delete unit.fusedSkillRole;
+    delete unit.fusedSkillName;
     unit.hasPickedOpeningTarget = false;
     unit.hasUsedOpeningCrit = false;
   }
   state.board = originalBoard;
+  state.pendingHiddenEffects = [];
   state.temporaryBoosts = {
     hp: 0,
     atk: 0,

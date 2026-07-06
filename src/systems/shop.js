@@ -164,6 +164,21 @@ export function createShopController({
     render();
   }
 
+  function debugRecruitUnit(query) {
+    if (!state.debugMode || state.busy) return;
+    const normalized = String(query || "").trim().toLocaleLowerCase("ko");
+    if (!normalized) return addLog("영입할 캐릭터 이름을 입력하세요.");
+    const base = roster.find((unit) => unit.name.toLocaleLowerCase("ko") === normalized)
+      || roster.find((unit) => unit.name.toLocaleLowerCase("ko").includes(normalized));
+    if (!base) return addLog(`'${query}'에 해당하는 캐릭터를 찾지 못했습니다.`);
+    const slot = state.bench.findIndex((unit) => !unit);
+    if (slot < 0) return addLog("벤치가 가득 찼습니다.");
+    state.bench[slot] = makeUnit(base, 1);
+    addLog(`[디버그] ${base.name} 즉시 영입.`);
+    combineAllUnits();
+    render();
+  }
+
   function sellSelectedUnit() {
     if (state.busy || !state.selected) return;
     const arr = state[state.selected.source];
@@ -212,6 +227,7 @@ export function createShopController({
   return {
     buyUnit,
     combineAllUnits,
+    debugRecruitUnit,
     moveSelected,
     moveUnit,
     rollShop,

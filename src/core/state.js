@@ -3,6 +3,7 @@ const LOCAL_TEST_GOLD = 999999;
 export function createGameState({ balance, roster, createUnitPool, communityBoardConfig }) {
   const localTest = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
   const state = {
+    debugMode: localTest,
     round: 1,
     hp: balance.player.startHp,
     gold: localTest ? LOCAL_TEST_GOLD : balance.player.startGold,
