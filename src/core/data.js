@@ -20,6 +20,7 @@ export const uiSettings = structuredClone(uiSettingsData);
 export const rankingStorageKey = uiSettings.rankingStorageKey;
 export const communityBoardStorageKey = uiSettings.communityBoardStorageKey;
 export const patchNotesStorageKey = uiSettings.patchNotesStorageKey;
+export const gameSaveStorageKey = uiSettings.gameSaveStorageKey || "lumia-tactics-game-save";
 export const communityBoardConfig = {
   ...uiSettings.communityBoard,
   url: window.LUMIA_TACTICS_CONFIG?.supabase?.url,
