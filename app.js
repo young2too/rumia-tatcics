@@ -1,5 +1,6 @@
-import { balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, hiddenTraitRules, patchNotesConfig, patchNotesStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
+import { balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, gameSaveStorageKey, hiddenTraitRules, patchNotesConfig, patchNotesStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
 import { createGameState } from "./src/core/state.js";
+import { createSaveController } from "./src/core/save.js";
 import { createUnitPool, makeUnit as createUnit, sample, sellValue, sleep } from "./src/core/units.js";
 import { createCombatController } from "./src/systems/combat.js";
 import { createProgressionController } from "./src/systems/progression.js";
@@ -31,7 +32,11 @@ const temporaryBoostPercent = (stat) => Math.round((state.temporaryBoosts?.[stat
 let gameView;
 let overlayView;
 let combat;
-const render = () => gameView?.render();
+let saveController;
+const render = () => {
+  gameView?.render();
+  saveController?.saveNow();
+};
 const renderRanking = () => overlayView?.renderRanking();
 
 function addLog(text) {
@@ -40,6 +45,9 @@ function addLog(text) {
   refs.log.prepend(item);
   while (refs.log.children.length > 9) refs.log.lastChild.remove();
 }
+
+saveController = createSaveController({ state, balance, storageKey: gameSaveStorageKey, addLog });
+const restoredGame = saveController.restoreSave();
 
 const audio = createAudioController({ state, refs, bgmConfig });
 const ranking = createRankingController({ state, refs, rankingConfig, rankingStorageKey, renderRanking, render });
@@ -189,7 +197,10 @@ bindUiEvents({
     buyTemporaryBoost,
     rollShop,
     render,
-    simulate: combat.simulate,
+    simulate: () => {
+      saveController?.saveNow();
+      combat.simulate();
+    },
     buyXp,
     sellSelectedUnit,
     toggleBgm: audio.toggleBgm,
@@ -210,4 +221,5 @@ communityBoard.bindCommunityBoardEvents();
 addLog("상점에서 캐릭터를 영입하고 보드로 드래그하세요.");
 loadRankings();
 initPatchNotes();
-rollShop();
+if (restoredGame) render();
+else rollShop();
