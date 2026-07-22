@@ -381,6 +381,9 @@ function unitMaxMana(unit) {
 function gainMana(unit, amount) {
   if (!unit || amount <= 0) return;
   if (unit.shieldDefenseRemainingMs > 0) return;
+  if (unit.peaceRemainingMs > 0) return;
+  if (unit.lifeShareRemainingMs > 0) return;
+  if (unit.immuneRemainingMs > 0) return;
   unit.mana = Math.min(unitMaxMana(unit), (unit.mana || 0) + Math.round(amount * (unit.manaGain || 1)));
 }
 
@@ -1509,7 +1512,6 @@ function basicAttack(attacker, enemies) {
     const extraDamage = dealDamage(attacker, target, extraHit.amount);
     const extraPaintMark = extraDamage > 0 ? markPaintTarget(attacker, target) : null;
     const extraHeal = applyLifeSteal(attacker, extraDamage);
-    gainMana(attacker, balance.battle.manaPerAttack * 0.5);
     effects.push(combatEffect(attacker, target, "attack", { amount: extraDamage, critical: extraHit.critical, extra: true }));
     if (extraPaintMark) effects.push({ ...combatEffect(attacker, target, "paint-mark"), kind: "paint-mark" });
     if (extraHeal) effects.push(combatEffect(attacker, attacker, "heal", { amount: extraHeal }));

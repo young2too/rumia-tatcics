@@ -8,6 +8,7 @@ export function createSkillEffectRenderer() {
   let pixiHost = null;
   let pixiInitPromise = null;
   let pixiFrame = 0;
+  let pixiGeneration = 0;
   const animations = [];
   const pixiAnimations = [];
   let frame = 0;
@@ -79,6 +80,7 @@ export function createSkillEffectRenderer() {
       return pixiApp;
     }
     if (pixiInitPromise) return pixiInitPromise;
+    const generation = pixiGeneration;
     pixiInitPromise = (async () => {
       pixiApp?.destroy(true);
       pixiApp = new Application();
@@ -91,6 +93,11 @@ export function createSkillEffectRenderer() {
         preference: "webgl",
         autoStart: false,
       });
+      if (generation !== pixiGeneration || !layout.battlefield.isConnected) {
+        pixiApp.destroy(true);
+        pixiApp = null;
+        return null;
+      }
       pixiHost = layout.battlefield;
       pixiLayer = pixiApp.canvas;
       pixiLayer.className = "skill-effect-canvas pixi-skill-effect-canvas";
@@ -140,7 +147,7 @@ export function createSkillEffectRenderer() {
       "hart-peacemaker": 1400,
       "sissela-channel": 760,
       "sissela-liberation": 850,
-      "elena-danse-macabre": 820,
+      "elena-danse-macabre": 680,
       "priya-earth-echo": 1250,
       "haze-rocket-launcher": 780,
       "bernice-snare-trap": 760,
@@ -281,13 +288,13 @@ export function createSkillEffectRenderer() {
     graphics.ellipse(center.x, center.y + 8, 52 + progress * 10, 20 + progress * 4);
     pixiFill(graphics, "#7ad6ff", alpha * 0.12);
     pixiStroke(graphics, "#dff8ff", 3, alpha);
-    for (let blade = 0; blade < 6; blade += 1) {
-      const angle = progress * 7 + (Math.PI * 2 * blade) / 6;
+    for (let blade = 0; blade < 4; blade += 1) {
+      const angle = progress * 6 + (Math.PI * 2 * blade) / 4;
       graphics.moveTo(center.x + Math.cos(angle) * 22, center.y + 8 + Math.sin(angle) * 8);
       graphics.lineTo(center.x + Math.cos(angle) * (55 + progress * 10), center.y + 8 + Math.sin(angle) * (22 + progress * 5));
       pixiStroke(graphics, "#ffffff", 2, alpha * 0.8);
     }
-    for (const target of animation.targets) {
+    for (const target of animation.targets.slice(0, 4)) {
       drawPixiImpact(graphics, { x: target.x, y: target.y + 8 }, progress, target === center ? "#f4fdff" : "#aeeeff", target === center ? 22 : 14, target === center ? 0.9 : 0.58);
     }
   }
@@ -660,8 +667,10 @@ export function createSkillEffectRenderer() {
   }
 
   function playPixi(spec, layout, origin, targets, target) {
+    const generation = pixiGeneration;
     ensurePixiLayer(layout)
       .then((app) => {
+        if (generation !== pixiGeneration) return;
         if (!app || pixiHost !== layout.battlefield) return;
         const container = new Container();
         container.blendMode = "add";
@@ -1415,7 +1424,7 @@ export function createSkillEffectRenderer() {
   function drawElenaDanseMacabre(ctx, animation, progress) {
     const center = animation.targets[0];
     if (!center) return;
-    const targets = animation.targets.length ? animation.targets : [center];
+    const targets = animation.targets.length ? animation.targets.slice(0, 4) : [center];
     const alpha = Math.sin(Math.PI * progress);
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
@@ -1425,7 +1434,7 @@ export function createSkillEffectRenderer() {
     ctx.strokeStyle = "#dff8ff";
     ctx.lineWidth = 4;
     ctx.shadowColor = "#6fd9ff";
-    ctx.shadowBlur = 22;
+    ctx.shadowBlur = 10;
     ctx.beginPath();
     ctx.ellipse(0, 0, 52 + progress * 10, 20 + progress * 4, progress * 2.8, 0, Math.PI * 2);
     ctx.fill();
@@ -1433,8 +1442,8 @@ export function createSkillEffectRenderer() {
 
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
-    for (let blade = 0; blade < 8; blade += 1) {
-      const angle = progress * 7 + (Math.PI * 2 * blade) / 8;
+    for (let blade = 0; blade < 4; blade += 1) {
+      const angle = progress * 6 + (Math.PI * 2 * blade) / 4;
       const innerX = Math.cos(angle) * 22;
       const innerY = Math.sin(angle) * 8;
       const outerX = Math.cos(angle) * (55 + progress * 12);
@@ -1461,12 +1470,12 @@ export function createSkillEffectRenderer() {
       ctx.strokeStyle = target === center ? "#f4fdff" : "#aeeeff";
       ctx.lineWidth = target === center ? 4 : 3;
       ctx.shadowColor = "#73dcff";
-      ctx.shadowBlur = target === center ? 20 : 14;
+      ctx.shadowBlur = target === center ? 10 : 6;
       ctx.beginPath();
       ctx.arc(0, 0, target === center ? 24 + progress * 18 : 16 + progress * 12, 0, Math.PI * 2);
       ctx.stroke();
-      for (let flake = 0; flake < 6; flake += 1) {
-        const angle = progress * -5 + (Math.PI * 2 * flake) / 6;
+      for (let flake = 0; flake < 4; flake += 1) {
+        const angle = progress * -5 + (Math.PI * 2 * flake) / 4;
         ctx.beginPath();
         ctx.moveTo(Math.cos(angle) * 5, Math.sin(angle) * 5);
         ctx.lineTo(Math.cos(angle) * (target === center ? 28 : 20), Math.sin(angle) * (target === center ? 28 : 20));
@@ -2019,6 +2028,7 @@ export function createSkillEffectRenderer() {
   }
 
   function clear() {
+    pixiGeneration += 1;
     animations.length = 0;
     for (const animation of pixiAnimations) {
       animation.container.removeFromParent();
