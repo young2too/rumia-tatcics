@@ -125,26 +125,37 @@
               <button id="reroll" class="shop-reroll" title="상점 새로고침">2크레딧 리롤</button>
             </div>
           </div>
-          <div class="shop-wallet">
-            <span>보유 크레딧</span>
-            <strong id="gold">1</strong>
+          <div class="shop-panel-tabs" role="tablist" aria-label="상점 패널">
+              <button id="shopTabShop" class="active" type="button" data-shop-panel-tab="shop">상점</button>
+              <button id="shopTabMetrics" type="button" data-shop-panel-tab="metrics">전투 지표</button>
           </div>
-          <div id="debugShop" class="debug-shop" hidden>
-            <label for="debugUnitSearch">디버그 기물 영입</label>
-            <div>
-              <input id="debugUnitSearch" list="debugUnitList" placeholder="캐릭터 이름 검색" autocomplete="off" />
-              <datalist id="debugUnitList"></datalist>
-              <button id="debugRecruitUnit" type="button">즉시 영입</button>
+          <div id="shopContent" class="shop-content">
+            <div class="shop-wallet">
+              <span>보유 크레딧</span>
+              <strong id="gold">1</strong>
+            </div>
+            <div id="debugShop" class="debug-shop" hidden>
+              <label for="debugUnitSearch">디버그 기물 영입</label>
+              <div>
+                <input id="debugUnitSearch" list="debugUnitList" placeholder="캐릭터 이름 검색" autocomplete="off" />
+                <datalist id="debugUnitList"></datalist>
+                <button id="debugRecruitUnit" type="button">즉시 영입</button>
+              </div>
+              <div class="debug-dummy-tools">
+                <button id="debugDummyToggle" type="button">더미 배치 OFF</button>
+                <button id="debugDummyClear" type="button">더미 초기화</button>
+              </div>
+            </div>
+            <div id="shop" class="shop"></div>
+            <div id="oddsPopover" class="shop-odds" hidden>
+              <div class="panel-title">
+                <h2>상점 확률</h2>
+                <span>기물 풀</span>
+              </div>
+              <div id="shopOdds" class="odds-grid"></div>
             </div>
           </div>
-          <div id="shop" class="shop"></div>
-          <div id="oddsPopover" class="shop-odds" hidden>
-            <div class="panel-title">
-              <h2>상점 확률</h2>
-              <span>기물 풀</span>
-            </div>
-            <div id="shopOdds" class="odds-grid"></div>
-          </div>
+          <div id="combatMetrics" class="combat-metrics" hidden></div>
           <div class="unit-detail">
             <div class="panel-title">
               <h2>유닛 정보</h2>

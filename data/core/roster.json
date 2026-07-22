@@ -15,8 +15,9 @@
     "speed": 1.02,
     "skillAmp": 22,
     "defense": 11,
-    "skill": "힘줄절단",
-    "skillTooltip": "적에게 공격력의 50% 출혈 데미지. 8턴 지속(중첩불가, 지속시간 갱신가능)",
+    "skill": "습격",
+    "skillId": "jackie_assault",
+    "skillTooltip": "재키가 적을 처치하면 다음 목표의 옆 칸으로 도약해 공격력의 65% + 스킬 증폭의 85% + 6 피해를 줍니다.",
     "art": "./assets/characters/001_Jackie.png",
     "active": true
   },
@@ -36,8 +37,9 @@
     "speed": 1.1,
     "skillAmp": 19,
     "defense": 5,
-    "skill": "2연발사격",
-    "skillTooltip": "스증의 200% 데미지",
+    "skill": "2연발 사격",
+    "skillId": "aya_double_burst",
+    "skillTooltip": "푸른 조준선을 따라 두 발을 연속 발사해 각각 공격력의 37.5% + 스킬 증폭의 100% 피해를 줍니다.",
     "art": "./assets/characters/002_Aya.png",
     "active": true
   },
@@ -58,7 +60,8 @@
     "skillAmp": 16,
     "defense": 16,
     "skill": "도그파이트",
-    "skillTooltip": "스증의 200%만큼 회복",
+    "skillId": "hyunwoo_dogfight",
+    "skillTooltip": "자신에게 걸린 상태이상을 해제하고 스킬 증폭의 200%만큼 체력을 회복합니다. 회복량의 35%만큼 보호막을 얻습니다.",
     "art": "./assets/characters/003_Hyunwoo.png",
     "active": true
   },
@@ -79,7 +82,8 @@
     "skillAmp": 34,
     "defense": 4,
     "skill": "삼재",
-    "skillTooltip": "적중 시 스증의 100% 데미지를 주고 4턴간 기절, 1칸 넉백",
+    "skillId": "hyejin_samjae",
+    "skillTooltip": "가까운 적 3명에게 각각 스킬 증폭의 68% + 8 피해를 줍니다. 같은 대상에게 삼재 표식 3개가 쌓이면 1초간 기절시킵니다.",
     "art": "./assets/characters/012_Hyejin.png",
     "active": true
   },
@@ -99,8 +103,9 @@
     "speed": 1,
     "skillAmp": 20,
     "defense": 11,
-    "skill": "빗겨치고일격",
-    "skillTooltip": "공격력의 150% 데미지를 주고 2턴간 기절",
+    "skill": "화무십일홍",
+    "skillId": "yuki_hwamusibilhong",
+    "skillTooltip": "주위 전방위 사거리 2칸, 전방 180도를 스킬 증폭의 200%로 타격합니다. 이후 2턴간 행동을 멈춘 뒤 최초 피격 대상에게 스킬 증폭의 200% 고정 피해를 줍니다.",
     "art": "./assets/characters/011_Yuki.png",
     "active": true
   },
@@ -121,9 +126,11 @@
     "skillAmp": 28,
     "defense": 6,
     "skill": "피스메이커",
-    "skillTooltip": "자신 주위 1칸의 아군의 체력을 4턴간 1이하로 떨어지지 않게 만듬",
+    "skillId": "hart_peacemaker",
+    "skillTooltip": "자신과 주위 1칸의 아군을 1.2초간 체력 1 이하로 떨어지지 않게 합니다. 지속시간 종료 시 스킬 증폭의 95% + 12만큼 회복합니다.",
     "art": "./assets/characters/008_Hart.png",
-    "active": true
+    "active": true,
+    "maxMana": 130
   },
   {
     "name": "쇼이치",
@@ -142,7 +149,8 @@
     "skillAmp": 22,
     "defense": 6,
     "skill": "무자비",
-    "skillTooltip": "",
+    "skillId": "shoichi_dagger_ride",
+    "skillTooltip": "가장 먼 적의 뒤편과 제자리에 단검을 생성합니다. 두 단검 사이를 왕복하며 경로의 모든 적에게 각각 공격력의 30% + 스킬 증폭의 65% 피해를 줍니다.",
     "art": "./assets/characters/017_Shoichi.png",
     "active": true
   },
@@ -163,7 +171,8 @@
     "skillAmp": 18,
     "defense": 10,
     "skill": "취호격파산",
-    "skillTooltip": "",
+    "skillId": "li_dailin_suppression",
+    "skillTooltip": "교전 중인 적을 1초간 기절시키고 공격력의 80% + 스킬 증폭의 90% + 7 피해를 줍니다. 이 공격으로 마나가 차오르지 않습니다.",
     "art": "./assets/characters/010_Li_Dailin.png",
     "active": true
   },
@@ -184,9 +193,11 @@
     "skillAmp": 41,
     "defense": 3,
     "skill": "모두 해방이에요",
-    "skillTooltip": "",
+    "skillId": "sissela_liberation",
+    "skillTooltip": "0.7초간 정신집중 후 모든 적에게 스킬 증폭의 58% + 잃은 체력의 11% + 8 피해를 줍니다.",
     "art": "./assets/characters/014_Sissela.png",
-    "active": true
+    "active": true,
+    "maxMana": 125
   },
   {
     "name": "레녹스",
@@ -204,10 +215,12 @@
     "speed": 0.9,
     "skillAmp": 19,
     "defense": 19,
-    "skill": "위풍당당",
-    "skillTooltip": "",
+    "skill": "날카로운 독니",
+    "skillId": "lenox_sharp_fang",
+    "skillTooltip": "가장 먼 적을 자신 옆으로 끌어온 뒤 1초간 기절시키고 공격력의 35% + 스킬 증폭의 115% + 6 피해를 줍니다.",
     "art": "./assets/characters/020_Lenox.png",
-    "active": true
+    "active": true,
+    "maxMana": 115
   },
   {
     "name": "로지",
@@ -226,7 +239,8 @@
     "skillAmp": 19,
     "defense": 5,
     "skill": "더블샷",
-    "skillTooltip": "",
+    "skillId": "rozzi_double_shot",
+    "skillTooltip": "권총을 빠르게 두 번 발사해 각각 공격력의 50% + 스킬 증폭의 75% 피해를 줍니다.",
     "art": "./assets/characters/021_Rozzi.png",
     "active": true
   },
@@ -246,10 +260,12 @@
     "speed": 0.92,
     "skillAmp": 25,
     "defense": 17,
-    "skill": "익스클루시브",
-    "skillTooltip": "",
+    "skill": "숄 장막",
+    "skillId": "mai_shawl_curtain",
+    "skillTooltip": "스킬 증폭의 125% + 방어력의 160% + 18 보호막을 얻습니다. 1.8초간 보호막이 남아 있으면 받는 피해가 25% 감소합니다.",
     "art": "./assets/characters/045_Mai.png",
-    "active": true
+    "active": true,
+    "maxMana": 115
   },
   {
     "name": "엘레나",
@@ -268,9 +284,11 @@
     "skillAmp": 22,
     "defense": 9,
     "skill": "죽음의 무도",
-    "skillTooltip": "",
+    "skillId": "elena_danse_macabre",
+    "skillTooltip": "교전 중인 적과 주위 1칸에 시전합니다. 중앙 대상은 공격력의 35% + 스킬 증폭의 155% + 6 피해와 1초 기절, 주변 대상은 공격력의 35% + 스킬 증폭의 80% + 6 피해와 행동 지연을 받습니다.",
     "art": "./assets/characters/050_Elena.png",
-    "active": true
+    "active": true,
+    "maxMana": 115
   },
   {
     "name": "아이작",
@@ -288,8 +306,8 @@
     "speed": 1.08,
     "skillAmp": 24,
     "defense": 7,
-    "skill": "검거",
-    "skillTooltip": "",
+    "skill": "착취",
+    "skillTooltip": "아이작의 3번째 공격은 강화되며, 피해량의 70%를 회복합니다",
     "art": "./assets/characters/059_Isaac.png",
     "active": false
   },
@@ -310,9 +328,11 @@
     "skillAmp": 35,
     "defense": 6,
     "skill": "대지의메아리",
-    "skillTooltip": "",
+    "skillId": "priya_earth_echo",
+    "skillTooltip": "0.8초간 정신집중 후 사거리 3칸의 적에게 스킬 증폭의 75% + 9 피해를 주고 0.8초간 기절시킵니다.",
     "art": "./assets/characters/051_Priya.png",
-    "active": true
+    "active": true,
+    "maxMana": 125
   },
   {
     "name": "헤이즈",
@@ -330,8 +350,9 @@
     "speed": 1.12,
     "skillAmp": 28,
     "defense": 6,
-    "skill": "유탄발사기",
-    "skillTooltip": "",
+    "skill": "로켓 런쳐",
+    "skillId": "haze_rocket_launcher",
+    "skillTooltip": "가장 먼 적 1명을 조준해 로켓 4발을 발사합니다. 각 로켓은 대상까지의 경로에 있는 모든 적에게 공격력의 42% + 스킬 증폭의 58% + 5 피해를 줍니다.",
     "art": "./assets/characters/058_Haze.png",
     "active": true
   },
@@ -351,10 +372,12 @@
     "speed": 1.14,
     "skillAmp": 34,
     "defense": 6,
-    "skill": "니나 협공",
-    "skillTooltip": "",
+    "skill": "생명 공유",
+    "skillId": "chloe_life_share",
+    "skillTooltip": "가장 체력이 많은 아군과 3초간 체력을 공유합니다. 공유 중 피해를 받으면 두 유닛의 남은 체력 비율을 다시 맞추며, 합산 체력이 2 이상이면 둘 다 체력 1 아래로 떨어지지 않습니다.",
     "art": "./assets/characters/040_Chloe.png",
-    "active": true
+    "active": true,
+    "maxMana": 140
   },
   {
     "name": "피오라",
@@ -373,10 +396,11 @@
     "skillAmp": 19,
     "defense": 9,
     "skill": "찌르기 연계",
-    "skillTooltip": "",
+    "skillTooltip": "교전 중인 적을 3회 연속으로 찌릅니다. 각 타격은 공격력의 55% + 스킬 증폭의 25% + 3 피해를 줍니다.",
     "artFile": "005_Fiora.png",
     "art": "./assets/characters/005_Fiora.png",
-    "active": true
+    "active": true,
+    "skillId": "fiora_thrust_combo"
   },
   {
     "name": "나딘",
@@ -395,6 +419,7 @@
     "skillAmp": 18,
     "defense": 5,
     "skill": "늑대의 맹습",
+    "skillId": "nadine_wolf_assault",
     "skillTooltip": "",
     "artFile": "006_Nadine.png",
     "art": "./assets/characters/006_Nadine.png",
@@ -416,11 +441,12 @@
     "speed": 0.96,
     "skillAmp": 22,
     "defense": 11,
-    "skill": "뜨거운 맛",
-    "skillTooltip": "",
+    "skill": "식사시간",
+    "skillTooltip": "가장 체력 비율이 낮은 아군 1명을 스킬 증폭의 90% + 18만큼 회복시킵니다. 이번 전투에서 시전할 때마다 힐량이 25%씩 증가합니다.",
     "artFile": "013_Xiukai.png",
     "art": "./assets/characters/013_Xiukai.png",
-    "active": true
+    "active": true,
+    "skillId": "xiukai_hot_taste"
   },
   {
     "name": "매그너스",
@@ -438,8 +464,8 @@
     "speed": 0.88,
     "skillAmp": 15,
     "defense": 15,
-    "skill": "17대1",
-    "skillTooltip": "",
+    "skill": "근성",
+    "skillTooltip": "자신의 체력을 회복하며, 매그너스가 기본 공격 또는 스킬을 쓸 때마다 근성 중첩을 쌓습니다. 최대 10스택 유지, 스택당 방어력과 체력회복량이 증가합니다.",
     "artFile": "004_Magnus.png",
     "art": "./assets/characters/004_Magnus.png",
     "active": false
@@ -460,11 +486,12 @@
     "speed": 1,
     "skillAmp": 35,
     "defense": 4,
-    "skill": "차크람 폭풍",
-    "skillTooltip": "",
+    "skill": "바이바야스트라",
+    "skillTooltip": "교전중인 대상을 향해 회오리를 날립니다. 이동 경로에 있는 적과 대상의 적은 0.5초간 기절에 걸립니다.",
     "artFile": "007_Zahir.png",
     "art": "./assets/characters/007_Zahir.png",
-    "active": true
+    "active": true,
+    "skillId": "zahir_vayvayastra"
   },
   {
     "name": "키아라",
@@ -483,7 +510,7 @@
     "skillAmp": 23,
     "defense": 8,
     "skill": "심판",
-    "skillTooltip": "",
+    "skillTooltip": "가장 체력이 낮은 적을 향해 돌진하며, 이 스킬로 적을 처치하면 마나를 모두 돌려받습니다.",
     "artFile": "015_Chiara.png",
     "art": "./assets/characters/015_Chiara.png",
     "active": false
@@ -504,11 +531,12 @@
     "speed": 1.1,
     "skillAmp": 18,
     "defense": 7,
-    "skill": "무소음 청소기",
-    "skillTooltip": "",
+    "skill": "강박증",
+    "skillTooltip": "자신 주위 1칸의 적을 모두 공격합니다. 대상이 된 적의 수에 비례하여 자신의 잃은 체력을 회복합니다. 체력 회복량은 전체 체력의 40%를 넘지 못합니다.",
     "artFile": "022_Luke.png",
     "art": "./assets/characters/022_Luke.png",
-    "active": true
+    "active": true,
+    "skillId": "luke_obsession"
   },
   {
     "name": "캐시",
@@ -526,8 +554,9 @@
     "speed": 1.14,
     "skillAmp": 20,
     "defense": 6,
-    "skill": "응급 절개",
-    "skillTooltip": "",
+    "skill": "수처",
+    "skillId": "cathy_suture",
+    "skillTooltip": "작은 바늘을 날려 피해를 주고 대상을 2칸 밀어냅니다. 대상이 벽이나 다른 적과 충돌하면 대상과 충돌한 적을 2턴간 속박합니다.",
     "artFile": "023_Cathy.png",
     "art": "./assets/characters/023_Cathy.png",
     "active": true
@@ -548,11 +577,12 @@
     "speed": 1.14,
     "skillAmp": 20,
     "defense": 5,
-    "skill": "기동 사격",
-    "skillTooltip": "",
+    "skill": "스피드건",
+    "skillTooltip": "자신과 교전중인 된 적을 향해 스피드건을 발사합니다. 경로상의 적은 피해를 입고 경로상의 아군은 체력을 회복합니다.",
     "artFile": "018_Silvia.png",
     "art": "./assets/characters/018_Silvia.png",
-    "active": true
+    "active": true,
+    "skillId": "silvia_speed_gun"
   },
   {
     "name": "비앙카",
@@ -571,10 +601,11 @@
     "skillAmp": 44,
     "defense": 6,
     "skill": "진조의 군림",
-    "skillTooltip": "",
+    "skillTooltip": "전장 정중앙으로 이동하며 전장 전체에 데미지를 줍니다. 2.5초 후 한번 더 데미지를 줍니다. 이 스킬은 전투당 1회만 발동합니다",
     "artFile": "042_Bianca.png",
     "art": "./assets/characters/042_Bianca.png",
-    "active": true
+    "active": true,
+    "skillId": "bianca_blood_reign"
   },
   {
     "name": "버니스",
@@ -593,10 +624,11 @@
     "skillAmp": 22,
     "defense": 6,
     "skill": "올가미 덫",
-    "skillTooltip": "",
+    "skillTooltip": "가장 먼 적에게 올가미 덫을 설치해 공격력의 45% + 스킬 증폭의 90% + 8 피해를 주고 2초간 속박합니다.",
     "artFile": "025_Bernice.png",
     "art": "./assets/characters/025_Bernice.png",
-    "active": true
+    "active": true,
+    "skillId": "bernice_snare_trap"
   },
   {
     "name": "바바라",
@@ -636,11 +668,12 @@
     "speed": 1.12,
     "skillAmp": 23,
     "defense": 9,
-    "skill": "유인",
-    "skillTooltip": "",
+    "skill": "정밀폭격",
+    "skillTooltip": "가장 먼 적 위치에 폭격을 1회 떨어뜨려 주위 1칸에 공격력의 25% + 스킬 증폭의 52% + 5 피해를 주고 장판을 생성합니다. 장판은 0.45초마다 3회, 주위 1칸의 적에게 공격력의 12% + 스킬 증폭의 28% + 3 피해를 줍니다.",
     "artFile": "027_Alex.png",
     "art": "./assets/characters/027_Alex.png",
-    "active": true
+    "active": true,
+    "skillId": "alex_precision_bombardment"
   },
   {
     "name": "수아",
@@ -659,10 +692,11 @@
     "skillAmp": 24,
     "defense": 11,
     "skill": "오딧세이",
-    "skillTooltip": "",
+    "skillTooltip": "교전 중인 적과 주위 1칸의 적에게 공격력의 55% + 스킬 증폭의 75% + 6 피해를 주고 0.5초간 둔화시킵니다.",
     "artFile": "028_Sua.png",
     "art": "./assets/characters/028_Sua.png",
-    "active": true
+    "active": true,
+    "skillId": "sua_odyssey"
   },
   {
     "name": "레온",
@@ -681,10 +715,11 @@
     "skillAmp": 20,
     "defense": 11,
     "skill": "잠영",
-    "skillTooltip": "",
+    "skillTooltip": "가장 먼 적 옆으로 잠영해 접근한 뒤 공격력의 55% + 스킬 증폭의 80% + 6 피해를 주고 0.5초간 기절시킵니다.",
     "artFile": "029_Leon.png",
     "art": "./assets/characters/029_Leon.png",
-    "active": true
+    "active": true,
+    "skillId": "leon_submerge"
   },
   {
     "name": "일레븐",
@@ -703,10 +738,11 @@
     "skillAmp": 26,
     "defense": 19,
     "skill": "나 불렀어?",
-    "skillTooltip": "",
+    "skillTooltip": "주위 2칸 안의 적들을 도발하고 자신은 스킬 증폭의 85% + 방어력의 120% + 12 보호막을 얻습니다.",
     "artFile": "030_Eleven.png",
     "art": "./assets/characters/030_Eleven.png",
-    "active": true
+    "active": true,
+    "skillId": "eleven_taunt"
   },
   {
     "name": "리오",
@@ -724,11 +760,12 @@
     "speed": 1.16,
     "skillAmp": 21,
     "defense": 5,
-    "skill": "카에유미",
-    "skillTooltip": "",
+    "skill": "하나레",
+    "skillTooltip": "가장 먼 적을 조준해 화살 2발을 발사합니다. 각 화살은 공격력의 75% + 스킬 증폭의 45% 피해를 줍니다.",
     "artFile": "031_Rio.png",
     "art": "./assets/characters/031_Rio.png",
-    "active": true
+    "active": true,
+    "skillId": "rio_kaeyumi"
   },
   {
     "name": "니키",
@@ -747,10 +784,11 @@
     "skillAmp": 20,
     "defense": 11,
     "skill": "가드 카운터",
-    "skillTooltip": "",
+    "skillTooltip": "0.75초간 가드를 올립니다. 그 동안 피격 시, 다음 평타에는 기절이 추가됩니다. 이 평타로는 마나를 획득하지 못합니다.",
     "artFile": "033_Nicky.png",
     "art": "./assets/characters/033_Nicky.png",
-    "active": true
+    "active": true,
+    "skillId": "nicky_guard_counter"
   },
   {
     "name": "마커스",
@@ -768,8 +806,8 @@
     "speed": 0.88,
     "skillAmp": 20,
     "defense": 15,
-    "skill": "피의 나선",
-    "skillTooltip": "",
+    "skill": "전투 교범",
+    "skillTooltip": "다음 3회의 공격이 강화됩니다. 강화된 피해의 130%를 회복합니다. 이 공격으로 마나를 획득하지 않습니다.",
     "artFile": "053_Markus.png",
     "art": "./assets/characters/053_Markus.png",
     "active": false
@@ -790,11 +828,12 @@
     "speed": 1.16,
     "skillAmp": 23,
     "defense": 11,
-    "skill": "앙쌀란떼",
-    "skillTooltip": "",
+    "skill": "두엔데",
+    "skillTooltip": "바라보는 방향으로 3칸을 이동하며 피해를 입히고, 되돌아오며 피해를 입힙니다. 2회 모두 적중당한 적은 기절합니다.",
     "artFile": "039_Camilo.png",
     "art": "./assets/characters/039_Camilo.png",
-    "active": true
+    "active": true,
+    "skillId": "camilo_duende"
   },
   {
     "name": "아르다",
@@ -812,11 +851,12 @@
     "speed": 1,
     "skillAmp": 44,
     "defense": 7,
-    "skill": "잠들어있는 힘",
-    "skillTooltip": "",
+    "skill": "샤마쉬의 두루마리",
+    "skillTooltip": "자신과 교전중인 적을 향해 두루마리를 발사합니다. 너비는 바라보는 방향 기준으로 3칸이며, 적에게 데미지를 입히며 적중한 아군은 회복합니다",
     "artFile": "066_Arda.png",
     "art": "./assets/characters/066_Arda.png",
-    "active": true
+    "active": true,
+    "skillId": "arda_shamash_scroll"
   },
   {
     "name": "셀린",
@@ -835,10 +875,11 @@
     "skillAmp": 43,
     "defense": 5,
     "skill": "플라즈마 폭발",
-    "skillTooltip": "",
+    "skillTooltip": "교전 중인 적에게 플라즈마를 설치하고 0.45초 후 폭발시킵니다. 대상과 주위 1칸의 적에게 스킬 증폭의 125% + 10 피해를 줍니다.",
     "artFile": "043_Celine.png",
     "art": "./assets/characters/043_Celine.png",
-    "active": true
+    "active": true,
+    "skillId": "celine_plasma_bomb"
   },
   {
     "name": "에키온",
@@ -856,11 +897,12 @@
     "speed": 1.08,
     "skillAmp": 25,
     "defense": 12,
-    "skill": "폭주",
-    "skillTooltip": "",
+    "skill": "독사의 진노",
+    "skillTooltip": "바라보는 방향으로 3칸에 데미지를 주고 1초 뒤 해당 자리에 있는 적을 기절시킵니다",
     "artFile": "044_Echion.png",
     "art": "./assets/characters/044_Echion.png",
-    "active": true
+    "active": true,
+    "skillId": "echion_viper_fury"
   },
   {
     "name": "띠아",
@@ -879,10 +921,11 @@
     "skillAmp": 41,
     "defense": 6,
     "skill": "퍼펙트드로잉",
-    "skillTooltip": "",
+    "skillTooltip": "가까운 적 주변에 물감을 터뜨려 주위 1칸의 적에게 스킬 증폭의 75% + 8 피해를 줍니다. 체력 비율이 가장 낮은 아군을 스킬 증폭의 90% + 10만큼 회복합니다.",
     "artFile": "048_Tia.png",
     "art": "./assets/characters/048_Tia.png",
-    "active": true
+    "active": true,
+    "skillId": "tia_perfect_drawing"
   },
   {
     "name": "아디나",
@@ -900,11 +943,12 @@
     "speed": 1,
     "skillAmp": 46,
     "defense": 5,
-    "skill": "컨정션",
-    "skillTooltip": "",
+    "skill": "트라인 에스펙트",
+    "skillTooltip": "가까운 적 최대 3명에게 각각 투사체를 발사해 스킬 증폭의 70% + 8 피해를 주고, 자신의 마나를 20 회복합니다.",
     "artFile": "052_Adina.png",
     "art": "./assets/characters/052_Adina.png",
-    "active": true
+    "active": true,
+    "skillId": "adina_conjunction"
   },
   {
     "name": "에스텔",
@@ -923,10 +967,11 @@
     "skillAmp": 24,
     "defense": 17,
     "skill": "방패방어",
-    "skillTooltip": "",
+    "skillTooltip": "자신이 교전 중인 방향으로 3초간 방패를 들어 전방 적들의 공격을 자신에게 유도합니다. 이때 받는 피해가 60% 감소합니다. 방패방어가 활성화 중인 동안 마나를 회복하지 않습니다.",
     "artFile": "055_Estelle.png",
     "art": "./assets/characters/055_Estelle.png",
-    "active": false
+    "active": false,
+    "skillId": "estelle_shield_defense"
   },
   {
     "name": "칼라",
@@ -945,10 +990,11 @@
     "skillAmp": 25,
     "defense": 6,
     "skill": "관통 작살",
-    "skillTooltip": "",
+    "skillTooltip": "가장 먼 적 1명을 조준해 작살을 발사합니다. 4번째 시전시 작살을 모두 회수하며 경로의 모든 적을 공격합니다.",
     "artFile": "054_Karla.png",
     "art": "./assets/characters/054_Karla.png",
-    "active": true
+    "active": true,
+    "skillId": "karla_piercing_harpoon"
   },
   {
     "name": "아비게일",
@@ -967,10 +1013,11 @@
     "skillAmp": 28,
     "defense": 11,
     "skill": "호라이즌 클리브",
-    "skillTooltip": "",
+    "skillTooltip": "자신 주변 1칸의 모든 적을 2회 공격합니다",
     "artFile": "067_Abigail.png",
     "art": "./assets/characters/067_Abigail.png",
-    "active": true
+    "active": true,
+    "skillId": "abigail_horizon_cleave"
   },
   {
     "name": "케네스",
@@ -989,10 +1036,11 @@
     "skillAmp": 26,
     "defense": 15,
     "skill": "화염 분쇄",
-    "skillTooltip": "",
+    "skillTooltip": "교전 중인 적과 주위 1칸의 적에게 공격력의 70% + 스킬 증폭의 85% + 8 피해를 주고 총 피해량의 20%를 회복합니다.",
     "artFile": "071_Kenneth.png",
     "art": "./assets/characters/071_Kenneth.png",
-    "active": true
+    "active": true,
+    "skillId": "kenneth_flame_crush"
   },
   {
     "name": "샬럿",
@@ -1011,10 +1059,11 @@
     "skillAmp": 50,
     "defense": 7,
     "skill": "기적 실현",
-    "skillTooltip": "",
+    "skillTooltip": "자신 주변 1칸의 아군을 2초간 무적으로 만듭니다. 무적 상태에서 샬럿은 마나를 획득할 수 없습니다.",
     "artFile": "073_Charlotte.png",
     "art": "./assets/characters/073_Charlotte.png",
-    "active": true
+    "active": true,
+    "skillId": "charlotte_miracle"
   },
   {
     "name": "알론소",
@@ -1033,10 +1082,11 @@
     "skillAmp": 26,
     "defense": 20,
     "skill": "바운싱실드",
-    "skillTooltip": "",
+    "skillTooltip": "정면 방향 3칸까지 방패 파동을 5회 발사합니다. 각 파동은 공격력의 16% + 방어력의 42% + 3 피해를 주며, 3회 이상 적중한 적은 0.5초간 기절합니다.",
     "artFile": "068_Alonso.png",
     "art": "./assets/characters/068_Alonso.png",
-    "active": true
+    "active": true,
+    "skillId": "alonso_bouncing_shield"
   },
   {
     "name": "미르카",
@@ -1055,10 +1105,11 @@
     "skillAmp": 32,
     "defense": 22,
     "skill": "리펄스배리어",
-    "skillTooltip": "",
+    "skillTooltip": "주위 1칸 안의 적을 밀쳐내며 스킬 증폭의 80% + 방어력의 120% + 8 피해를 줍니다. 자신은 1.5초간 보호막을 얻습니다.",
     "artFile": "085_Mirka.png",
     "art": "./assets/characters/085_Mirka.png",
-    "active": true
+    "active": true,
+    "skillId": "mirka_repulse_barrier"
   },
   {
     "name": "비형",
@@ -1077,10 +1128,11 @@
     "skillAmp": 39,
     "defense": 27,
     "skill": "뚝딱!",
-    "skillTooltip": "",
+    "skillTooltip": "다음 기본 공격 2회를 강화합니다. 강화 공격은 공격력의 135% 피해를 주며 마나를 획득하지 않습니다. 2회째 강화 공격은 자신 주변 전방 180도 3칸의 적에게 공격력의 55% + 방어력의 95% + 6 추가 피해를 줍니다.",
     "artFile": "088_Bihyung.png",
     "art": "./assets/characters/088_Bihyung.png",
-    "active": true
+    "active": true,
+    "skillId": "bihyung_ttukttak"
   },
   {
     "name": "가넷",
@@ -1099,10 +1151,11 @@
     "skillAmp": 35,
     "defense": 22,
     "skill": "아이언메이든",
-    "skillTooltip": "",
+    "skillTooltip": "현재 체력 비율이 가장 낮은 적에게 공격력의 25% + 스킬 증폭의 105% + 방어력의 75% 피해를 주고 1.5초간 아이언메이든을 겁니다. 지속 중 대상이 체력 22% 이하가 되면 끌어와 처형합니다.",
     "artFile": "076_Garnet.png",
     "art": "./assets/characters/076_Garnet.png",
-    "active": true
+    "active": true,
+    "skillId": "garnet_iron_maiden"
   },
   {
     "name": "에이든",
@@ -1121,10 +1174,11 @@
     "skillAmp": 25,
     "defense": 11,
     "skill": "라이드더라이트닝!",
-    "skillTooltip": "",
+    "skillTooltip": "가장 먼 적에게 번개처럼 돌진하며 경로상의 적에게 공격력의 60% + 스킬 증폭의 85% + 7 피해를 줍니다.",
     "artFile": "046_Aiden.png",
     "art": "./assets/characters/046_Aiden.png",
-    "active": true
+    "active": true,
+    "skillId": "aiden_ride_lightning"
   },
   {
     "name": "펠릭스",
@@ -1143,10 +1197,11 @@
     "skillAmp": 21,
     "defense": 9,
     "skill": "연계 창술",
-    "skillTooltip": "",
+    "skillTooltip": "교전 중인 적을 3회 찌릅니다. 각 타격은 공격력의 45% + 스킬 증폭의 35% + 3 피해를 줍니다.",
     "artFile": "049_Felix.png",
     "art": "./assets/characters/049_Felix.png",
-    "active": true
+    "active": true,
+    "skillId": "felix_spear_combo"
   },
   {
     "name": "피올로",
@@ -1165,10 +1220,11 @@
     "skillAmp": 23,
     "defense": 11,
     "skill": "쌍절난격",
-    "skillTooltip": "",
+    "skillTooltip": "주위 1칸 안의 모든 적을 4회 난타합니다. 각 타격은 공격력의 26% + 스킬 증폭의 28% + 3 피해를 줍니다.",
     "artFile": "056_Piolo.png",
     "art": "./assets/characters/056_Piolo.png",
-    "active": true
+    "active": true,
+    "skillId": "piolo_nunchaku_flurry"
   },
   {
     "name": "데비&마를렌",
@@ -1187,10 +1243,11 @@
     "skillAmp": 28,
     "defense": 12,
     "skill": "트윈즈러시",
-    "skillTooltip": "",
+    "skillTooltip": "교전 중인 적과 가장 먼 적을 함께 덮쳐 각각 공격력의 65% + 스킬 증폭의 70% + 8 피해를 줍니다.",
     "artFile": "065_Debi&Marlene.png",
     "art": "./assets/characters/065_Debi&Marlene.png",
-    "active": true
+    "active": true,
+    "skillId": "debi_marlene_twins_rush"
   },
   {
     "name": "레니",
@@ -1209,7 +1266,8 @@
     "skillAmp": 32,
     "defense": 6,
     "skill": "바주카!",
-    "skillTooltip": "",
+    "skillId": "leni_carrot_bazooka",
+    "skillTooltip": "체력 비율이 가장 낮은 아군에게 당근 바주카를 발사합니다. 대상은 감소된 지원 회복량으로 체력을 회복하고, 회복량의 25%만큼 중첩되지 않는 보호막을 얻습니다.",
     "artFile": "069_Leni.png",
     "art": "./assets/characters/069_Leni.png",
     "active": true
@@ -1231,10 +1289,11 @@
     "skillAmp": 37,
     "defense": 6,
     "skill": "에너지 필드",
-    "skillTooltip": "",
+    "skillTooltip": "체력 비율이 낮은 아군 3명을 스킬 증폭의 65% + 10만큼 회복하고 1.5초간 보호막을 부여합니다.",
     "artFile": "062_Theodore.png",
     "art": "./assets/characters/062_Theodore.png",
-    "active": true
+    "active": true,
+    "skillId": "theodore_energy_field"
   },
   {
     "name": "요한",
@@ -1253,10 +1312,11 @@
     "skillAmp": 39,
     "defense": 7,
     "skill": "구원의 성역",
-    "skillTooltip": "",
+    "skillTooltip": "주위 2칸의 아군을 스킬 증폭의 55% + 12만큼 회복하고 1초 동안 받는 피해를 감소시키는 보호막을 부여합니다.",
     "artFile": "041_Johann.png",
     "art": "./assets/characters/041_Johann.png",
-    "active": true
+    "active": true,
+    "skillId": "johann_sanctuary"
   },
   {
     "name": "엠마",
@@ -1275,10 +1335,11 @@
     "skillAmp": 36,
     "defense": 4,
     "skill": "마술 모자",
-    "skillTooltip": "",
+    "skillTooltip": "체력 비율이 가장 낮은 적에게 마술 모자를 던져 스킬 증폭의 95% + 10 피해를 주고 1초간 속박합니다.",
     "artFile": "019_Emma.png",
     "art": "./assets/characters/019_Emma.png",
-    "active": true
+    "active": true,
+    "skillId": "emma_magic_hat"
   },
   {
     "name": "다니엘",
@@ -1297,10 +1358,11 @@
     "skillAmp": 25,
     "defense": 7,
     "skill": "역작",
-    "skillTooltip": "",
+    "skillTooltip": "체력 비율이 낮은 적에게 순간이동해 공격력의 90% + 스킬 증폭의 75% + 10 피해를 줍니다. 처치 시 마나를 50 회복합니다.",
     "artFile": "037_Daniel.png",
     "art": "./assets/characters/037_Daniel.png",
-    "active": true
+    "active": true,
+    "skillId": "daniel_masterpiece"
   },
   {
     "name": "슈린",
@@ -1319,10 +1381,11 @@
     "skillAmp": 25,
     "defense": 11,
     "skill": "만검귀종",
-    "skillTooltip": "",
+    "skillTooltip": "주위 1칸 안의 모든 적에게 공격력의 70% + 스킬 증폭의 65% + 7 피해를 줍니다.",
     "artFile": "082_Xuelin.png",
     "art": "./assets/characters/082_Xuelin.png",
-    "active": true
+    "active": true,
+    "skillId": "xuelin_ten_thousand_swords"
   },
   {
     "name": "이렘",
@@ -1341,10 +1404,11 @@
     "skillAmp": 28,
     "defense": 6,
     "skill": "냥냥펀치",
-    "skillTooltip": "",
+    "skillTooltip": "교전 중인 적에게 냥냥펀치를 2회 날려 각각 공격력의 45% + 스킬 증폭의 55% + 4 피해를 줍니다.",
     "artFile": "061_Irem.png",
     "art": "./assets/characters/061_Irem.png",
-    "active": true
+    "active": true,
+    "skillId": "irem_cat_punch"
   },
   {
     "name": "얀",
@@ -1363,10 +1427,11 @@
     "skillAmp": 20,
     "defense": 9,
     "skill": "쿼드라곤",
-    "skillTooltip": "",
+    "skillTooltip": "교전 중인 적을 4회 타격합니다. 각 타격은 공격력의 35% + 스킬 증폭의 35% + 3 피해를 줍니다. 마지막 타격은 0.5초간 기절시킵니다.",
     "artFile": "035_Jan.png",
     "art": "./assets/characters/035_Jan.png",
-    "active": true
+    "active": true,
+    "skillId": "jan_quadragon"
   },
   {
     "active": true,
@@ -1386,8 +1451,9 @@
     "skillAmp": 50,
     "defense": 6,
     "skill": "흑백의거울상",
-    "skillTooltip": "",
+    "skillTooltip": "시전할 때마다 효과가 번갈아 발동합니다. 피해 투사체는 교전 중인 적에게 스킬 증폭의 118% + 공격력의 28% + 10 피해를 주고, 보호막 투사체는 자신에게 스킬 증폭의 130% + 방어력의 120% + 18 보호막을 부여합니다.",
     "artFile": "087_Coraline.png",
-    "art": "./assets/characters/087_Coraline.png"
+    "art": "./assets/characters/087_Coraline.png",
+    "skillId": "coraline_mirror_image"
   }
 ]

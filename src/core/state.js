@@ -4,12 +4,17 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
   const localTest = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
   const state = {
     debugMode: localTest,
+    debugDummyPlacement: false,
+    debugDummies: Array(16).fill(null),
     round: 1,
     hp: balance.player.startHp,
     gold: localTest ? LOCAL_TEST_GOLD : balance.player.startGold,
     level: 1,
     xp: 0,
     shop: [],
+    shopPanelTab: "shop",
+    combatMetricMode: "damageDone",
+    lastCombatMetrics: [],
     pool: createUnitPool(roster, balance),
     combatGrid: null,
     shopLocked: balance.shop.locked,

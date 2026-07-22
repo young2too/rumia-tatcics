@@ -1,4 +1,8 @@
 export function createGameView({ state, refs, balance, audio, combat, boardUnits, boardLimit, levelXpLabel, xpToNextLevel, syncLocalTestGold, views, renderCommunityBoard }) {
+  function renderCombatFrame() {
+    views.battlefield.renderBoard();
+  }
+
   function render() {
     syncLocalTestGold();
     refs.round.textContent = state.round;
@@ -41,5 +45,5 @@ export function createGameView({ state, refs, balance, audio, combat, boardUnits
     renderCommunityBoard();
   }
 
-  return { render };
+  return { render, renderCombatFrame };
 }

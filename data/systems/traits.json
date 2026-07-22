@@ -231,7 +231,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "주술형 스킬 피해 +35%, 마나 획득량 +12%, 스킬 3명 타격",
+        "text": "주술형 스킬 피해 +35%, 마나 획득량 +12%, 요구 마나 -5",
         "effects": [
           {
             "stat": "skillAmp",
@@ -242,14 +242,14 @@
             "multiply": 1.12
           },
           {
-            "stat": "skillTargets",
-            "add": 1
+            "stat": "maxManaReduction",
+            "add": 5
           }
         ]
       },
       {
         "need": 4,
-        "text": "주술형 스킬 피해 +80%, 마나 획득량 +25%, 스킬 5명 타격",
+        "text": "주술형 스킬 피해 +80%, 마나 획득량 +25%, 요구 마나 -10",
         "effects": [
           {
             "stat": "skillAmp",
@@ -260,14 +260,14 @@
             "multiply": 1.25
           },
           {
-            "stat": "skillTargets",
-            "add": 3
+            "stat": "maxManaReduction",
+            "add": 10
           }
         ]
       },
       {
         "need": 6,
-        "text": "주술형 스킬 피해 +135%, 마나 획득량 +38%, 스킬 8명 타격",
+        "text": "주술형 스킬 피해 +135%, 마나 획득량 +38%, 요구 마나 -15",
         "effects": [
           {
             "stat": "skillAmp",
@@ -278,14 +278,14 @@
             "multiply": 1.38
           },
           {
-            "stat": "skillTargets",
-            "add": 6
+            "stat": "maxManaReduction",
+            "add": 15
           }
         ]
       },
       {
         "need": 8,
-        "text": "주술형 스킬 피해 +220%, 마나 획득량 +50%, 스킬 전체 타격",
+        "text": "주술형 스킬 피해 +220%, 마나 획득량 +50%, 요구 마나 -20",
         "effects": [
           {
             "stat": "skillAmp",
@@ -296,8 +296,8 @@
             "multiply": 1.5
           },
           {
-            "stat": "skillTargets",
-            "add": 97
+            "stat": "maxManaReduction",
+            "add": 20
           }
         ]
       }
@@ -755,69 +755,73 @@
     "tiers": [
       {
         "need": 2,
-        "text": "지원형 회복량 +35%, 3명 회복",
+        "text": "지원형 회복량 +35%, 마나 획득량 +10%, 요구 마나 -5",
         "effects": [
           {
             "stat": "heal",
             "multiply": 1.35
           },
           {
-            "stat": "healTargets",
-            "add": 1
+            "stat": "manaGain",
+            "multiply": 1.1
+          },
+          {
+            "stat": "maxManaReduction",
+            "add": 5
           }
         ]
       },
       {
         "need": 4,
-        "text": "지원형 회복량 +80%, 스킬 피해 +10%, 5명 회복",
+        "text": "지원형 회복량 +80%, 마나 획득량 +20%, 요구 마나 -10",
         "effects": [
           {
             "stat": "heal",
             "multiply": 1.8
           },
           {
-            "stat": "skillAmp",
-            "multiply": 1.1
+            "stat": "manaGain",
+            "multiply": 1.2
           },
           {
-            "stat": "healTargets",
-            "add": 3
+            "stat": "maxManaReduction",
+            "add": 10
           }
         ]
       },
       {
         "need": 6,
-        "text": "지원형 회복량 +135%, 스킬 피해 +22%, 8명 회복",
+        "text": "지원형 회복량 +135%, 마나 획득량 +32%, 요구 마나 -15",
         "effects": [
           {
             "stat": "heal",
             "multiply": 2.35
           },
           {
-            "stat": "skillAmp",
-            "multiply": 1.22
+            "stat": "manaGain",
+            "multiply": 1.32
           },
           {
-            "stat": "healTargets",
-            "add": 6
+            "stat": "maxManaReduction",
+            "add": 15
           }
         ]
       },
       {
         "need": 8,
-        "text": "지원형 회복량 +210%, 스킬 피해 +40%, 전체 회복",
+        "text": "지원형 회복량 +210%, 마나 획득량 +45%, 요구 마나 -20",
         "effects": [
           {
             "stat": "heal",
             "multiply": 3.1
           },
           {
-            "stat": "skillAmp",
-            "multiply": 1.4
+            "stat": "manaGain",
+            "multiply": 1.45
           },
           {
-            "stat": "healTargets",
-            "add": 97
+            "stat": "maxManaReduction",
+            "add": 20
           }
         ]
       }

@@ -7,7 +7,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
   }
 
   function unitMaxMana(unit) {
-    return Math.max(40, 100 - Math.round(unit.maxManaReduction || 0));
+    return Math.max(40, Math.round(unit.maxMana || 100) - Math.round(unit.maxManaReduction || 0));
   }
 
   function selectedUnit() {
@@ -34,6 +34,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       skillTargets: unit.skillTargets ?? 2,
       healTargets: unit.healTargets ?? 2,
       rangeBonus: unit.rangeBonus ?? 0,
+      maxMana: unit.maxMana ?? 100,
       maxManaReduction: unit.maxManaReduction ?? 0,
       extraAttackEvery: unit.extraAttackEvery ?? 0,
       basicAttackExtraTargets: unit.basicAttackExtraTargets ?? 0,
@@ -45,22 +46,43 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
 
   function statusEffects(unit) {
     const effects = [];
-    const stunTicks = unit.stunDisplayTicks ?? unit.stunTicks ?? 0;
-    if (stunTicks > 0) {
-      const maxTicks = Math.max(unit.stunDisplayMaxTicks || unit.stunMaxTicks || stunTicks || 1, 1);
-      effects.push({ tone: "danger", label: "기절", ratio: stunTicks / maxTicks });
+    const stunMs = unit.stunRemainingMs ?? 0;
+    if (stunMs > 0) {
+      const durationMs = Math.max(unit.stunDurationMs || stunMs || 1, 1);
+      effects.push({ tone: "danger", label: "기절", ratio: stunMs / durationMs });
     }
-    const immuneTicks = unit.immuneDisplayTicks ?? unit.immuneTicks ?? 0;
-    if (immuneTicks > 0 || unit.status === "immune") {
-      const maxTicks = Math.max(unit.immuneDisplayMaxTicks || unit.immuneMaxTicks || immuneTicks || 1, 1);
-      effects.push({ tone: "guard", label: "면역", ratio: Math.max(immuneTicks, unit.status === "immune" ? 1 : 0) / maxTicks });
+    const immuneMs = unit.immuneRemainingMs ?? 0;
+    if (immuneMs > 0 || unit.status === "immune") {
+      const durationMs = Math.max(unit.immuneDurationMs || immuneMs || 1, 1);
+      effects.push({ tone: "guard", label: "면역", ratio: Math.max(immuneMs, unit.status === "immune" ? 1 : 0) / durationMs });
     }
-    const healReductionTicks = unit.healReductionRemainingTicks ?? 0;
-    if (healReductionTicks > 0) {
-      const maxTicks = Math.max(unit.healReductionMaxTicks || healReductionTicks || 1, 1);
-      effects.push({ tone: "danger", label: "치감", ratio: healReductionTicks / maxTicks });
+    const healReductionMs = unit.healReductionRemainingMs ?? 0;
+    if (healReductionMs > 0) {
+      const durationMs = Math.max(unit.healReductionDurationMs || healReductionMs || 1, 1);
+      effects.push({ tone: "danger", label: "치감", ratio: healReductionMs / durationMs });
     }
     if (unit.tacticalTarget) effects.push({ tone: "tactical", label: "전술 표적", ratio: 1 });
+    if (unit.status === "suppressed") effects.push({ tone: "suppressed", label: "제압", ratio: 1 });
+    if (unit.actionLockRemainingMs > 0) {
+      const durationMs = Math.max(unit.actionLockDurationMs || unit.actionLockRemainingMs, 1);
+      effects.push({ tone: "yuki", label: "납도", ratio: unit.actionLockRemainingMs / durationMs });
+    }
+    if (unit.rootRemainingMs > 0) {
+      const durationMs = Math.max(unit.rootDurationMs || unit.rootRemainingMs, 1);
+      effects.push({ tone: "rooted", label: "속박", ratio: unit.rootRemainingMs / durationMs });
+    }
+    if (unit.peaceRemainingMs > 0) {
+      const durationMs = Math.max(unit.peaceDurationMs || unit.peaceRemainingMs, 1);
+      effects.push({ tone: "guard", label: "평화", ratio: unit.peaceRemainingMs / durationMs });
+    }
+    if (unit.lifeShareRemainingMs > 0) {
+      const durationMs = Math.max(unit.lifeShareDurationMs || unit.lifeShareRemainingMs, 1);
+      effects.push({ tone: "guard", label: "공유", ratio: unit.lifeShareRemainingMs / durationMs });
+    }
+    if (unit.shawlCurtainRemainingMs > 0) {
+      const durationMs = Math.max(unit.shawlCurtainDurationMs || unit.shawlCurtainRemainingMs, 1);
+      effects.push({ tone: "guard", label: "장막", ratio: unit.shawlCurtainRemainingMs / durationMs });
+    }
     return effects;
   }
 
@@ -92,6 +114,14 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
         <span>${effect.label}</span><i></i>
       </b>
     `).join("");
+    if ((unit.samjaeMarks || 0) > 0) {
+      const stack = Math.max(0, Math.min(2, unit.samjaeMarks || 0));
+      node.insertAdjacentHTML("beforeend", `
+        <div class="samjae-orbs" aria-label="삼재 표식 ${stack}/3">
+          ${[0, 1, 2].map((orb) => `<i class="${orb < stack ? "filled" : ""}"></i>`).join("")}
+        </div>
+      `);
+    }
     node.title = `${displayNameFor(unit)} · ${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}${unit.skillTooltip ? ` - ${unit.skillTooltip}` : ""}`;
     node.addEventListener("dragstart", () => {
       state.dragging = { source, index };

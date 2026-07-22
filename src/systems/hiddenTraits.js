@@ -256,6 +256,7 @@ export function createHiddenTraitController({ hiddenTraitRules, boardUnits }) {
     host.skillTargets = Math.max(host.skillTargets, target.skillTargets || 1);
     host.healTargets = Math.max(host.healTargets, target.healTargets || 1);
     host.rangeBonus = Math.max(host.rangeBonus, target.rangeBonus || 0);
+    host.maxMana = Math.max(host.maxMana || 100, target.maxMana || 100);
     host.maxManaReduction = Math.max(host.maxManaReduction, target.maxManaReduction || 0);
     host.basicAttackExtraTargets += target.basicAttackExtraTargets || 0;
     host.healReductionOnHit = Math.max(host.healReductionOnHit, target.healReductionOnHit || 0);
