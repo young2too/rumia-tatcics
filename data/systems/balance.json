@@ -399,11 +399,42 @@
         "speed": 1.06
       }
     },
-    "tickMs": 520,
-    "maxTicks": 32,
+    "simulationStepMs": 50,
+    "renderIntervalMs": 100,
+    "baseAttackIntervalMs": 500,
+    "minimumAttackIntervalMs": 140,
+    "legacySkillActionIntervalMs": 520,
+    "moveIntervalMs": 500,
+    "statusTurnMs": 500,
+    "maxCombatMs": 15000,
     "manaPerAttack": 34,
     "manaPerHit": 16,
     "basicDamageMultiplier": 0.68,
+    "effectBudget": {
+      "maxConcurrentSkillEffects": 18,
+      "maxConcurrentProjectiles": 24,
+      "maxDamageNumbersPerBatch": 12,
+      "maxMinorDamageNumbersPerBatch": 6,
+      "minorDamageThreshold": 45,
+      "alwaysShowTypes": [
+        "skill-name",
+        "shoichi-ride"
+      ],
+      "alwaysShowKinds": [
+        "paint-explosion",
+        "paint-mark"
+      ],
+      "dropProjectileTypesWhenBusy": [
+        "attack",
+        "heal",
+        "shield"
+      ],
+      "dropNumberTypesWhenBusy": [
+        "attack",
+        "heal",
+        "shield"
+      ]
+    },
     "temporaryBoosts": {
       "cost": 20,
       "amount": 0.1,

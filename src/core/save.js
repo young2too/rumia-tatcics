@@ -100,9 +100,24 @@ function normalizeSaveData(data, balance) {
   };
 }
 
-export function createSaveController({ state, balance, storageKey, addLog }) {
+function hasMeaningfulProgress(data) {
+  const hasUnits = [...(data.board || []), ...(data.bench || [])].some(Boolean);
+  const hasBoosts = Object.values(data.temporaryBoosts || {}).some((value) => Number(value) > 0);
+  return Boolean(
+    hasUnits ||
+      hasBoosts ||
+      data.round > 1 ||
+      data.level > 1 ||
+      data.xp > 0 ||
+      data.hp < 100 ||
+      data.deathRecord ||
+      data.rankingSubmitted
+  );
+}
+
+export function createSaveController({ state, balance, storageKey, addLog, shouldOfferRestore = () => true }) {
   function canSave() {
-    return !state.busy && !state.combatGrid;
+    return !state.busy && !state.combatGrid && hasMeaningfulProgress(state);
   }
 
   function snapshot() {
@@ -145,8 +160,13 @@ export function createSaveController({ state, balance, storageKey, addLog }) {
   }
 
   function restoreSave() {
+    if (!shouldOfferRestore()) return false;
     const saved = readSave();
     if (!saved) return false;
+    if (!hasMeaningfulProgress(saved.data)) {
+      clearSave();
+      return false;
+    }
     const savedDate = new Date(saved.savedAt || Date.now()).toLocaleString("ko-KR", {
       month: "2-digit",
       day: "2-digit",

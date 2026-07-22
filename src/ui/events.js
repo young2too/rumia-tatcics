@@ -8,6 +8,8 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     actions.debugRecruitUnit(refs.debugUnitSearch.value);
     refs.debugUnitSearch.value = "";
   });
+  refs.debugDummyToggle?.addEventListener("click", actions.toggleDebugDummyPlacement);
+  refs.debugDummyClear?.addEventListener("click", actions.clearDebugDummies);
   $("reroll").addEventListener("click", () => {
     if (state.busy) return;
     if (state.gold < balance.shop.rerollCost) return actions.addLog(`새로고침에는 ${balance.shop.rerollCost} 크레딧이 필요합니다.`);

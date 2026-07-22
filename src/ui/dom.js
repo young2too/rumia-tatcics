@@ -18,6 +18,8 @@ export function createRefs() {
     debugUnitSearch: $("debugUnitSearch"),
     debugUnitList: $("debugUnitList"),
     debugRecruitUnit: $("debugRecruitUnit"),
+    debugDummyToggle: $("debugDummyToggle"),
+    debugDummyClear: $("debugDummyClear"),
     oddsToggle: $("oddsToggle"),
     oddsPopover: $("oddsPopover"),
     shopLock: $("shopLock"),

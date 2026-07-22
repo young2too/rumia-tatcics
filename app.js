@@ -19,6 +19,8 @@ import { createOverlayView } from "./src/ui/views/overlayView.js";
 import { createShopView } from "./src/ui/views/shopView.js";
 import { createTraitView } from "./src/ui/views/traitView.js";
 import { createUnitView } from "./src/ui/views/unitView.js";
+import { createSkillEffectRenderer } from "./src/ui/skillEffects.js";
+import { installCombatStressTools } from "./src/systems/combat/debugStress.js";
 
 const { state, syncLocalTestGold } = createGameState({ balance, roster, createUnitPool, communityBoardConfig });
 const refs = createRefs();
@@ -28,6 +30,50 @@ const boardLimit = () => state.level;
 const makeUnit = (base, tier = 1) => createUnit(base, balance, tier);
 const temporaryBoostConfig = () => balance.battle.temporaryBoosts || { cost: 20, amount: 0.1, stats: [] };
 const temporaryBoostPercent = (stat) => Math.round((state.temporaryBoosts?.[stat] || 0) * 100);
+const searchParams = new URLSearchParams(location.search);
+
+function trainingDummy() {
+  return {
+    id: crypto.randomUUID(),
+    name: "훈련 더미",
+    cost: 1,
+    tier: 1,
+    role: "방패",
+    trait: "수호",
+    traits: ["수호"],
+    weapon: "훈련",
+    color: "#82909a",
+    maxHp: 10000,
+    hp: 10000,
+    atk: 0,
+    speed: 1,
+    skillAmp: 0,
+    defense: 0,
+    skill: "행동 없음",
+    skillTooltip: "로컬 스킬 테스트용 고정 표적",
+    art: "",
+    trainingDummy: true,
+    side: "enemy",
+  };
+}
+
+function placeDebugDummy(index) {
+  if (!state.debugMode || state.busy || !state.debugDummyPlacement) return;
+  state.debugDummies[index] = state.debugDummies[index] ? null : trainingDummy();
+  render();
+}
+
+function toggleDebugDummyPlacement() {
+  if (!state.debugMode || state.busy) return;
+  state.debugDummyPlacement = !state.debugDummyPlacement;
+  render();
+}
+
+function clearDebugDummies() {
+  if (!state.debugMode || state.busy) return;
+  state.debugDummies = Array(balance.battle.enemySlots).fill(null);
+  render();
+}
 
 let gameView;
 let overlayView;
@@ -46,7 +92,13 @@ function addLog(text) {
   while (refs.log.children.length > 9) refs.log.lastChild.remove();
 }
 
-saveController = createSaveController({ state, balance, storageKey: gameSaveStorageKey, addLog });
+saveController = createSaveController({
+  state,
+  balance,
+  storageKey: gameSaveStorageKey,
+  addLog,
+  shouldOfferRestore: () => !searchParams.has("pixi-benchmark") && !searchParams.has("combat-stress"),
+});
 const restoredGame = saveController.restoreSave();
 
 const audio = createAudioController({ state, refs, bgmConfig });
@@ -66,6 +118,36 @@ const { addXp, buyXp, grantRoundIncome, levelXpLabel, xpToNextLevel } = progress
 const traits = createTraitController({ state, traitRules, boardUnits });
 const { activeTraits, activeTraitTier, applySynergy, nextTraitNeed } = traits;
 const hiddenTraits = createHiddenTraitController({ hiddenTraitRules, boardUnits });
+const skillEffects = createSkillEffectRenderer();
+const playBudgetedSkillVisual = (spec) => {
+  const budget = balance.battle.effectBudget || {};
+  const max = budget.maxConcurrentSkillEffects ?? 18;
+  const current = skillEffects.activeCount?.() ?? 0;
+  const important = ["fate-absorb", "shoichi-dagger-ride", "zahir-vayvayastra", "bianca-reign", "yuki-bloom"].includes(spec?.type);
+  if (!important && current >= max) return;
+  skillEffects.play(spec);
+};
+if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
+  window.__rumiaSkillEffects = skillEffects;
+  if (searchParams.has("pixi-benchmark")) {
+    window.setTimeout(async () => {
+      const allTypes = skillEffects.effectTypes || ["zahir-vayvayastra", "elena-danse-macabre", "priya-earth-echo", "bianca-reign"];
+      const types = searchParams.get("pixi-benchmark") === "all" ? allTypes : ["zahir-vayvayastra", "elena-danse-macabre", "priya-earth-echo", "bianca-reign"];
+      const requestedCount = Number(searchParams.get("pixi-count"));
+      const results = [];
+      for (const type of types) {
+        const count = Number.isFinite(requestedCount) && requestedCount > 0 ? requestedCount : type === "zahir-vayvayastra" ? 8 : 6;
+        const pixi = await skillEffects.benchmark({ renderer: "pixi", type, count, samples: searchParams.get("pixi-benchmark") === "all" ? 20 : 45 });
+        const legacy = searchParams.get("pixi-benchmark") === "all"
+          ? null
+          : await skillEffects.benchmark({ renderer: "legacy", type, count, samples: 45 });
+        results.push({ type, pixi, legacy });
+        console.info("[rumia-pixi-benchmark-step]", JSON.stringify({ type, pixi, legacy }));
+      }
+      console.info("[rumia-pixi-benchmark]", JSON.stringify(results));
+    }, 800);
+  }
+}
 const {
   activeHiddenTraits,
   applyAbsorbedStats,
@@ -96,6 +178,7 @@ const battlefieldView = createBattlefieldView({
   unitNode: unitView.unitNode,
   moveUnit,
   moveSelected,
+  placeDebugDummy,
   previewBossEnemies: () => combat.previewBossEnemies(),
   temporaryBoostConfig,
   temporaryBoostPercent,
@@ -125,6 +208,8 @@ combat = createCombatController({
   triggerExclusiveRescue,
   triggerDefeatEffects,
   triggerKillEffects,
+  playSkillVisual: playBudgetedSkillVisual,
+  clearSkillVisuals: skillEffects.clear,
   render,
   rollShop,
   addXp,
@@ -132,6 +217,8 @@ combat = createCombatController({
   captureDeathRecord,
   sleep,
 });
+
+installCombatStressTools({ state, balance, roster, makeUnit, render, combat, searchParams });
 
 gameView = createGameView({
   state,
@@ -194,6 +281,8 @@ bindUiEvents({
   actions: {
     addLog,
     debugRecruitUnit,
+    toggleDebugDummyPlacement,
+    clearDebugDummies,
     buyTemporaryBoost,
     rollShop,
     render,

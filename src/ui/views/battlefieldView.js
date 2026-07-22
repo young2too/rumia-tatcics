@@ -1,4 +1,4 @@
-export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit, moveSelected, previewBossEnemies, temporaryBoostConfig, temporaryBoostPercent }) {
+export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit, moveSelected, placeDebugDummy, previewBossEnemies, temporaryBoostConfig, temporaryBoostPercent }) {
   function createCell(unit, index, side, interactive = false) {
     const gridIndex = interactive ? index + balance.battle.enemySlots : index;
     const gridRow = Math.floor(gridIndex / balance.battle.columns);
@@ -20,6 +20,11 @@ export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit
       cell.addEventListener("drop", () => moveUnit("board", index));
       cell.addEventListener("click", () => moveSelected("board", index));
     }
+    if (!interactive && state.debugMode && !state.combatGrid && state.debugDummyPlacement) {
+      cell.classList.add("debug-dummy-target");
+      cell.title = unit?.trainingDummy ? "훈련 더미 제거" : "훈련 더미 배치";
+      cell.addEventListener("click", () => placeDebugDummy(index));
+    }
     if (unit) cell.append(unitNode(unit, state.combatGrid ? side : interactive ? "board" : "enemy", index, !interactive));
     return cell;
   }
@@ -35,6 +40,7 @@ export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit
     refs.enemyBoard.innerHTML = "";
     const visibleEnemies = state.combatGrid
       ? state.combatGrid.slice(0, 16)
+      : state.debugMode && state.debugDummies.some(Boolean) ? state.debugDummies
       : state.enemies.some(Boolean) ? state.enemies : previewBossEnemies();
     visibleEnemies.forEach((unit, index) => {
       const side = state.combatGrid && unit?.side ? unit.side : "enemy";

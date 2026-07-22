@@ -42,6 +42,7 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       manaGain: unit.manaGain ?? 1,
       skillTargets: unit.skillTargets ?? 2,
       rangeBonus: unit.rangeBonus ?? 0,
+      maxMana: unit.maxMana ?? 100,
       maxManaReduction: unit.maxManaReduction ?? 0,
       extraAttackEvery: unit.extraAttackEvery ?? 0,
       extraAttackDamageRatio: unit.extraAttackDamageRatio ?? 1,

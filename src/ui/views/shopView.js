@@ -15,6 +15,10 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
     if (refs.debugShop) {
       refs.debugShop.hidden = !state.debugMode;
       refs.debugRecruitUnit.disabled = state.busy;
+      refs.debugDummyToggle.disabled = state.busy;
+      refs.debugDummyClear.disabled = state.busy;
+      refs.debugDummyToggle.classList.toggle("active", state.debugDummyPlacement);
+      refs.debugDummyToggle.textContent = state.debugDummyPlacement ? "더미 배치 ON" : "더미 배치 OFF";
       if (state.debugMode && !refs.debugUnitList.children.length) {
         refs.debugUnitList.innerHTML = roster
           .slice()
