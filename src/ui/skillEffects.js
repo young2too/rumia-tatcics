@@ -389,14 +389,84 @@ export function createSkillEffectRenderer() {
 
   function drawPixiPetalBurst(animation, progress, graphics, options = {}) {
     const { origin, petals = [] } = animation;
-    const { color = "#ff667e", accent = "#ffd6e1", radius = 105 } = options;
-    for (const petal of petals.slice(0, 28)) {
-      const distance = petal.distance * (0.25 + progress * 1.05);
-      const x = origin.x + Math.cos(petal.angle) * distance;
-      const y = origin.y + Math.sin(petal.angle) * distance * 0.65;
-      drawPixiPetal(graphics, x, y, petal.size, petal.angle + progress * petal.spin, color, Math.sin(Math.PI * progress) * 0.78);
+    const { color = "#ff667e", accent = "#ffd6e1", radius = 105, targetImpact = false } = options;
+    const centers = targetImpact && animation.targets.length ? animation.targets : [origin];
+    for (const [centerIndex, center] of centers.entries()) {
+      for (const petal of petals.slice(0, animation.type === "yuki-bloom" ? 34 : 28)) {
+        const angle = petal.angle + centerIndex * 0.67;
+        const distance = petal.distance * (0.25 + progress * 1.05);
+        const x = center.x + Math.cos(angle) * distance;
+        const y = center.y + Math.sin(angle) * distance * 0.65;
+        drawPixiPetal(graphics, x, y, petal.size * 1.15, angle + progress * petal.spin, color, Math.sin(Math.PI * progress) * 0.9);
+      }
+      drawPixiRadial(graphics, center, progress, { color: accent, fill: color, radius, alpha: 0.78, rings: 3 });
     }
-    drawPixiRadial(graphics, origin, progress, { color: accent, fill: color, radius, alpha: 0.55, rings: 2 });
+    if (targetImpact && centers[0] !== origin) {
+      drawPixiRadial(graphics, origin, progress, { color: accent, fill: color, radius: 34, alpha: 0.42, rings: 1 });
+    }
+  }
+
+  function drawPixiYukiCrescent(animation, progress, graphics) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    if (!targets.length) return;
+    const origin = animation.origin;
+    const average = targets.reduce((sum, target) => ({ x: sum.x + target.x, y: sum.y + target.y }), { x: 0, y: 0 });
+    average.x /= targets.length;
+    average.y /= targets.length;
+    const angle = Math.atan2(average.y - origin.y, average.x - origin.x);
+    const forward = { x: Math.cos(angle), y: Math.sin(angle) };
+    const normal = { x: -forward.y, y: forward.x };
+    const center = {
+      x: origin.x + forward.x * 54,
+      y: origin.y + forward.y * 54 - 4,
+    };
+    const reveal = Math.min(1, progress * 1.45);
+    const fade = Math.max(0, 1 - Math.max(0, progress - 0.72) / 0.28);
+    const alpha = Math.min(1, progress * 6) * fade;
+    const startTheta = -1.42;
+    const endTheta = 1.42;
+    const steps = 30;
+    const visibleSteps = Math.max(1, Math.floor(steps * reveal));
+    const slashPoint = (theta, width = 78, depth = 26) => ({
+      x: center.x + normal.x * Math.sin(theta) * width + forward.x * Math.cos(theta) * depth,
+      y: center.y + normal.y * Math.sin(theta) * width + forward.y * Math.cos(theta) * depth,
+    });
+
+    graphics.moveTo(origin.x + forward.x * 10, origin.y + forward.y * 10 - 8);
+    graphics.lineTo(center.x + forward.x * 12, center.y + forward.y * 12);
+    pixiStroke(graphics, "#fff2f5", 2, alpha * 0.35);
+
+    const drawArc = (width, depth, color, strokeWidth, strokeAlpha, offset = 0) => {
+      let previous = null;
+      for (let step = 0; step <= visibleSteps; step += 1) {
+        const ratio = step / steps;
+        const theta = startTheta + (endTheta - startTheta) * ratio + offset;
+        const point = slashPoint(theta, width, depth);
+        if (!previous) graphics.moveTo(point.x, point.y);
+        else graphics.lineTo(point.x, point.y);
+        previous = point;
+      }
+      pixiStroke(graphics, color, strokeWidth, strokeAlpha);
+    };
+
+    drawArc(82, 31, "#ff7f9e", 13, alpha * 0.24);
+    drawArc(78, 26, "#ffeaf0", 6, alpha * 0.86);
+    drawArc(70, 18, "#ffffff", 2, alpha);
+    drawArc(91, 42, "#ff4f7c", 3, alpha * 0.46, 0.05);
+
+    if (progress > 0.18) {
+      const local = Math.min(1, (progress - 0.18) / 0.46);
+      for (const target of targets) {
+        const hitAngle = Math.atan2(target.y - origin.y, target.x - origin.x);
+        const hitAlpha = Math.sin(Math.PI * local) * 0.86;
+        graphics.moveTo(target.x - Math.cos(hitAngle + 0.8) * 24, target.y - Math.sin(hitAngle + 0.8) * 24);
+        graphics.lineTo(target.x + Math.cos(hitAngle + 0.8) * 24, target.y + Math.sin(hitAngle + 0.8) * 24);
+        pixiStroke(graphics, "#fff7fa", 3, hitAlpha);
+        drawPixiImpact(graphics, target, local, "#ff9ab0", 20, 0.56);
+      }
+    }
+
+    drawPixiRadial(graphics, origin, progress, { color: "#fff0f4", fill: "#ff7a95", radius: 28, alpha: 0.38, rings: 1 });
   }
 
   function drawPixiFateAbsorb(animation, progress, graphics) {
@@ -543,8 +613,8 @@ export function createSkillEffectRenderer() {
   function drawPixiAnimation(animation, progress) {
     const graphics = animation.graphics;
     graphics.clear();
-    if (animation.type === "yuki-cast") drawPixiPetalBurst(animation, progress, graphics, { color: "#ff8aa0", accent: "#fff0f4", radius: 72 });
-    else if (animation.type === "yuki-bloom") drawPixiPetalBurst(animation, progress, graphics, { color: "#ff667e", accent: "#ffd8e2", radius: 92 });
+    if (animation.type === "yuki-cast") drawPixiYukiCrescent(animation, progress, graphics);
+    else if (animation.type === "yuki-bloom") drawPixiPetalBurst(animation, progress, graphics, { color: "#ff416d", accent: "#fff0f5", radius: 120, targetImpact: true });
     else if (animation.type === "fate-absorb") drawPixiFateAbsorb(animation, progress, graphics);
     else if (animation.type === "nadine-wolf") drawPixiWolfRush(animation, progress, graphics);
     else if (animation.type === "cathy-needle") drawPixiRocket(animation, progress, graphics, { color: "#f8fbff", accent: "#8ee9ff", shots: 1, lift: 8 });
@@ -603,6 +673,7 @@ export function createSkillEffectRenderer() {
           origin,
           targets,
           target,
+          petals: seededPetals(origin, spec.type === "yuki-bloom" ? 34 : 24),
           width: layout.width,
           height: layout.height,
           startedAt: performance.now(),

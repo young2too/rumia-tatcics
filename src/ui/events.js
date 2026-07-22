@@ -10,6 +10,12 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   });
   refs.debugDummyToggle?.addEventListener("click", actions.toggleDebugDummyPlacement);
   refs.debugDummyClear?.addEventListener("click", actions.clearDebugDummies);
+  refs.shopTabShop?.addEventListener("click", () => actions.setShopPanelTab("shop"));
+  refs.shopTabMetrics?.addEventListener("click", () => actions.setShopPanelTab("metrics"));
+  refs.combatMetrics?.addEventListener("click", (event) => {
+    const mode = event.target.closest("[data-combat-metric]")?.dataset.combatMetric;
+    if (mode) actions.setCombatMetricMode(mode);
+  });
   $("reroll").addEventListener("click", () => {
     if (state.busy) return;
     if (state.gold < balance.shop.rerollCost) return actions.addLog(`새로고침에는 ${balance.shop.rerollCost} 크레딧이 필요합니다.`);

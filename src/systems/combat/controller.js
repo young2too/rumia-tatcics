@@ -31,6 +31,7 @@ export function createCombatController(context) {
     playSkillVisual,
     clearSkillVisuals,
     render,
+    renderCombatFrame = render,
     rollShop,
     addXp,
     grantRoundIncome,
@@ -56,6 +57,7 @@ const skillOutputMultiplier = (unit) => {
 const skillOutput = (unit, amount) => amount * skillOutputMultiplier(unit);
 
 function dealSkillDamage(source, target, amount, options = {}) {
+  if (options.fixed) return dealDamage(source, target, amount, options);
   return dealDamage(source, target, skillOutput(source, amount), options);
 }
 
@@ -1132,6 +1134,7 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.basicAttackCount = 0;
   unit.samjaeMarks = 0;
   unit.flameAttacks = 0;
+  unit.mealTimeCasts = 0;
   unit.bihyungEnhancedAttacks = 0;
   unit.garnetIronMaiden = null;
   unit.biancaReignUsed = false;
@@ -1335,11 +1338,59 @@ function weaponEffectKind(unit, type = "attack") {
   if (["권총", "돌격소총", "저격총"].includes(unit.weapon)) return "bullet";
   if (["활", "석궁"].includes(unit.weapon)) return "arrow";
   if (["투척", "암기", "아르카나"].includes(unit.weapon)) return "magic";
+  if (type === "attack" && ["사격", "술법", "지원"].includes(unit.role)) return unit.weapon === "창" ? "arrow" : "magic";
   return "slash";
 }
 
 function combatEffect(from, to, type = "attack", value = null) {
+  recordCombatMetric(from, to, type, value);
   return { from: from.id, to: to.id, type, weapon: from.weapon, kind: weaponEffectKind(from, type), value };
+}
+
+function ensureCombatMetric(unit) {
+  if (!state.combatMetricsActive || !unit || unit.side !== "ally" || unit.trainingDummy) return null;
+  state.currentCombatMetrics ||= {};
+  if (!state.currentCombatMetrics[unit.id]) {
+    state.currentCombatMetrics[unit.id] = {
+      id: unit.id,
+      name: unit.name,
+      art: unit.art,
+      color: unit.color,
+      cost: unit.cost,
+      tier: unit.tier || 1,
+      damageDone: 0,
+      damageTaken: 0,
+      healingDone: 0,
+    };
+  }
+  return state.currentCombatMetrics[unit.id];
+}
+
+function recordCombatMetric(from, to, type, value) {
+  const amount = Math.max(0, Math.round(value?.amount || 0));
+  if (!amount) return;
+  if (type === "heal") {
+    const metric = ensureCombatMetric(from);
+    if (metric) metric.healingDone += amount;
+    return;
+  }
+  if (type === "shield") return;
+  const attackerMetric = ensureCombatMetric(from);
+  const targetMetric = ensureCombatMetric(to);
+  if (attackerMetric) attackerMetric.damageDone += amount;
+  if (targetMetric) targetMetric.damageTaken += amount;
+}
+
+function beginCombatMetrics(units) {
+  state.currentCombatMetrics = {};
+  state.combatMetricsActive = true;
+  units.filter(Boolean).forEach(ensureCombatMetric);
+}
+
+function finishCombatMetrics() {
+  state.lastCombatMetrics = Object.values(state.currentCombatMetrics || {});
+  state.currentCombatMetrics = {};
+  state.combatMetricsActive = false;
 }
 
 function applyLifeSteal(attacker, damage) {
@@ -2133,12 +2184,22 @@ function castTiaSkill(caster, allies, enemies) {
   return { message: `${caster.name} 퍼펙트드로잉: ${targets.length}명 ${total} 피해 / ${heal} 회복`, effects };
 }
 
-function castXiukaiSkill(caster) {
-  caster.flameAttacks = 6;
-  playSkillVisual?.({ type: "xiukai-hot-taste", fromId: caster.id, targetIds: [caster.id] });
+function castXiukaiSkill(caster, allies) {
+  return castShouMealTimeSkill(caster, allies);
+}
+
+function castShouMealTimeSkill(caster, allies) {
+  const target = lowestHpAllies(allies, 1)[0];
+  if (!target) return { message: `${caster.name} 식사시간: 대상 없음`, effects: [] };
+  const castCount = caster.mealTimeCasts || 0;
+  const ramp = 1 + castCount * 0.25;
+  const rawHeal = skillOutput(caster, (caster.skillAmp * 0.9 + 18) * caster.healPower * ramp);
+  const heal = applyHeal(target, rawHeal);
+  caster.mealTimeCasts = castCount + 1;
+  playSkillVisual?.({ type: "xiukai-hot-taste", fromId: caster.id, targetIds: [target.id] });
   return {
-    message: `${caster.name} 뜨거운 맛: 다음 기본 공격 6회 강화`,
-    effects: [combatEffect(caster, caster, "shield", { amount: 1 })],
+    message: `${caster.name} 식사시간: ${target.name} ${heal} 회복 / 다음 식사 +25%`,
+    effects: heal > 0 ? [combatEffect(caster, target, "heal", { amount: heal })] : [],
   };
 }
 
@@ -2383,10 +2444,15 @@ function castEchionSkill(caster, enemies) {
 
 function castAdinaSkill(caster, enemies) {
   const targets = living(enemies).slice().sort((a, b) => compareByDistanceThenHp(caster, a, b)).slice(0, 3);
-  const { effects, total } = hitTargets(caster, targets, caster.skillAmp * 0.7 + 8, "magic", 90);
+  const effects = [];
+  let total = 0;
+  targets.forEach((target, index) => {
+    const damage = dealSkillDamage(caster, target, caster.skillAmp * 0.7 + 8);
+    total += damage;
+    effects.push({ ...combatEffect(caster, target, "skill", { amount: damage }), kind: "magic", delayMs: index * 90 });
+  });
   gainMana(caster, 20);
-  playSkillVisual?.({ type: "priya-earth-echo", fromId: caster.id, targetIds: targets.map((unit) => unit.id) });
-  return { message: `${caster.name} 컨정션: ${targets.length}명 ${total} 피해 / 마나 회복`, effects };
+  return { message: `${caster.name} 트라인 에스펙트: ${targets.length}명 ${total} 피해 / 마나 회복`, effects };
 }
 
 function castKarlaSkill(caster, enemies) {
@@ -2730,7 +2796,7 @@ function resolveSkillTimelineEvents(elapsedMs) {
       for (const target of targets) {
         const damage = dealSkillDamage(event.caster, target, event.fixedDamage, { fixed: true });
         total += damage;
-        effects.push(combatEffect(target, target, "skill", { amount: damage, fixed: true, timeline: "yuki-bloom" }));
+        effects.push(combatEffect(event.caster, target, "skill", { amount: damage, fixed: true, timeline: "yuki-bloom" }));
       }
       playSkillVisual?.({ type: "yuki-bloom", fromId: event.caster.id, targetIds: targets.map((unit) => unit.id) });
       messages.push(`${event.caster.name} 화무십일홍 개화: ${targets.length}명 ${total} 고정 피해`);
@@ -2882,7 +2948,7 @@ function castSkill(caster, allies, enemies) {
   if (caster.skillId === "rio_kaeyumi") return withSkillName(caster, castRioSkill(caster, enemies));
   if (caster.skillId === "celine_plasma_bomb") return withSkillName(caster, castCelineSkill(caster, enemies));
   if (caster.skillId === "tia_perfect_drawing") return withSkillName(caster, castTiaSkill(caster, allies, enemies));
-  if (caster.skillId === "xiukai_hot_taste") return withSkillName(caster, castXiukaiSkill(caster));
+  if (caster.skillId === "xiukai_hot_taste") return withSkillName(caster, castXiukaiSkill(caster, allies));
   if (caster.skillId === "zahir_vayvayastra") return withSkillName(caster, castZahirVayvayastraSkill(caster, enemies));
   if (caster.skillId === "luke_obsession") return withSkillName(caster, castLukeSkill(caster, enemies));
   if (caster.skillId === "silvia_speed_gun") return withSkillName(caster, castSilviaSkill(caster, allies, enemies));
@@ -3073,7 +3139,7 @@ function playCombatEffects(effects) {
       label.className = "skill-name-float";
       label.textContent = effect.value?.label || "스킬";
       label.style.left = `${fromRect.left + fromRect.width / 2 - fieldRect.left}px`;
-      label.style.top = `${fromRect.top - fieldRect.top - 4}px`;
+      label.style.top = `${fromRect.top - fieldRect.top - 20}px`;
       field.append(label);
       label.addEventListener("animationend", () => label.remove(), { once: true });
       continue;
@@ -3247,14 +3313,15 @@ async function simulate() {
   if (hiddenClones.length) {
     addLog(`둘이서 하나! 발동: ${hiddenClones.map(({ owner }) => owner.name).join(", ")} 분신 소환.`);
   }
+  beginCombatMetrics(allies);
   const hasTacticalPull = allies.some((unit) => unit.pullBacklineTargets > 0);
   if (hasTacticalPull) {
-    render();
+    renderCombatFrame();
     await sleep(220);
   }
   const openingUtilities = applyOpeningTeamUtilities(allies, state.enemies);
   if (openingUtilities.pulledUnits) {
-    render();
+    renderCombatFrame();
     await sleep(380);
   }
   const diverCount = placeBacklineDivers([...allies, ...state.enemies.filter(Boolean)]);
@@ -3316,12 +3383,13 @@ async function simulate() {
     const shouldRender = combatElapsedMs >= nextRenderAt;
     if (shouldRender) {
       refs.phase.textContent = `전투 중: ${(combatElapsedMs / 1000).toFixed(1)}초 · 아군 ${living(allies).length}명 / 적 ${living(state.enemies).length}명`;
-      render();
+      renderCombatFrame();
       nextRenderAt = combatElapsedMs + renderIntervalMs;
     }
     playCombatEffects(effects);
   }
   flushCombatLogs();
+  finishCombatMetrics();
 
   const win = living(allies).length > 0 && living(state.enemies).length === 0;
   const wasBossRound = isBossRound();
@@ -3394,6 +3462,7 @@ async function simulate() {
     unit.basicAttackCount = 0;
     unit.samjaeMarks = 0;
     unit.flameAttacks = 0;
+    unit.mealTimeCasts = 0;
     unit.bihyungEnhancedAttacks = 0;
     unit.garnetIronMaiden = null;
     unit.biancaReignUsed = false;

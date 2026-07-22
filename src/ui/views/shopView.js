@@ -1,6 +1,12 @@
 import { traitPills } from "./traitHelpers.js";
 
 export function createShopView({ state, refs, balance, roster, buyUnit, displayNameFor = (unit) => unit.name }) {
+  const metricModes = {
+    damageDone: { label: "딜량", iconClass: "sword", empty: "아직 기록된 피해량이 없습니다." },
+    damageTaken: { label: "받은 피해", iconClass: "shield", empty: "아직 기록된 받은 피해량이 없습니다." },
+    healingDone: { label: "힐량", iconClass: "heal", empty: "아직 기록된 회복량이 없습니다." },
+  };
+
   function shopCardStatus(unit) {
     const owned = [...state.board, ...state.bench].filter((copy) => copy?.name === unit.name);
     if (!owned.length) return { className: "", label: "", stars: "" };
@@ -12,6 +18,15 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
   }
 
   function renderShop() {
+    const showShop = state.shopPanelTab !== "metrics";
+    refs.shopTabShop?.classList.toggle("active", showShop);
+    refs.shopTabMetrics?.classList.toggle("active", !showShop);
+    if (refs.shopContent) refs.shopContent.hidden = !showShop;
+    if (refs.combatMetrics) refs.combatMetrics.hidden = showShop;
+    if (!showShop) {
+      renderCombatMetrics();
+      return;
+    }
     if (refs.debugShop) {
       refs.debugShop.hidden = !state.debugMode;
       refs.debugRecruitUnit.disabled = state.busy;
@@ -59,5 +74,39 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
     refs.shopOdds.innerHTML = `<div class="odds-head">${header}</div>${rows}`;
   }
 
-  return { renderShop, renderShopOdds };
+  function renderCombatMetrics() {
+    if (!refs.combatMetrics) return;
+    const mode = metricModes[state.combatMetricMode] ? state.combatMetricMode : "damageDone";
+    const rows = (state.lastCombatMetrics || [])
+      .slice()
+      .sort((a, b) => (b[mode] || 0) - (a[mode] || 0));
+    const max = Math.max(1, ...rows.map((unit) => unit[mode] || 0));
+    const buttons = Object.entries(metricModes).map(([id, option]) => `
+      <button type="button" class="${mode === id ? "active" : ""}" data-combat-metric="${id}" aria-label="${option.label}" title="${option.label}">
+        <span class="combat-metric-icon ${option.iconClass}" aria-hidden="true"></span>
+      </button>
+    `).join("");
+    const list = rows.length
+      ? rows.map((unit) => {
+        const value = Math.round(unit[mode] || 0);
+        const width = `${Math.max(4, Math.round((value / max) * 100))}%`;
+        return `
+          <article class="combat-metric-row">
+            <span class="portrait">${unit.art ? `<img src="${unit.art}" alt="">` : unit.name.slice(0, 1)}</span>
+            <span class="combat-metric-main">
+              <span><strong>${displayNameFor(unit)}</strong><small>${"★".repeat(unit.tier || 1)} · ${unit.cost}코</small></span>
+              <i style="--value: ${width}"></i>
+            </span>
+            <b>${value}</b>
+          </article>
+        `;
+      }).join("")
+      : `<div class="combat-metric-empty">${metricModes[mode].empty}<small>전투가 끝나면 내 유닛의 최근 전투 기여도가 표시됩니다.</small></div>`;
+    refs.combatMetrics.innerHTML = `
+      <div class="combat-metric-tabs" role="radiogroup" aria-label="전투 지표 기준">${buttons}</div>
+      <div class="combat-metric-list">${list}</div>
+    `;
+  }
+
+  return { renderShop, renderShopOdds, renderCombatMetrics };
 }

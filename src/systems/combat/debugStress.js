@@ -12,7 +12,7 @@ export function installCombatStressTools({
 }) {
   if (!localHostnames.has(location.hostname)) return;
 
-  window.__rumiaCombatStress = async (options = {}) => {
+  const runCombatStress = async (options = {}) => {
     if (state.busy) return null;
     const allyCount = Math.max(1, Math.min(10, Math.round(options.allyCount || Number(searchParams.get("ally-count")) || 10)));
     const enemyCount = Math.max(1, Math.min(16, Math.round(options.enemyCount || Number(searchParams.get("enemy-count")) || 13)));
@@ -113,7 +113,13 @@ export function installCombatStressTools({
     return summary;
   };
 
+  try {
+    if (Object.isExtensible(window)) window.__rumiaCombatStress = runCombatStress;
+  } catch {
+    // The public debug hook is optional; query-driven stress tests still run.
+  }
+
   if (searchParams.has("combat-stress")) {
-    window.setTimeout(() => window.__rumiaCombatStress(), 900);
+    window.setTimeout(() => runCombatStress(), 900);
   }
 }

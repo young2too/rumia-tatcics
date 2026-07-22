@@ -411,10 +411,10 @@
     "manaPerHit": 16,
     "basicDamageMultiplier": 0.68,
     "effectBudget": {
-      "maxConcurrentSkillEffects": 18,
-      "maxConcurrentProjectiles": 24,
-      "maxDamageNumbersPerBatch": 12,
-      "maxMinorDamageNumbersPerBatch": 6,
+      "maxConcurrentSkillEffects": 24,
+      "maxConcurrentProjectiles": 32,
+      "maxDamageNumbersPerBatch": 16,
+      "maxMinorDamageNumbersPerBatch": 8,
       "minorDamageThreshold": 45,
       "alwaysShowTypes": [
         "skill-name",

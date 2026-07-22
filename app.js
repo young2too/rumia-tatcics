@@ -24,6 +24,7 @@ import { installCombatStressTools } from "./src/systems/combat/debugStress.js";
 
 const { state, syncLocalTestGold } = createGameState({ balance, roster, createUnitPool, communityBoardConfig });
 const refs = createRefs();
+refs.log?.closest(".log-wrap")?.toggleAttribute("hidden", !state.debugMode);
 const boardUnits = () => state.board.filter(Boolean);
 const ownedUnits = () => [...state.board, ...state.bench].filter(Boolean);
 const boardLimit = () => state.level;
@@ -31,6 +32,14 @@ const makeUnit = (base, tier = 1) => createUnit(base, balance, tier);
 const temporaryBoostConfig = () => balance.battle.temporaryBoosts || { cost: 20, amount: 0.1, stats: [] };
 const temporaryBoostPercent = (stat) => Math.round((state.temporaryBoosts?.[stat] || 0) * 100);
 const searchParams = new URLSearchParams(location.search);
+
+function exposeLocalDebug(name, value) {
+  try {
+    if (Object.isExtensible(window)) window[name] = value;
+  } catch {
+    // Some embedded browser test contexts freeze window; debug globals are optional.
+  }
+}
 
 function trainingDummy() {
   return {
@@ -83,9 +92,11 @@ const render = () => {
   gameView?.render();
   saveController?.saveNow();
 };
+const renderCombatFrame = () => gameView?.renderCombatFrame();
 const renderRanking = () => overlayView?.renderRanking();
 
 function addLog(text) {
+  if (!state.debugMode) return;
   const item = document.createElement("div");
   item.textContent = text;
   refs.log.prepend(item);
@@ -123,12 +134,12 @@ const playBudgetedSkillVisual = (spec) => {
   const budget = balance.battle.effectBudget || {};
   const max = budget.maxConcurrentSkillEffects ?? 18;
   const current = skillEffects.activeCount?.() ?? 0;
-  const important = ["fate-absorb", "shoichi-dagger-ride", "zahir-vayvayastra", "bianca-reign", "yuki-bloom"].includes(spec?.type);
+  const important = ["fate-absorb", "shoichi-dagger-ride", "zahir-vayvayastra", "bianca-reign", "yuki-cast", "yuki-bloom"].includes(spec?.type);
   if (!important && current >= max) return;
   skillEffects.play(spec);
 };
 if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
-  window.__rumiaSkillEffects = skillEffects;
+  exposeLocalDebug("__rumiaSkillEffects", skillEffects);
   if (searchParams.has("pixi-benchmark")) {
     window.setTimeout(async () => {
       const allTypes = skillEffects.effectTypes || ["zahir-vayvayastra", "elena-danse-macabre", "priya-earth-echo", "bianca-reign"];
@@ -211,6 +222,7 @@ combat = createCombatController({
   playSkillVisual: playBudgetedSkillVisual,
   clearSkillVisuals: skillEffects.clear,
   render,
+  renderCombatFrame,
   rollShop,
   addXp,
   grantRoundIncome,
@@ -265,6 +277,21 @@ function setRankingVersionFilter(version) {
   loadRankings(true);
 }
 
+function setShopPanelTab(tab) {
+  state.shopPanelTab = tab === "metrics" ? "metrics" : "shop";
+  render();
+}
+
+function setCombatMetricMode(mode) {
+  if (!["damageDone", "damageTaken", "healingDone"].includes(mode)) return;
+  state.combatMetricMode = mode;
+  state.shopPanelTab = "metrics";
+  render();
+}
+
+exposeLocalDebug("__rumiaSetShopPanelTab", setShopPanelTab);
+exposeLocalDebug("__rumiaSetCombatMetricMode", setCombatMetricMode);
+
 function setTraitModal(type, open, trait = "") {
   if (type === "roster") {
     state.traitRosterTrait = trait;
@@ -280,6 +307,8 @@ bindUiEvents({
   balance,
   actions: {
     addLog,
+    setShopPanelTab,
+    setCombatMetricMode,
     debugRecruitUnit,
     toggleDebugDummyPlacement,
     clearDebugDummies,
