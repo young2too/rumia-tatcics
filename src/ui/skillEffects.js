@@ -82,7 +82,7 @@ export function createSkillEffectRenderer() {
     if (pixiInitPromise) return pixiInitPromise;
     const generation = pixiGeneration;
     pixiInitPromise = (async () => {
-      pixiApp?.destroy(true);
+      destroyPixiApp();
       pixiApp = new Application();
       await pixiApp.init({
         width: layout.width,
@@ -94,7 +94,7 @@ export function createSkillEffectRenderer() {
         autoStart: false,
       });
       if (generation !== pixiGeneration || !layout.battlefield.isConnected) {
-        pixiApp.destroy(true);
+        destroyPixiApp();
         pixiApp = null;
         return null;
       }
@@ -174,6 +174,16 @@ export function createSkillEffectRenderer() {
 
   function pixiFill(graphics, color, alpha = 1) {
     graphics.fill({ color: hexColor(color), alpha });
+  }
+
+  function destroyPixiApp() {
+    if (!pixiApp) return;
+    try {
+      pixiApp.destroy(true);
+    } catch (error) {
+      console.warn("[rumia-pixi-destroy]", error);
+      pixiLayer?.remove();
+    }
   }
 
   function drawPixiVortex(graphics, center, progress, options = {}) {
@@ -2031,8 +2041,12 @@ export function createSkillEffectRenderer() {
     pixiGeneration += 1;
     animations.length = 0;
     for (const animation of pixiAnimations) {
-      animation.container.removeFromParent();
-      animation.container.destroy({ children: true });
+      try {
+        animation.container.removeFromParent();
+        animation.container.destroy({ children: true });
+      } catch (error) {
+        console.warn("[rumia-pixi-animation-destroy]", error);
+      }
     }
     pixiAnimations.length = 0;
     if (frame) cancelAnimationFrame(frame);
@@ -2040,7 +2054,7 @@ export function createSkillEffectRenderer() {
     frame = 0;
     pixiFrame = 0;
     canvas?.remove();
-    pixiApp?.destroy(true);
+    destroyPixiApp();
     canvas = null;
     context = null;
     pixiApp = null;
