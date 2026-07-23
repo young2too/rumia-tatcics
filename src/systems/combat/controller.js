@@ -2792,6 +2792,7 @@ function resolveSkillTimelineEvents(elapsedMs) {
   const effects = [];
   const messages = [];
   for (const event of skillTimeline.takeDue(elapsedMs)) {
+    try {
     if (event.type === "yuki-final-bloom") {
       const targets = event.targets.filter((unit) => unit.hp > 0);
       let total = 0;
@@ -2882,6 +2883,11 @@ function resolveSkillTimelineEvents(elapsedMs) {
       for (const target of targets) applyStun(target, 2);
       messages.push(`${event.caster.name} 독사의 진노: ${targets.length}명 기절`);
       continue;
+    }
+    } catch (error) {
+      console.error("[rumia-skill-timeline-event]", event?.type, error);
+      addLog(`예약 스킬 처리 오류: ${event?.type || "unknown"} 이벤트를 건너뜁니다.`, { force: true });
+      messages.push("예약 스킬 처리 오류: 해당 이벤트를 건너뜁니다.");
     }
   }
   return { effects, messages };
@@ -3243,6 +3249,7 @@ async function simulate() {
   document.body.classList.add("fighting");
   skillTimeline.clear();
   clearSkillVisuals?.();
+  try {
   const traitCounts = activeTraits();
   state.enemies = makeEnemies();
   allies.forEach((unit) => {
@@ -3342,6 +3349,7 @@ async function simulate() {
   const maxCombatMs = balance.battle.maxCombatMs ?? 30000;
   let nextRenderAt = 0;
   let nextLogAt = 0;
+  let lastProgressAt = 0;
   const combatLogBuffer = [];
   const flushCombatLogs = () => {
     if (!combatLogBuffer.length) return;
@@ -3357,6 +3365,7 @@ async function simulate() {
     const actors = combatants.sort((a, b) => (a.actionCooldownMs || 0) - (b.actionCooldownMs || 0) || b.speed - a.speed);
     const tickLogs = [];
     const effects = [];
+    let actedThisStep = false;
 
     for (const actor of actors) {
       if (actor.hp <= 0) continue;
@@ -3365,7 +3374,18 @@ async function simulate() {
       const friends = actor.side === "ally" ? allies : state.enemies;
       const foes = actor.side === "ally" ? state.enemies : allies;
       if (!living(foes).length) break;
-      const action = actor.mana >= unitMaxMana(actor) ? castSkill(actor, friends, foes) : basicAttack(actor, foes);
+      let action;
+      try {
+        action = actor.mana >= unitMaxMana(actor) ? castSkill(actor, friends, foes) : basicAttack(actor, foes);
+      } catch (error) {
+        console.error("[rumia-combat-action]", actor?.name, error);
+        addLog(`전투 행동 오류: ${actor.name} 행동을 건너뜁니다.`, { force: true });
+        actor.mana = 0;
+        actor.actionCooldownMs = balance.battle.moveIntervalMs ?? 500;
+        tickLogs.push(`${actor.name} 행동 오류: 이번 행동을 건너뜁니다.`);
+        continue;
+      }
+      actedThisStep = true;
       const overdueMs = Math.min(0, actor.actionCooldownMs || 0);
       actor.actionCooldownMs = Math.max(0, cooldownForAction(actor, action) + overdueMs);
       if (action.message) tickLogs.push(action.message);
@@ -3376,6 +3396,13 @@ async function simulate() {
     const timelineResult = resolveSkillTimelineEvents(combatElapsedMs);
     tickLogs.push(...timelineResult.messages);
     effects.push(...timelineResult.effects);
+    if (actedThisStep || tickLogs.length || effects.length || timelineResult.messages.length || timelineResult.effects.length) {
+      lastProgressAt = combatElapsedMs;
+    } else if (combatElapsedMs - lastProgressAt > 3000) {
+      addLog("전투 진행 정체 감지: 남은 예약/상태를 정리하고 라운드를 종료합니다.", { force: true });
+      addLog("전투 진행 정체 감지: 남은 예약/상태를 정리하고 라운드를 종료합니다.");
+      break;
+    }
 
     if (tickLogs.length) combatLogBuffer.push(tickLogs.slice(0, 3).join(" / "));
     if (combatElapsedMs >= nextLogAt) {
@@ -3517,6 +3544,37 @@ async function simulate() {
     render();
   } else {
     rollShop();
+  }
+  } catch (error) {
+    console.error("[rumia-combat-stall-guard]", error);
+    addLog(`전투 처리 오류 감지: ${error?.message || error || "unknown"} / 전투 상태를 복구했습니다.`, { force: true });
+    addLog("전투 처리 오류 감지: 전투 상태를 복구했습니다.");
+    document.body.classList.remove("fighting");
+    state.busy = false;
+    state.combatGrid = null;
+    state.enemies = [];
+    state.board = originalBoard;
+    state.pendingHiddenEffects = [];
+    skillTimeline.clear();
+    clearSkillVisuals?.();
+    for (const unit of boardAllies) {
+      if (!unit) continue;
+      if (unit.combatBase) {
+        unit.maxHp = unit.combatBase.maxHp;
+        unit.atk = unit.combatBase.atk;
+        unit.speed = unit.combatBase.speed;
+        unit.skillAmp = unit.combatBase.skillAmp;
+        unit.defense = unit.combatBase.defense;
+        delete unit.combatBase;
+      }
+      unit.hp = unit.maxHp;
+      unit.mana = 0;
+      unit.status = "";
+      unit.actionCooldownMs = 0;
+      unit.hiddenAbsorbed = false;
+    }
+    refs.phase.textContent = "전투 처리 오류가 발생해 상태를 복구했습니다. 다시 전투를 시작할 수 있습니다.";
+    render();
   }
 }
 

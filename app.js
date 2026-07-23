@@ -95,8 +95,12 @@ const render = () => {
 const renderCombatFrame = () => gameView?.renderCombatFrame();
 const renderRanking = () => overlayView?.renderRanking();
 
-function addLog(text) {
-  if (!state.debugMode) return;
+function addLog(text, options = {}) {
+  if (!state.debugMode && !options.force && !state.forceBattleLog) return;
+  if (options.force) {
+    state.forceBattleLog = true;
+    refs.log?.closest(".log-wrap")?.removeAttribute("hidden");
+  }
   const item = document.createElement("div");
   item.textContent = text;
   refs.log.prepend(item);
