@@ -3233,6 +3233,16 @@ function cooldownForAction(unit, action) {
   return movement ? (balance.battle.moveIntervalMs ?? 250) : attackIntervalMs(unit);
 }
 
+function unlockCombatUi(message = "전투 상태를 복구했습니다. 다시 전투를 시작할 수 있습니다.") {
+  document.body.classList.remove("fighting");
+  state.busy = false;
+  state.combatGrid = null;
+  refs.battle.disabled = false;
+  refs.battle.textContent = "전투 시작";
+  refs.levelUp.disabled = state.level >= balance.player.maxLevel;
+  refs.phase.textContent = message;
+}
+
 async function simulate() {
   if (state.busy) return;
   const boardAllies = boardUnits();
@@ -3547,6 +3557,7 @@ async function simulate() {
   }
   } catch (error) {
     console.error("[rumia-combat-stall-guard]", error);
+    unlockCombatUi(`전투 처리 오류 감지: ${error?.message || error || "unknown"} / 전투 상태를 복구했습니다.`);
     addLog(`전투 처리 오류 감지: ${error?.message || error || "unknown"} / 전투 상태를 복구했습니다.`, { force: true });
     addLog("전투 처리 오류 감지: 전투 상태를 복구했습니다.");
     document.body.classList.remove("fighting");
@@ -3556,7 +3567,11 @@ async function simulate() {
     state.board = originalBoard;
     state.pendingHiddenEffects = [];
     skillTimeline.clear();
-    clearSkillVisuals?.();
+    try {
+      clearSkillVisuals?.();
+    } catch (clearError) {
+      console.warn("[rumia-combat-recover-clear]", clearError);
+    }
     for (const unit of boardAllies) {
       if (!unit) continue;
       if (unit.combatBase) {
