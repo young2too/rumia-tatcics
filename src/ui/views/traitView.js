@@ -16,6 +16,21 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
     const activeCounts = activeTraits();
     const boardNames = new Set(state.board.filter(Boolean).map((unit) => unit.name));
     const benchNames = new Set(state.bench.filter(Boolean).map((unit) => unit.name));
+    const traitRows = Object.entries(traitRules)
+      .map(([trait, rule], order) => {
+        const count = counts[trait] || 0;
+        const activeCount = activeCounts[trait] || 0;
+        const activeTier = activeTraitTier(rule, activeCount);
+        const nextNeed = nextTraitNeed(rule, activeCount);
+        return { trait, rule, order, count, activeCount, activeTier, nextNeed };
+      })
+      .filter((entry) => entry.count > 0)
+      .sort((a, b) =>
+        (b.activeTier?.need || 0) - (a.activeTier?.need || 0)
+        || b.activeCount - a.activeCount
+        || b.count - a.count
+        || a.order - b.order
+      );
     refs.traits.innerHTML = "";
     if (refs.hiddenTraitToggle) {
       refs.hiddenTraitToggle.classList.toggle("active", state.showHiddenTraits);
@@ -34,12 +49,7 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
         refs.traits.append(row);
       }
     }
-    for (const [trait, rule] of Object.entries(traitRules)) {
-      const count = counts[trait] || 0;
-      if (count <= 0) continue;
-      const activeCount = activeCounts[trait] || 0;
-      const activeTier = activeTraitTier(rule, activeCount);
-      const nextNeed = nextTraitNeed(rule, activeCount);
+    for (const { trait, rule, count, activeCount, activeTier, nextNeed } of traitRows) {
       const row = document.createElement("div");
       row.className = `trait ${activeTier ? "active" : ""}`;
       row.dataset.trait = trait;
