@@ -291,5 +291,28 @@
       "type": "deadAllyAttackShare",
       "atkShareRatio": 0.18
     }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_double_prismatic",
+    "name": "프리즘 폭주",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "gamble",
+      "augment"
+    ],
+    "summary": "무작위 프리즘 증강 2개 획득",
+    "description": "현재 단계의 무작위 프리즘 증강을 2개 즉시 획득합니다.",
+    "effect": {
+      "type": "randomAugmentGrant",
+      "rarity": "prismatic",
+      "count": 2
+    }
   }
 ]

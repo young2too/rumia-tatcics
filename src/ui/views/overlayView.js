@@ -130,6 +130,8 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
       case "freeRerollPerRound": lines.push(`라운드마다 무료 상점 리롤 ${effect.count || 1}회.`); break;
       case "instantGold": lines.push(`즉시 크레딧 ${signedNumber(effect.add)}.`); break;
       case "playerHp": lines.push(`플레이어 체력 ${signedNumber(effect.add)}.`); break;
+      case "cataclysmTransform": lines.push(`모든 보유 유닛이 성급을 유지하고 ${effect.costAdd || 1}코스트 높은 유닛으로 변합니다.`); break;
+      case "randomAugmentGrant": lines.push(`무작위 ${effect.rarity === "prismatic" ? "프리즘" : effect.rarity === "gold" ? "골드" : "실버"} 증강 ${effect.count || 1}개를 즉시 획득합니다.`); break;
       case "interestCapBonus": lines.push(`이자 상한 ${signedNumber(effect.add)}.`); break;
       case "streakIncomeBonus": lines.push(`연승/연패 수입 상한 ${signedNumber(effect.capAdd)}.`); break;
       case "sellValueBonus": lines.push(`판매 수익 x${effect.multiply || 1}.`); break;

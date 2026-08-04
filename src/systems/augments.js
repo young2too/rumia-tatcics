@@ -198,6 +198,105 @@ export function createAugmentController({
     return true;
   }
 
+  function unitCopyCount(unit) {
+    return unit?.tier >= 3 ? 9 : unit?.tier >= 2 ? 3 : 1;
+  }
+
+  function ownedThreeStarNames() {
+    return new Set(ownedUnits().filter((unit) => unit?.tier >= 3).map((unit) => unit.name));
+  }
+
+  function transformUnitToHigherCost(unit, rng) {
+    if (!unit) return null;
+    const nextCost = Math.min(5, (Number(unit.cost) || 1) + 1);
+    const blockedThreeStars = ownedThreeStarNames();
+    const candidates = roster.filter((base) => {
+      if (base.active === false) return false;
+      if (base.cost !== nextCost) return false;
+      if (base.name === unit.name) return false;
+      if (blockedThreeStars.has(base.name)) return false;
+      return true;
+    });
+    if (!candidates.length) return null;
+    const base = candidates[rng.integer(candidates.length)];
+    const copies = unitCopyCount(unit);
+    if (state.pool?.[unit.name] !== undefined) state.pool[unit.name] += copies;
+    if (state.pool?.[base.name] !== undefined) state.pool[base.name] = Math.max(0, state.pool[base.name] - copies);
+    return makeUnit(base, unit.tier || 1);
+  }
+
+  function applyCataclysmTransform(augment) {
+    const effect = augment?.effect || {};
+    if (effect.type !== "cataclysmTransform") return false;
+    const seed = createDeterministicSeed("augment-cataclysm", {
+      round: state.round,
+      stage: state.augmentStage,
+      augmentId: augment.id,
+      selected: (state.selectedAugments || []).map((item) => item.id),
+      board: boardSignature(),
+    });
+    const rng = createSeededRng(seed);
+    let changed = 0;
+    for (const arr of [state.board, state.bench]) {
+      for (let index = 0; index < arr.length; index += 1) {
+        const transformed = transformUnitToHigherCost(arr[index], rng);
+        if (!transformed) continue;
+        arr[index] = transformed;
+        changed += 1;
+      }
+    }
+    addLog?.(`[증강] ${augment.name}: ${changed}명의 유닛이 더 높은 코스트로 변했습니다.`, { force: true });
+    return changed > 0;
+  }
+
+  function applyAugmentEffects(augment) {
+    const grantedUnitName = grantUnitCopy(augment) ? augment?.effect?.grantUnitCopy?.unit || augment?.effect?.unit : "";
+    if (grantedUnitName) combineGrantedUnits(grantedUnitName);
+    applyCataclysmTransform(augment);
+    applyImmediateAugmentEffect(state, augment, addLog);
+  }
+
+  function grantRandomAugments(sourceAugment, blockedIds = new Set()) {
+    const effect = sourceAugment?.effect || {};
+    if (effect.type !== "randomAugmentGrant") return [];
+    const rarity = RARITIES.includes(effect.rarity) ? effect.rarity : "gold";
+    const count = Math.max(1, Math.min(3, Math.round(Number(effect.count) || 1)));
+    const seed = createDeterministicSeed("augment-random-grant", {
+      round: state.round,
+      stage: state.augmentStage,
+      sourceId: sourceAugment.id,
+      selected: (state.selectedAugments || []).map((augment) => augment.id),
+      board: boardSignature(),
+    });
+    const rng = createSeededRng(seed);
+    const picked = [];
+    const blocked = new Set([
+      ...selectedIds(),
+      ...blockedIds,
+      sourceAugment.id,
+      ...(state.augmentChoices || []).map((augment) => augment.id),
+    ]);
+    for (let index = 0; index < count; index += 1) {
+      const candidates = poolFor(state.augmentStage, rarity)
+        .filter((augment) => !blocked.has(augment.id))
+        .filter((augment) => augment.effect?.type !== "randomAugmentGrant");
+      if (!candidates.length) break;
+      const augment = structuredClone(candidates[rng.integer(candidates.length)]);
+      blocked.add(augment.id);
+      applyAugmentEffects(augment);
+      state.selectedAugments.push({
+        ...augment,
+        stage: state.augmentStage,
+        pickedAtRound: state.round,
+        grantedBy: sourceAugment.id,
+        offerSeed: seed,
+      });
+      picked.push(augment);
+      addLog?.(`[증강] ${sourceAugment.name}: ${augment.name} 추가 획득.`, { force: true });
+    }
+    return picked;
+  }
+
   function combineGrantedUnits(name) {
     if (!name) return;
     while (true) {
@@ -229,6 +328,7 @@ export function createAugmentController({
     if (!augment) return;
     const grantedUnitName = grantUnitCopy(augment) ? augment?.effect?.grantUnitCopy?.unit || augment?.effect?.unit : "";
     if (grantedUnitName) combineGrantedUnits(grantedUnitName);
+    applyCataclysmTransform(augment);
     applyImmediateAugmentEffect(state, augment, addLog);
     state.selectedAugments.push({
       ...structuredClone(augment),
@@ -236,6 +336,7 @@ export function createAugmentController({
       pickedAtRound: state.round,
       offerSeed: state.augmentOfferSeed,
     });
+    grantRandomAugments(augment, new Set([augment.id]));
     state.augmentOpen = false;
     state.augmentChoices = [];
     addLog?.(`[증강] ${augment.name} 선택.`);

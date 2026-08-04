@@ -275,5 +275,74 @@
       "type": "sellValueBonus",
       "multiply": 1.25
     }
+  },
+  {
+    "active": true,
+    "id": "common_gold_cataclysm",
+    "name": "대격변",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "gamble",
+      "transform"
+    ],
+    "summary": "보유 유닛을 한 단계 높은 코스트로 변환",
+    "description": "보드와 벤치의 모든 유닛이 성급을 유지한 채 현재보다 1코스트 높은 무작위 유닛으로 변합니다. 5코스트 유닛은 다른 5코스트 유닛으로 변합니다.",
+    "effect": {
+      "type": "cataclysmTransform",
+      "costAdd": 1,
+      "preserveTier": true
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_random_gold",
+    "name": "황금 주사위",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "gamble",
+      "augment"
+    ],
+    "summary": "무작위 골드 증강 1개 획득",
+    "description": "현재 단계의 무작위 골드 증강을 1개 즉시 획득합니다.",
+    "effect": {
+      "type": "randomAugmentGrant",
+      "rarity": "gold",
+      "count": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_random_prismatic",
+    "name": "찬란한 도박",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "gamble",
+      "augment"
+    ],
+    "summary": "무작위 프리즘 증강 1개 획득",
+    "description": "현재 단계의 무작위 프리즘 증강을 1개 즉시 획득합니다.",
+    "effect": {
+      "type": "randomAugmentGrant",
+      "rarity": "prismatic",
+      "count": 1
+    }
   }
 ]
