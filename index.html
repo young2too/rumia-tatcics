@@ -51,6 +51,7 @@
             <button id="bgmToggle" class="audio-button" title="배경음악 켜기">BGM</button>
             <button id="patchNotesToggle" class="patch-notes-button" title="패치노트 보기">패치노트</button>
             <button id="rankingToggle" class="ranking-button" title="랭킹 보기">랭킹</button>
+            <a class="pvp-rooms-button" href="./pvp.html" title="PvP 방 목록 보기">PvP</a>
             <a class="statistics-button" href="./stats.html" title="통계 보기">통계</a>
             <button id="communityBoardToggle" class="community-board-button" title="게시판 보기">게시판</button>
           </nav>
@@ -100,6 +101,7 @@
               <strong id="boardCapacityMain">0/1</strong>
               <span id="boardCapacitySub"></span>
             </div>
+            <div id="activeAugments" class="active-augments" hidden></div>
             <div id="enemyBoard" class="enemy-board"></div>
             <div id="board" class="board"></div>
             <div class="field-xp" aria-hidden="true"><i id="fieldXpBar"></i></div>
@@ -144,6 +146,27 @@
               <div class="debug-dummy-tools">
                 <button id="debugDummyToggle" type="button">더미 배치 OFF</button>
                 <button id="debugDummyClear" type="button">더미 초기화</button>
+              </div>
+              <div class="debug-round-tools">
+                <label for="debugRoundInput">라운드 점프</label>
+                <div>
+                  <input id="debugRoundInput" type="number" min="1" max="999" step="1" value="15" />
+                  <button id="debugRoundJump" type="button">이동</button>
+                </div>
+                <div class="debug-round-presets" aria-label="라운드 빠른 이동">
+                  <button type="button" data-debug-round="15">15R</button>
+                  <button type="button" data-debug-round="30">30R</button>
+                  <button type="button" data-debug-round="60">60R</button>
+                  <button type="button" data-debug-round="90">90R</button>
+                </div>
+              </div>
+              <div class="debug-augment-tools">
+                <label>증강 테스트</label>
+                <div>
+                  <button type="button" data-debug-augment-stage="1">1단계</button>
+                  <button type="button" data-debug-augment-stage="2">2단계</button>
+                  <button type="button" data-debug-augment-stage="3">3단계</button>
+                </div>
               </div>
             </div>
             <div id="shop" class="shop"></div>
@@ -208,6 +231,22 @@
             <input id="patchNotesSkipToday" type="checkbox" />
             <span>오늘 다시 보지 않기</span>
           </label>
+        </section>
+      </div>
+
+      <div id="augmentModal" class="augment-modal" hidden>
+        <section class="augment-dialog" role="dialog" aria-modal="true" aria-labelledby="augmentTitle">
+          <div class="panel-title">
+            <div>
+              <h2 id="augmentTitle">증강 선택</h2>
+              <span id="augmentMeta"></span>
+            </div>
+            <div class="augment-actions">
+              <button id="augmentClose" class="icon-button" title="잠시 닫기">잠시 닫기</button>
+            </div>
+          </div>
+          <div id="augmentPanel" class="augment-panel"></div>
+          <div id="selectedAugments" class="selected-augments"></div>
         </section>
       </div>
 

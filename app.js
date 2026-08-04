@@ -1,9 +1,12 @@
-import { balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, gameSaveStorageKey, hiddenTraitRules, patchNotesConfig, patchNotesStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
+import { augmentPools, augmentSettings, balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, gameSaveStorageKey, hiddenTraitRules, patchNotesConfig, patchNotesStorageKey, pvpRoomsConfig, pvpPendingSquadStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
 import { createGameState } from "./src/core/state.js";
+import { createPvpSnapshotId, createStableHash } from "./src/core/rng.js";
 import { createSaveController } from "./src/core/save.js";
 import { createUnitPool, makeUnit as createUnit, sample, sellValue, sleep } from "./src/core/units.js";
 import { createCombatController } from "./src/systems/combat.js";
 import { createProgressionController } from "./src/systems/progression.js";
+import { createAugmentController } from "./src/systems/augments.js";
+import { augmentBoardLimitAdd, augmentCanRerollShop, augmentTemporaryBoostConfig } from "./src/systems/augmentEffects.js";
 import { createHiddenTraitController } from "./src/systems/hiddenTraits.js";
 import { createShopController } from "./src/systems/shop.js";
 import { createTraitController } from "./src/systems/traits.js";
@@ -22,16 +25,22 @@ import { createUnitView } from "./src/ui/views/unitView.js";
 import { createSkillEffectRenderer } from "./src/ui/skillEffects.js";
 import { installCombatStressTools } from "./src/systems/combat/debugStress.js";
 
-const { state, syncLocalTestGold } = createGameState({ balance, roster, createUnitPool, communityBoardConfig });
+const { state, syncLocalTestGold } = createGameState({ balance, roster, createUnitPool, communityBoardConfig, pvpRoomsConfig });
 const refs = createRefs();
 refs.log?.closest(".log-wrap")?.toggleAttribute("hidden", !state.debugMode);
 const boardUnits = () => state.board.filter(Boolean);
 const ownedUnits = () => [...state.board, ...state.bench].filter(Boolean);
-const boardLimit = () => state.level;
+const boardLimit = () => Math.max(1, state.level + augmentBoardLimitAdd(state));
 const makeUnit = (base, tier = 1) => createUnit(base, balance, tier);
-const temporaryBoostConfig = () => balance.battle.temporaryBoosts || { cost: 20, amount: 0.1, stats: [] };
+const temporaryBoostConfig = () => augmentTemporaryBoostConfig(state, balance.battle.temporaryBoosts || { cost: 20, amount: 0.1, stats: [] });
 const temporaryBoostPercent = (stat) => Math.round((state.temporaryBoosts?.[stat] || 0) * 100);
 const searchParams = new URLSearchParams(location.search);
+
+function hasPendingAugmentChoice() {
+  return !state.augmentOpen
+    && (state.augmentChoices || []).length > 0
+    && !(state.selectedAugments || []).some((augment) => augment.stage === state.augmentStage);
+}
 
 function exposeLocalDebug(name, value) {
   try {
@@ -84,6 +93,76 @@ function clearDebugDummies() {
   render();
 }
 
+function debugJumpRound(value) {
+  if (!state.debugMode || state.busy) return;
+  const targetRound = Math.max(1, Math.min(999, Math.round(Number(value) || state.round)));
+  state.round = targetRound;
+  state.phase = "";
+  state.lastCombatSeed = "";
+  state.lastCombatResult = null;
+  state.enemies = [];
+  state.combatGrid = null;
+  if (refs.debugRoundInput) refs.debugRoundInput.value = String(targetRound);
+  addLog(`[디버그] ${targetRound}라운드로 이동.`);
+  if (!state.shopLocked) rollShop();
+  render();
+}
+
+function pvpUnitSnapshot(unit, index, source) {
+  if (!unit) return null;
+  return {
+    source,
+    index,
+    name: unit.name,
+    displayName: displayNameFor(unit),
+    tier: unit.tier,
+    cost: unit.cost,
+    art: unit.art,
+    color: unit.color,
+    role: unit.role,
+    trait: unit.trait,
+    traits: Array.isArray(unit.traits) ? unit.traits.slice() : [unit.trait].filter(Boolean),
+    weapon: unit.weapon,
+    maxHp: unit.maxHp,
+    atk: unit.atk,
+    speed: unit.speed,
+    skillAmp: unit.skillAmp,
+    defense: unit.defense,
+    skill: unit.skill,
+    skillTooltip: unit.skillTooltip,
+  };
+}
+
+function savePvpPendingSquad(stage, board = state.board) {
+  const payload = {
+    schemaVersion: 1,
+    savedAt: new Date().toISOString(),
+    stage,
+    round: state.round,
+    hp: state.hp,
+    level: state.level,
+    gold: state.gold,
+    board: board.map((unit, index) => pvpUnitSnapshot(unit, index, "board")).filter(Boolean),
+    bench: state.bench.map((unit, index) => pvpUnitSnapshot(unit, index, "bench")).filter(Boolean),
+  };
+  payload.lineupHash = createStableHash({
+    board: payload.board.map(({ name, tier, index, source }) => ({ name, tier, index, source })),
+    bench: payload.bench.map(({ name, tier, index, source }) => ({ name, tier, index, source })),
+  });
+  payload.snapshotId = createPvpSnapshotId(payload);
+  localStorage.setItem(pvpPendingSquadStorageKey, JSON.stringify(payload));
+  return payload;
+}
+
+function offerPvpEntry(stage, board = state.board) {
+  if (pvpRoomsConfig.enabled === false) return;
+  if (stage !== balance.battle.bossInterval) return;
+  const wantsPvp = window.confirm("15라 보스를 격파했습니다.\n현재 덱으로 비동기 PvP 방 목록으로 이동할까요?");
+  if (!wantsPvp) return;
+  savePvpPendingSquad(stage, board);
+  window.location.href = "./pvp.html";
+}
+
 let gameView;
 let overlayView;
 let combat;
@@ -112,7 +191,7 @@ saveController = createSaveController({
   balance,
   storageKey: gameSaveStorageKey,
   addLog,
-  shouldOfferRestore: () => !searchParams.has("pixi-benchmark") && !searchParams.has("combat-stress"),
+  shouldOfferRestore: () => !searchParams.has("pixi-benchmark") && !searchParams.has("combat-stress") && !searchParams.has("combat-determinism"),
 });
 const restoredGame = saveController.restoreSave();
 
@@ -127,6 +206,16 @@ const communityBoard = createCommunityBoardController({
   boardConfig: communityBoardConfig,
   storageKey: communityBoardStorageKey,
   render,
+});
+const augments = createAugmentController({
+  state,
+  augmentSettings,
+  augmentPools,
+  roster,
+  makeUnit,
+  ownedUnits,
+  render,
+  addLog,
 });
 const progression = createProgressionController({ state, balance, addLog, render, boardLimit });
 const { addXp, buyXp, grantRoundIncome, levelXpLabel, xpToNextLevel } = progression;
@@ -185,7 +274,7 @@ const { buyUnit, debugRecruitUnit, moveSelected, moveUnit, rollShop, sellSelecte
 const unitView = createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor, render });
 const shopView = createShopView({ state, refs, balance, roster, buyUnit, displayNameFor });
 const traitView = createTraitView({ state, refs, roster, traitRules, hiddenTraitRules, ownedUnits, activeTraits, activeHiddenTraits, activeTraitTier, nextTraitNeed, displayNameFor });
-overlayView = createOverlayView({ state, refs, rankingConfig, patchNotesConfig });
+overlayView = createOverlayView({ state, refs, rankingConfig, patchNotesConfig, augmentSettings });
 const battlefieldView = createBattlefieldView({
   state,
   refs,
@@ -231,6 +320,8 @@ combat = createCombatController({
   addXp,
   grantRoundIncome,
   captureDeathRecord,
+  offerAugments: augments.offerForRound,
+  offerPvpEntry,
   sleep,
 });
 
@@ -262,6 +353,18 @@ function buyTemporaryBoost(stat) {
   state.temporaryBoosts[stat] = (state.temporaryBoosts[stat] || 0) + amount;
   addLog(`${boost.label} 강화 구매: 다음 전투 ${boost.label} +${temporaryBoostPercent(stat)}%.`);
   render();
+}
+
+function rerollShop() {
+  if (state.busy) return;
+  if (!augmentCanRerollShop(state)) return addLog("상점 리롤을 사용할 수 없습니다.");
+  const free = Math.max(0, state.freeShopRerollsRemaining || 0);
+  const cost = free > 0 ? 0 : balance.shop.rerollCost;
+  if (state.gold < cost) return addLog(`새로고침에는 ${cost} 크레딧이 필요합니다.`);
+  if (free > 0) state.freeShopRerollsRemaining -= 1;
+  else state.gold -= cost;
+  addLog(cost ? `상점 새로고침: ${cost} 크레딧 사용.` : "상점 새로고침: 무료 리롤 사용.");
+  rollShop();
 }
 
 function setRankingSort(sortBy) {
@@ -316,10 +419,23 @@ bindUiEvents({
     debugRecruitUnit,
     toggleDebugDummyPlacement,
     clearDebugDummies,
+    debugJumpRound,
+    openAugments: augments.openAugments,
+    reopenAugments: augments.reopenAugments,
+    closeAugments: augments.closeAugments,
+    rerollAugments: augments.rerollAugments,
+    rerollAugmentSlot: augments.rerollAugmentSlot,
+    selectAugment: augments.selectAugment,
     buyTemporaryBoost,
+    rerollShop,
     rollShop,
     render,
     simulate: () => {
+      if (hasPendingAugmentChoice()) {
+        addLog("[증강] 증강을 선택해야 다음 전투를 시작할 수 있습니다.", { force: true });
+        augments.reopenAugments();
+        return;
+      }
       saveController?.saveNow();
       combat.simulate();
     },

@@ -1,0 +1,40 @@
+{
+  "triggerRounds": {
+    "1": 15,
+    "2": 30,
+    "3": 60
+  },
+  "choiceCount": 3,
+  "freeRerolls": 1,
+  "rarityOddsByStage": {
+    "1": {
+      "silver": 45,
+      "gold": 40,
+      "prismatic": 15
+    },
+    "2": {
+      "silver": 30,
+      "gold": 50,
+      "prismatic": 20
+    },
+    "3": {
+      "silver": 20,
+      "gold": 45,
+      "prismatic": 35
+    }
+  },
+  "rarities": {
+    "silver": {
+      "label": "실버",
+      "tone": "#c8d8e8"
+    },
+    "gold": {
+      "label": "골드",
+      "tone": "#ffd36a"
+    },
+    "prismatic": {
+      "label": "프리즘",
+      "tone": "#b98cff"
+    }
+  }
+}

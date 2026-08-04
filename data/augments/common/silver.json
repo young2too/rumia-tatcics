@@ -1,0 +1,206 @@
+[
+  {
+    "active": false,
+    "id": "common_silver_tidy_bench",
+    "name": "정리 정돈",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "bench",
+      "operation"
+    ],
+    "summary": "벤치 +2",
+    "description": "벤치 칸이 2칸 증가합니다.",
+    "effect": {
+      "type": "benchSize",
+      "add": 2
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_discount_coupon",
+    "name": "할인 쿠폰",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "shop",
+      "reroll"
+    ],
+    "summary": "매 라운드 첫 리롤 무료",
+    "description": "매 라운드 첫 상점 리롤 비용이 0이 됩니다.",
+    "effect": {
+      "type": "freeRerollPerRound",
+      "count": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_emergency_care",
+    "name": "응급 구조",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "playerHp"
+    ],
+    "summary": "플레이어 체력 회복",
+    "description": "플레이어 체력을 12 회복합니다.",
+    "effect": {
+      "type": "playerHp",
+      "add": 12
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_frontline_formation",
+    "name": "전열 대형",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "frontline"
+    ],
+    "summary": "앞 2열 방어 증가",
+    "description": "전투 시작 시 앞 2열에 배치된 아군의 방어력이 증가합니다.",
+    "effect": {
+      "type": "positionStat",
+      "rows": "front2",
+      "stats": {
+        "defenseMultiply": 1.18
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_armor_piercer",
+    "name": "철갑탄",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "debuff"
+    ],
+    "summary": "고방어 대상 피해 증가",
+    "description": "방어력이 가장 높은 적을 공격할 때 입히는 피해가 증가합니다.",
+    "effect": {
+      "type": "damageAgainstHighestDefense",
+      "damageMultiply": 1.12
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_harvest",
+    "name": "수확",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "scaling"
+    ],
+    "summary": "처치 시 전투 중 스탯 증가",
+    "description": "아군이 적을 처치할 때마다 해당 전투 동안 공격력과 스킬 증폭이 증가합니다.",
+    "effect": {
+      "type": "teamKillCombatStack",
+      "stacks": 6,
+      "atkMultiplyAdd": 0.015,
+      "skillAmpMultiplyAdd": 0.015
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_lone_wolf",
+    "name": "빈틈 공략",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "combat"
+    ],
+    "summary": "고립 아군 공격/스증 증가",
+    "description": "주변 1칸에 아군이 없는 유닛은 공격력과 스킬 증폭이 증가합니다.",
+    "effect": {
+      "type": "isolatedAllyStat",
+      "range": 1,
+      "atkMultiply": 1.1,
+      "skillAmpMultiply": 1.1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_thorn_snare",
+    "name": "가시덤불",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "debuff"
+    ],
+    "summary": "첫 공격 대상 이동 방해",
+    "description": "아군의 첫 기본 공격이 대상에게 짧은 이동 방해를 걸고 받는 피해를 증가시킵니다.",
+    "effect": {
+      "type": "firstAttackSnare",
+      "duration": 0.75,
+      "damageTakenAdd": 0.08
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_emergency_fund",
+    "name": "비상금",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "economy"
+    ],
+    "summary": "즉시 크레딧 획득",
+    "description": "선택 즉시 12크레딧을 획득합니다.",
+    "effect": {
+      "type": "instantGold",
+      "add": 12
+    }
+  }
+]

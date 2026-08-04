@@ -1,6 +1,81 @@
 // 전투 스트레스 테스트: 로컬 개발 환경에서 10대13 최대 교전 부하를 자동 구성하고 프레임을 측정합니다.
 const localHostnames = new Set(["127.0.0.1", "localhost"]);
 
+const PRESET_ALLIES = {
+  default: [
+    "유키",
+    "하트",
+    "쇼이치",
+    "시셀라",
+    "헤이즈",
+    "클로에",
+    "띠아",
+    "자히르",
+    "데비&마를렌",
+    "코렐라인",
+  ],
+  assaultGuardian: [
+    "재키",
+    "리다이린",
+    "수아",
+    "레온",
+    "니키",
+    "에키온",
+    "케네스",
+    "슈린",
+    "비형",
+    "가넷",
+  ],
+  casterSupport: [
+    "혜진",
+    "시셀라",
+    "자히르",
+    "비앙카",
+    "셀린",
+    "아디나",
+    "엠마",
+    "코렐라인",
+    "레니",
+    "테오도르",
+  ],
+  assassinTactical: [
+    "쇼이치",
+    "루크",
+    "캐시",
+    "알렉스",
+    "아비게일",
+    "다니엘",
+    "이렘",
+    "얀",
+    "레녹스",
+    "클로에",
+  ],
+  rangedRemote: [
+    "아야",
+    "로지",
+    "헤이즈",
+    "클로에",
+    "나딘",
+    "실비아",
+    "버니스",
+    "리오",
+    "칼라",
+    "아르다",
+  ],
+  hiddenCombo: [
+    "케네스",
+    "가넷",
+    "현우",
+    "혜진",
+    "수아",
+    "요한",
+    "리오",
+    "유키",
+    "아야",
+    "쇼이치",
+  ],
+};
+
 export function installCombatStressTools({
   state,
   balance,
@@ -12,6 +87,14 @@ export function installCombatStressTools({
 }) {
   if (!localHostnames.has(location.hostname)) return;
 
+  const combatSignature = (result) => JSON.stringify({
+    win: result?.win,
+    survivors: result?.survivors,
+    hp: result?.hp,
+    allyMetrics: result?.allyMetrics || [],
+    remainingEnemies: result?.remainingEnemies || [],
+  });
+
   const runCombatStress = async (options = {}) => {
     if (state.busy) return null;
     const allyCount = Math.max(1, Math.min(10, Math.round(options.allyCount || Number(searchParams.get("ally-count")) || 10)));
@@ -19,18 +102,10 @@ export function installCombatStressTools({
     const tier = Math.max(1, Math.min(3, Math.round(options.tier || Number(searchParams.get("tier")) || 3)));
     const round = Math.max(1, Math.round(options.round || Number(searchParams.get("round")) || 90));
     const runId = String(options.runId || searchParams.get("run-id") || Date.now());
-    const allyArts = [
-      "007_Yuki.png",
-      "008_Hart.png",
-      "009_Shoichi.png",
-      "013_Sissela.png",
-      "058_Haze.png",
-      "059_Chloe.png",
-      "051_Tia.png",
-      "024_Zahir.png",
-      "065_Debi&Marlene.png",
-      "087_Coraline.png",
-    ];
+    const preset = String(options.preset || searchParams.get("preset") || "default");
+    const allyNames = Array.isArray(options.allyNames) && options.allyNames.length
+      ? options.allyNames
+      : PRESET_ALLIES[preset] || PRESET_ALLIES.default;
     const enemyArts = [
       "058_Haze.png",
       "013_Sissela.png",
@@ -47,6 +122,7 @@ export function installCombatStressTools({
       "088_Bihyung.png",
     ];
     const unitByArt = (art) => roster.find((unit) => String(unit.art || "").endsWith(art) && unit.active !== false);
+    const unitByName = (name) => roster.find((unit) => unit.name === name && unit.active !== false);
     const tuneStressUnit = (unit, side) => {
       unit.maxHp = Math.max(unit.maxHp, side === "ally" ? 1800 : 2100);
       unit.hp = unit.maxHp;
@@ -68,14 +144,25 @@ export function installCombatStressTools({
     state.hp = Math.max(state.hp, 100);
     state.selected = null;
     state.combatGrid = null;
-    allyArts.slice(0, allyCount).forEach((art, index) => {
-      const base = unitByArt(art);
-      if (base) state.board[boardPositions[index]] = tuneStressUnit(makeUnit(base, tier), "ally");
+    const previousShopLocked = state.shopLocked;
+    state.shopLocked = true;
+    if (options.seed) state.nextCombatSeed = String(options.seed);
+    allyNames.slice(0, allyCount).forEach((name, index) => {
+      const base = unitByName(name);
+      if (base) {
+        const unit = tuneStressUnit(makeUnit(base, tier), "ally");
+        unit.id = `stress-ally-${index}`;
+        state.board[boardPositions[index]] = unit;
+      }
     });
     enemyArts.slice(0, enemyCount).forEach((art, index) => {
       const base = unitByArt(art);
       const slot = balance.battle.enemySpawnOrder[index] ?? index;
-      if (base) state.debugDummies[slot] = tuneStressUnit(makeUnit(base, tier), "enemy");
+      if (base) {
+        const unit = tuneStressUnit(makeUnit(base, tier), "enemy");
+        unit.id = `stress-enemy-${index}`;
+        state.debugDummies[slot] = unit;
+      }
     });
     render();
 
@@ -89,12 +176,18 @@ export function installCombatStressTools({
     };
     requestAnimationFrame(collectFrame);
     const startedAt = performance.now();
-    await combat.simulate();
+    let result;
+    try {
+      result = await combat.simulate();
+    } finally {
+      state.shopLocked = previousShopLocked;
+    }
     running = false;
     const durationMs = performance.now() - startedAt;
     const sorted = frames.slice(1).sort((a, b) => a - b);
     const summary = {
       runId,
+      preset,
       allyCount,
       enemyCount,
       tier,
@@ -108,18 +201,58 @@ export function installCombatStressTools({
       over50ms: sorted.filter((value) => value > 50).length,
       pixiCanvasCount: document.querySelectorAll(".pixi-skill-effect-canvas").length,
       legacyCanvasCount: document.querySelectorAll("canvas.skill-effect-canvas:not(.pixi-skill-effect-canvas)").length,
+      seed: state.lastCombatSeed,
+      signature: combatSignature(result || state.lastCombatResult),
+      result: result || state.lastCombatResult,
     };
     console.info("[rumia-combat-stress]", JSON.stringify(summary));
     return summary;
   };
 
+  const runCombatDeterminism = async (options = {}) => {
+    const runs = Math.max(2, Math.min(100, Math.round(options.runs || Number(searchParams.get("runs")) || 10)));
+    const seed = String(options.seed || searchParams.get("seed") || "rumia-determinism-10v13");
+    const results = [];
+    for (let index = 0; index < runs; index += 1) {
+      const summary = await runCombatStress({
+        ...options,
+        seed,
+        runId: `${seed}-${index + 1}`,
+      });
+      if (!summary) break;
+      results.push({
+        index: index + 1,
+        seed: summary.seed,
+        signature: summary.signature,
+        result: summary.result,
+      });
+    }
+    const first = results[0]?.signature || "";
+    const mismatches = results.filter((result) => result.signature !== first);
+    const summary = {
+      seed,
+      runs: results.length,
+      passed: results.length === runs && mismatches.length === 0,
+      firstSignature: first,
+      mismatchCount: mismatches.length,
+      mismatches: mismatches.slice(0, 5),
+      results: results.slice(0, 3),
+    };
+    console.info("[rumia-combat-determinism]", JSON.stringify(summary));
+    return summary;
+  };
+
   try {
     if (Object.isExtensible(window)) window.__rumiaCombatStress = runCombatStress;
+    if (Object.isExtensible(window)) window.__rumiaCombatDeterminism = runCombatDeterminism;
   } catch {
     // The public debug hook is optional; query-driven stress tests still run.
   }
 
   if (searchParams.has("combat-stress")) {
     window.setTimeout(() => runCombatStress(), 900);
+  }
+  if (searchParams.has("combat-determinism")) {
+    window.setTimeout(() => runCombatDeterminism(), 900);
   }
 }

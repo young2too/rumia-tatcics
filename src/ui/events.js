@@ -10,6 +10,16 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   });
   refs.debugDummyToggle?.addEventListener("click", actions.toggleDebugDummyPlacement);
   refs.debugDummyClear?.addEventListener("click", actions.clearDebugDummies);
+  refs.debugRoundJump?.addEventListener("click", () => actions.debugJumpRound(refs.debugRoundInput.value));
+  refs.debugRoundInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") actions.debugJumpRound(refs.debugRoundInput.value);
+  });
+  refs.debugShop?.addEventListener("click", (event) => {
+    const targetRound = event.target.closest("[data-debug-round]")?.dataset.debugRound;
+    if (targetRound) actions.debugJumpRound(targetRound);
+    const augmentStage = event.target.closest("[data-debug-augment-stage]")?.dataset.debugAugmentStage;
+    if (augmentStage) actions.openAugments(Number(augmentStage), { force: true });
+  });
   refs.shopTabShop?.addEventListener("click", () => actions.setShopPanelTab("shop"));
   refs.shopTabMetrics?.addEventListener("click", () => actions.setShopPanelTab("metrics"));
   refs.combatMetrics?.addEventListener("click", (event) => {
@@ -17,11 +27,7 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     if (mode) actions.setCombatMetricMode(mode);
   });
   $("reroll").addEventListener("click", () => {
-    if (state.busy) return;
-    if (state.gold < balance.shop.rerollCost) return actions.addLog(`새로고침에는 ${balance.shop.rerollCost} 크레딧이 필요합니다.`);
-    state.gold -= balance.shop.rerollCost;
-    actions.addLog(`상점 새로고침: ${balance.shop.rerollCost} 크레딧 사용.`);
-    actions.rollShop();
+    actions.rerollShop();
   });
 
   $("shopLock").addEventListener("click", () => {
@@ -73,6 +79,22 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   });
   refs.patchNotesSkipToday.addEventListener("change", () => {
     state.patchNotesSkipToday = refs.patchNotesSkipToday.checked;
+  });
+  refs.augmentReroll?.addEventListener("click", actions.rerollAugments);
+  refs.augmentClose?.addEventListener("click", actions.closeAugments);
+  refs.activeAugments?.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    if (target?.closest("[data-augment-reopen]")) actions.reopenAugments();
+  });
+  refs.augmentPanel?.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const rerollSlot = target?.closest("[data-augment-reroll-slot]")?.dataset.augmentRerollSlot;
+    if (rerollSlot !== undefined) {
+      actions.rerollAugmentSlot(Number(rerollSlot));
+      return;
+    }
+    const augmentId = target?.closest("[data-augment-id]")?.dataset.augmentId;
+    if (augmentId) actions.selectAugment(augmentId);
   });
   refs.traits.addEventListener("click", (event) => {
     const trait = event.target.closest(".trait")?.dataset.trait;

@@ -178,10 +178,13 @@ export function createSkillEffectRenderer() {
 
   function destroyPixiApp() {
     if (!pixiApp) return;
+    const app = pixiApp;
+    pixiApp = null;
     try {
-      pixiApp.destroy(true);
+      if (typeof app._cancelResize !== "function") app._cancelResize = () => {};
+      app.destroy(true);
     } catch (error) {
-      console.warn("[rumia-pixi-destroy]", error);
+      if (!String(error?.message || error).includes("_cancelResize")) console.warn("[rumia-pixi-destroy]", error);
       pixiLayer?.remove();
     }
   }

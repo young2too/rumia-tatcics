@@ -1,5 +1,7 @@
 // 전투 컨트롤러: 전투 상태 생성, 전투 루프, 캐릭터 스킬 실행을 조립합니다.
+import { createCombatSeed, createSeededRng } from "../../core/rng.js";
 import { tierStatMultiplier } from "../../core/tier.js";
+import { applyAugmentStatsToUnit, applyStatPatch, augmentEffects, unitTraits } from "../augmentEffects.js";
 
 import { createSkillTimeline } from "./timeline.js";
 
@@ -36,11 +38,26 @@ export function createCombatController(context) {
     addXp,
     grantRoundIncome,
     captureDeathRecord,
+    offerAugments,
+    offerPvpEntry,
     sleep,
   } = context;
 
 const skillTimeline = createSkillTimeline();
 let combatElapsedMs = 0;
+let combatRng = createSeededRng("combat-bootstrap");
+
+function random() {
+  return combatRng.random();
+}
+
+function randomChoice(items) {
+  return combatRng.choice(items);
+}
+
+function combatId(prefix) {
+  return combatRng.id(prefix);
+}
 
 const statusTurnMs = () => balance.battle.statusTurnMs ?? 500;
 const durationFromTurns = (turns) => Math.max(0, Number(turns) || 0) * statusTurnMs();
@@ -56,9 +73,48 @@ const skillOutputMultiplier = (unit) => {
 
 const skillOutput = (unit, amount) => amount * skillOutputMultiplier(unit);
 
+function enemyRows() {
+  return Math.ceil((balance.battle.enemySlots || 0) / balance.battle.columns);
+}
+
+function allyRows() {
+  return Math.ceil((state.board?.length || 0) / balance.battle.columns);
+}
+
+function totalRows() {
+  return enemyRows() + allyRows();
+}
+
+function allyStartRow() {
+  return enemyRows();
+}
+
+function combatGridSize() {
+  return (balance.battle.enemySlots || 0) + (state.board?.length || 0);
+}
+
+function bossSpawnIndex() {
+  const configured = Number(balance.battle.enemyBossSpawnIndex);
+  if (Number.isInteger(configured) && configured >= 0 && configured < balance.battle.enemySlots) return configured;
+  return balance.battle.enemySpawnOrder?.[0] ?? Math.floor((balance.battle.enemySlots || 1) / 2);
+}
+
 function dealSkillDamage(source, target, amount, options = {}) {
   if (options.fixed) return dealDamage(source, target, amount, options);
   return dealDamage(source, target, skillOutput(source, amount), options);
+}
+
+function selectedAugmentEffects(type = "") {
+  return augmentEffects(state, type);
+}
+
+function unitAugmentEffect(unit, type) {
+  if (!unit || unit.side !== "ally") return null;
+  return selectedAugmentEffects(type).find((effect) => effect.unit === unit.name) || null;
+}
+
+function hasUnitAugment(unit, type) {
+  return Boolean(unitAugmentEffect(unit, type));
 }
 
 function enemyDifficultyStage() {
@@ -97,7 +153,7 @@ function enemyScale(kind) {
 function rollEnemyTier(stage) {
   const oddsTable = balance.battle.enemyTierOddsByStage || [[100, 0, 0]];
   const odds = oddsTable[Math.min(stage, oddsTable.length - 1)] || oddsTable[0];
-  const roll = Math.random() * 100;
+  const roll = random() * 100;
   let sum = 0;
   const minimumTier = state.round > (balance.battle.enemyMinimumTierAfterRound ?? Infinity) ? 2 : 1;
   for (let i = 0; i < odds.length; i++) {
@@ -126,7 +182,7 @@ function makeEnemyUnit(base, tier, stage, hpScale, atkScale) {
   const defenseMultiplier = tierStatMultiplier(balance, base.cost, tier, "defense");
   const unit = {
     ...base,
-    id: crypto.randomUUID(),
+    id: combatId("enemy"),
     tier,
     cost: base.cost,
     maxHp: Math.round(stats.hp * hpMultiplier),
@@ -185,7 +241,7 @@ function makeBossUnit(stage) {
   const defenseScale = (1 + bossIndex * balance.battle.bossDefenseGrowth) * (1 + bossCycle * (balance.battle.bossCycleDefenseGrowth ?? 0));
   return {
     ...base,
-    id: crypto.randomUUID(),
+    id: combatId("boss"),
     tier: Math.min(3, 1 + Math.floor(stage / 2)),
     cost: 5,
     boss: true,
@@ -202,8 +258,8 @@ function makeBossUnit(stage) {
 
 function weightedSample(items, weightKey = "weight") {
   const total = items.reduce((sum, item) => sum + Math.max(0, item[weightKey] ?? 1), 0);
-  if (total <= 0) return sample(items);
-  let roll = Math.random() * total;
+  if (total <= 0) return randomChoice(items);
+  let roll = random() * total;
   for (const item of items) {
     roll -= Math.max(0, item[weightKey] ?? 1);
     if (roll <= 0) return item;
@@ -295,9 +351,9 @@ function chooseEnemyBase(candidates, group, picked, countByName, count) {
   const pools = [groupCandidates, candidates];
   for (const pool of pools) {
     const available = pool.filter((unit) => canAddEnemy(picked, unit, countByName, count));
-    if (available.length) return sample(available);
+    if (available.length) return randomChoice(available);
   }
-  return sample(candidates);
+  return randomChoice(candidates);
 }
 
 function enemyGroupsForCount(count) {
@@ -309,7 +365,7 @@ function enemyGroupsForCount(count) {
   }
   return groups.sort((a, b) => {
     const priority = { frontline: 0, dealer: 1, support: 2 };
-    return (priority[a] ?? 9) - (priority[b] ?? 9) || Math.random() - 0.5;
+    return (priority[a] ?? 9) - (priority[b] ?? 9) || random() - 0.5;
   });
 }
 
@@ -319,13 +375,13 @@ function makeEnemies() {
   if (state.debugMode && state.debugDummies?.some(Boolean)) {
     return state.debugDummies.map((dummy) => dummy ? {
       ...dummy,
-      id: crypto.randomUUID(),
+      id: combatId("dummy"),
       hp: dummy.maxHp,
       side: "enemy",
     } : null);
   }
   if (isBossRound()) {
-    slots[12] = makeBossUnit(Math.max(1, state.round / balance.battle.bossInterval));
+    slots[bossSpawnIndex()] = makeBossUnit(Math.max(1, state.round / balance.battle.bossInterval));
     return slots;
   }
 
@@ -355,8 +411,9 @@ function makeEnemies() {
 function previewBossEnemies() {
   const slots = Array(balance.battle.enemySlots).fill(null);
   if (isBossRound()) {
-    slots[12] = makeBossUnit(Math.max(1, state.round / balance.battle.bossInterval));
-    slots[12].side = "enemy";
+    const index = bossSpawnIndex();
+    slots[index] = makeBossUnit(Math.max(1, state.round / balance.battle.bossInterval));
+    slots[index].side = "enemy";
   }
   return slots;
 }
@@ -407,7 +464,7 @@ function unitSlot(unit) {
   const arr = unit.side === "enemy" ? state.enemies : state.board;
   const index = arr.indexOf(unit);
   if (index < 0) return null;
-  const yOffset = unit.side === "enemy" ? 0 : 2;
+  const yOffset = unit.side === "enemy" ? 0 : allyStartRow();
   return { arr, index, x: index % cols, y: yOffset + Math.floor(index / cols) };
 }
 
@@ -426,15 +483,15 @@ function hexDistanceSlots(a, b) {
 function slotIndexFor(side, x, y, allowCross = false) {
   const cols = balance.battle.columns;
   if (allowCross) {
-    if (x < 0 || x >= cols || y < 0 || y > 5) return -1;
+    if (x < 0 || x >= cols || y < 0 || y >= totalRows()) return -1;
     return y * cols + x;
   }
   if (side === "enemy") {
-    if (x < 0 || x >= cols || y < 0 || y > 1) return -1;
+    if (x < 0 || x >= cols || y < 0 || y >= enemyRows()) return -1;
     return y * cols + x;
   }
-  if (x < 0 || x >= cols || y < 2 || y > 5) return -1;
-  return (y - 2) * cols + x;
+  if (x < 0 || x >= cols || y < allyStartRow() || y >= totalRows()) return -1;
+  return (y - allyStartRow()) * cols + x;
 }
 
 function distanceBetween(a, b) {
@@ -442,6 +499,13 @@ function distanceBetween(a, b) {
   const to = unitSlot(b);
   if (!from || !to) return 99;
   return hexDistanceSlots(from, to);
+}
+
+function isBacklineUnit(unit) {
+  const slot = unitSlot(unit);
+  if (!slot) return false;
+  if (unit.side === "enemy") return slot.y <= Math.max(0, enemyRows() - 2);
+  return slot.y >= allyStartRow() + Math.max(0, allyRows() - 2);
 }
 
 function nearestTarget(attacker, enemies) {
@@ -464,11 +528,11 @@ function isBacklineDiver(unit) {
 }
 
 function backlineJumpRows(unit) {
-  return unit.side === "ally" ? [0, 1] : [5, 4];
+  return unit.side === "ally" ? [0, 1] : [totalRows() - 1, totalRows() - 2];
 }
 
 function enemyBacklineRows(attacker) {
-  return attacker.side === "ally" ? [0, 1] : [5, 4];
+  return attacker.side === "ally" ? [0, 1] : [totalRows() - 1, totalRows() - 2];
 }
 
 function emptyBacklineSlots(unit) {
@@ -530,7 +594,7 @@ function placeBacklineDivers(units) {
 function backlineDepthFor(attacker, target) {
   const slot = unitSlot(target);
   if (!slot) return -1;
-  return attacker.side === "enemy" ? slot.y : balance.battle.columns - slot.y;
+  return attacker.side === "enemy" ? slot.y : totalRows() - 1 - slot.y;
 }
 
 function compareByDistanceThenHp(attacker, a, b) {
@@ -678,7 +742,7 @@ function summonHiddenClones(allies) {
     const ratio = Math.max(0.1, Number(owner.hiddenCloneSummon.effect.statRatio) || 0.4);
     const clone = {
       ...owner,
-      id: `${owner.id}-clone-${Date.now()}-${summoned.length}`,
+      id: `${owner.id}-${combatId("clone")}`,
       name: "분신",
       maxHp: Math.max(1, Math.round(owner.maxHp * ratio)),
       hp: Math.max(1, Math.round(owner.maxHp * ratio)),
@@ -744,9 +808,9 @@ function centerSlotFor(unit) {
   if (!state.combatGrid) return null;
   const from = unitSlot(unit);
   if (!from) return null;
-  const center = { x: (balance.battle.columns - 1) / 2, y: 2.5 };
+  const center = { x: (balance.battle.columns - 1) / 2, y: (totalRows() - 1) / 2 };
   const candidates = [];
-  for (let y = 0; y <= 5; y += 1) {
+  for (let y = 0; y < totalRows(); y += 1) {
     for (let x = 0; x < balance.battle.columns; x += 1) {
       const index = slotIndexFor(unit.side, x, y, true);
       if (index < 0 || state.combatGrid[index]) continue;
@@ -833,7 +897,7 @@ function summonOmega(caster) {
   if (!state.combatGrid || !casterSlot) return null;
   const range = hanaPattern.summonRange || 1;
   const emptySlots = [];
-  for (let y = 0; y < 6; y++) {
+  for (let y = 0; y < totalRows(); y++) {
     for (let x = 0; x < balance.battle.columns; x++) {
       const index = slotIndexFor(caster.side, x, y, true);
       if (index < 0 || state.combatGrid[index]) continue;
@@ -846,7 +910,7 @@ function summonOmega(caster) {
   if (index == null) return null;
   const omega = {
     ...bossRoster.find((boss) => boss.pattern === "omega"),
-    id: crypto.randomUUID(),
+    id: combatId("omega"),
     tier: 2,
     cost: 5,
     boss: true,
@@ -956,8 +1020,8 @@ function applyOpeningShield(units, targetsKey, ratioKey, preferBackline) {
   const shieldRatio = Math.max(...units.map((unit) => unit[ratioKey] || 0), 0);
   if (!targetCount || !shieldRatio) return 0;
   const isTargetRow = (unit, slot) => {
-    if (unit.side === "enemy") return preferBackline ? slot.y <= 1 : slot.y >= 2;
-    return preferBackline ? slot.y >= 4 : slot.y <= 3;
+    if (unit.side === "enemy") return preferBackline ? slot.y <= 1 : slot.y >= Math.max(0, enemyRows() - 2);
+    return preferBackline ? slot.y >= totalRows() - 2 : slot.y < allyStartRow() + 2;
   };
   const targets = living(units)
     .map((unit) => ({ unit, slot: unitSlot(unit) }))
@@ -987,7 +1051,7 @@ function pullBacklineEnemies(allies, enemies) {
     const from = unitSlot(unit);
     if (!from) continue;
     const destinations = [];
-    for (let y = 2; y <= 5; y++) {
+    for (let y = allyStartRow(); y < totalRows(); y++) {
       for (let x = 0; x < balance.battle.columns; x++) {
         const index = slotIndexFor("ally", x, y, true);
         if (index < 0 || state.combatGrid[index]) continue;
@@ -1042,6 +1106,7 @@ function applyOpeningTeamUtilities(allies, enemies) {
 }
 
 function prepareCombatUnit(unit, side, counts = {}) {
+  unit.side = side;
   const stats = side === "ally" ? applySynergy(unit, counts) : {
     hp: unit.maxHp,
     atk: unit.atk,
@@ -1078,8 +1143,17 @@ function prepareCombatUnit(unit, side, counts = {}) {
     stats.hp *= 1 + (boosts.hp || 0);
     stats.atk *= 1 + (boosts.atk || 0);
     stats.skillAmp *= 1 + (boosts.skillAmp || 0);
+    applyAugmentStatsToUnit(state, unit, stats, {
+      slotOf: unitSlot,
+      allyStartRow: allyStartRow(),
+      adjacentAllyCount: (target, range = 1) => boardUnits()
+        .filter((candidate) => candidate && candidate !== target)
+        .filter((candidate) => {
+          candidate.side ||= "ally";
+          return distanceBetween(target, candidate) <= range;
+        }).length,
+    });
   }
-  unit.side = side;
   unit.mana = 0;
   unit.maxHp = Math.round(stats.hp);
   unit.hp = unit.maxHp;
@@ -1224,13 +1298,30 @@ function pickTarget(attacker, enemies) {
 }
 
 function dealDamage(source, target, amount, options = {}) {
-  const damageFloor = Math.max(3, Math.round(amount * 0.12));
+  let adjustedAmount = amount;
+  if (source?.side === "ally" && target) {
+    for (const effect of selectedAugmentEffects("damageAgainstHighestDefense")) {
+      const foes = (state.combatGrid || []).filter((unit) => unit && unit.side !== source.side && unit.hp > 0);
+      const highestDefense = Math.max(0, ...foes.map((unit) => unit.defense || 0));
+      if ((target.defense || 0) >= highestDefense) adjustedAmount *= Number(effect.damageMultiply) || 1;
+    }
+    const sameTargetStacks = source.augmentSameTargetStacks?.[target.id] || 0;
+    const sameTargetBonus = selectedAugmentEffects("sameTargetVulnerability")
+      .reduce((sum, effect) => sum + Math.min(Number(effect.stacks) || 0, sameTargetStacks) * (Number(effect.damageTakenAddPerStack) || 0), 0);
+    adjustedAmount *= 1 + sameTargetBonus;
+    const curseBonus = (target.augmentCurseStacks || 0) * selectedAugmentEffects("skillCurseStack")
+      .reduce((sum, effect) => sum + (Number(effect.damageTakenAdd) || 0), 0);
+    adjustedAmount *= 1 + curseBonus + (target.augmentDamageTakenAdd || 0);
+    const daniel = unitAugmentEffect(source, "danielMoonlightExecution");
+    if (daniel && isBacklineUnit(target)) adjustedAmount *= Number(daniel.backlineDamageMultiply) || 1;
+  }
+  const damageFloor = Math.max(3, Math.round(adjustedAmount * 0.12));
   const shawlReduction = target.shawlCurtainRemainingMs > 0 && target.shield > 0 ? 0.25 : 0;
   const shieldDefenseReduction = target.shieldDefenseRemainingMs > 0 ? 0.6 : 0;
   const totalReduction = Math.max(0, Math.min(0.85, (target.damageReduction || 0) + shawlReduction + shieldDefenseReduction));
-  const reducedAmount = amount * (1 - totalReduction);
+  const reducedAmount = adjustedAmount * (1 - totalReduction);
   const damage = options.fixed
-    ? Math.max(0, Math.round(amount))
+    ? Math.max(0, Math.round(adjustedAmount))
     : Math.max(damageFloor, Math.round(reducedAmount - target.defense * 0.45));
   const wickelinePattern = bossPatterns.wickeline;
   if (target.pattern === "wickeline" && target.immuneRemainingMs > 0) {
@@ -1278,6 +1369,39 @@ function dealDamage(source, target, amount, options = {}) {
   const manaFromHit = Math.min(balance.battle.manaPerHit, Math.max(3, Math.round(damage * 0.32)));
   gainMana(target, manaFromHit * (1 + Math.max(0, target.manaOnHitBonus || 0)));
   target.status = target.hp > 0 ? "hit" : "dead";
+  if (source?.side === "ally" && target.hp > 0 && !options.skipAugmentExecution) {
+    const daniel = unitAugmentEffect(source, "danielMoonlightExecution");
+    if (daniel && target.hp / target.maxHp <= (Number(daniel.executeThresholdHpRatio) || 0)) {
+      const executeDamage = dealDamage(source, target, source.atk * (Number(daniel.executeDamageAtkRatio) || 0), { fixed: true, skipAugmentExecution: true });
+      state.pendingHiddenEffects ||= [];
+      if (executeDamage > 0) state.pendingHiddenEffects.push(combatEffect(source, target, "skill", { amount: executeDamage, fixed: true }));
+    }
+    for (const effect of selectedAugmentEffects("executeLowHpEnemy")) {
+      const threshold = Number(effect.thresholdHpRatio) || 0;
+      if (threshold > 0 && target.hp / target.maxHp <= threshold) {
+        if (target.boss) {
+          const executeDamage = dealDamage(source, target, target.maxHp * (Number(effect.bossDamageMaxHpRatio) || 0), { fixed: true, skipAugmentExecution: true });
+          state.pendingHiddenEffects ||= [];
+          if (executeDamage > 0) state.pendingHiddenEffects.push(combatEffect(source, target, "skill", { amount: executeDamage, fixed: true }));
+        } else {
+          target.hp = 0;
+          target.status = "dead";
+        }
+      }
+    }
+  }
+  const lowHpEffects = triggerLowHpAugments(target);
+  if (lowHpEffects.length) {
+    state.pendingHiddenEffects ||= [];
+    state.pendingHiddenEffects.push(...lowHpEffects);
+  }
+  if (target.hp <= 0) {
+    const reviveEffect = triggerThreeStarRevive(target);
+    if (reviveEffect) {
+      state.pendingHiddenEffects ||= [];
+      state.pendingHiddenEffects.push(reviveEffect);
+    }
+  }
   if (target.hp <= 0) {
     const units = state.combatGrid?.filter(Boolean) || [];
     const rallies = triggerDefeatEffects(target, units);
@@ -1309,6 +1433,48 @@ function dealDamage(source, target, amount, options = {}) {
       }
     }
     const killUtilities = triggerKillUtilities(source, target);
+    if (source?.side === "ally" && source.hp > 0) {
+      for (const effect of selectedAugmentEffects("teamKillCombatStack")) {
+        const allies = living(units).filter((unit) => unit.side === source.side);
+        const maxStacks = Number(effect.stacks) || 0;
+        for (const ally of allies) {
+          ally.augmentKillCombatStacks = Math.min(maxStacks, (ally.augmentKillCombatStacks || 0) + 1);
+          ally.atk *= 1 + (Number(effect.atkMultiplyAdd) || 0);
+          ally.skillAmp *= 1 + (Number(effect.skillAmpMultiplyAdd) || 0);
+        }
+      }
+      if (hasUnitAugment(source, "lukeCleaningService")) {
+        source.lukeCleaningBoost = true;
+        target.augmentDamageTakenAdd = Math.max(target.augmentDamageTakenAdd || 0, Number(unitAugmentEffect(source, "lukeCleaningService")?.markedDamageTakenAdd) || 0);
+      }
+      const iremEffect = unitAugmentEffect(source, "iremCatfishMayhem");
+      if (iremEffect) {
+        const multiply = target.tacticalTarget ? Number(iremEffect.tacticalTargetBonusMultiply) || 1 : 1;
+        source.atk += (Number(iremEffect.killAtkAdd) || 0) * multiply;
+        source.skillAmp += (Number(iremEffect.killSkillAmpAdd) || 0) * multiply;
+        addLog(`${source.name} 증강 성장: 공격 +${(Number(iremEffect.killAtkAdd) || 0) * multiply} / 스증 +${(Number(iremEffect.killSkillAmpAdd) || 0) * multiply}.`);
+      }
+    }
+    if (target.side === "ally") {
+      for (const effect of selectedAugmentEffects("deadAllyAttackShare")) {
+        const share = (target.atk || 0) * (Number(effect.atkShareRatio) || 0);
+        for (const ally of living(units).filter((unit) => unit.side === target.side && unit !== target)) ally.atk += share;
+      }
+      for (const effect of selectedAugmentEffects("inheritFirstDeadThreeStar")) {
+        if (state.augmentInheritedThreeStar || target.tier < 3) continue;
+        state.augmentInheritedThreeStar = true;
+        for (const ally of living(units).filter((unit) => unit.side === target.side && unit !== target)) {
+          ally.atk += target.atk * (Number(effect.inheritAtkRatio) || 0);
+          ally.skillAmp += target.skillAmp * (Number(effect.inheritSkillAmpRatio) || 0);
+          ally.maxHp += Math.round(target.maxHp * (Number(effect.inheritHpRatio) || 0));
+          ally.hp += Math.round(target.maxHp * (Number(effect.inheritHpRatio) || 0));
+        }
+      }
+    }
+    if (target.augmentLenoxSuppressSeconds > 0) {
+      const nearby = living(units).filter((unit) => unit.side === target.side && unit !== target && distanceBetween(target, unit) <= 1);
+      for (const unit of nearby) applyStunMs(unit, target.augmentLenoxSuppressSeconds * 1000);
+    }
     removeDeadUnits([target]);
     if (source?.skillId === "jackie_assault" && source.hp > 0 && !options.skipKillFollowup) {
       const nextTarget = blinkNextToTarget(source, units.filter((unit) => unit.side !== source.side && unit.hp > 0));
@@ -1402,12 +1568,94 @@ function applyLifeSteal(attacker, damage) {
   return applyHeal(attacker, heal);
 }
 
+function applyOpeningAugments(allies) {
+  const effects = [];
+  for (const effect of selectedAugmentEffects("frontlineShieldAndDefense")) {
+    const targets = living(allies).filter((unit) => {
+      const slot = unitSlot(unit);
+      return slot && slot.y <= allyStartRow() + 1;
+    });
+    for (const unit of targets) {
+      const shield = Math.max(1, Math.round(unit.maxHp * (Number(effect.shieldHpRatio) || 0)));
+      unit.shield = (unit.shield || 0) + shield;
+      unit.status = "shielded";
+      effects.push(combatEffect(unit, unit, "shield", { amount: shield }));
+    }
+  }
+  return effects;
+}
+
+function applyLastSurvivorAugment(allies) {
+  const survivor = living(allies)[0];
+  if (!survivor || survivor.augmentLastSurvivorApplied || living(allies).length !== 1) return null;
+  const effect = selectedAugmentEffects("lastAllyStandingBuff")[0];
+  if (!effect) return null;
+  survivor.augmentLastSurvivorApplied = true;
+  survivor.maxHp = Math.round(survivor.maxHp * (Number(effect.hpMultiply) || 1));
+  survivor.hp = Math.min(survivor.maxHp, Math.round(survivor.hp * (Number(effect.hpMultiply) || 1)));
+  survivor.atk *= Number(effect.atkMultiply) || 1;
+  survivor.skillAmp *= Number(effect.skillAmpMultiply) || 1;
+  return combatEffect(survivor, survivor, "shield", { amount: 1 });
+}
+
+function applyTimedAugments(allies) {
+  const effects = [];
+  for (const effect of selectedAugmentEffects("combatTimeScalingStat")) {
+    const interval = Math.max(1, Number(effect.intervalSeconds) || 3) * 1000;
+    const stack = Math.min(Number(effect.maxStacks) || 0, Math.floor(combatElapsedMs / interval));
+    for (const unit of living(allies)) {
+      if ((unit.augmentWarmupStacks || 0) >= stack) continue;
+      const missing = stack - (unit.augmentWarmupStacks || 0);
+      unit.augmentWarmupStacks = stack;
+      unit.atk *= 1 + (Number(effect.atkMultiplyAdd) || 0) * missing;
+      unit.skillAmp *= 1 + (Number(effect.skillAmpMultiplyAdd) || 0) * missing;
+      effects.push(combatEffect(unit, unit, "shield", { amount: 1 }));
+    }
+  }
+  return effects;
+}
+
+function triggerLowHpAugments(target) {
+  if (!target || target.side !== "ally" || target.hp <= 0) return [];
+  const effects = [];
+  for (const effect of selectedAugmentEffects("lowHpOnceBuff")) {
+    const key = `augmentLowHpBuff:${effect.type}:${effect.triggerHpRatio}`;
+    if (target[key] || target.hp / target.maxHp > (Number(effect.triggerHpRatio) || 0)) continue;
+    target[key] = true;
+    applyStatPatch(target, effect.stats);
+    target.damageReduction = Math.max(0, Math.min(0.85, target.damageReduction || 0));
+    target.status = "shielded";
+    effects.push(combatEffect(target, target, "shield", { amount: 1 }));
+  }
+  for (const effect of selectedAugmentEffects("lowHpHealPulse")) {
+    const key = `augmentLowHpHeal:${effect.type}`;
+    if (target[key] || target.hp / target.maxHp > (Number(effect.thresholdHpRatio) || 0.35)) continue;
+    target[key] = true;
+    const allies = living(state.combatGrid || []).filter((unit) => unit.side === target.side && distanceBetween(target, unit) <= (Number(effect.range) || 1));
+    for (const ally of allies) {
+      const heal = applyHeal(ally, ally.maxHp * (Number(effect.healHpRatio) || 0));
+      if (heal > 0) effects.push(combatEffect(target, ally, "heal", { amount: heal }));
+    }
+  }
+  return effects;
+}
+
+function triggerThreeStarRevive(target) {
+  if (!target || target.side !== "ally" || target.tier < 3 || target.hp > 0) return null;
+  const effect = selectedAugmentEffects("threeStarRevive")[0];
+  if (!effect || target.augmentThreeStarRevived) return null;
+  target.augmentThreeStarRevived = true;
+  target.hp = Math.max(1, Math.round(target.maxHp * (Number(effect.hpRatio) || 0.4)));
+  target.status = "healed";
+  return combatEffect(target, target, "heal", { amount: target.hp });
+}
+
 function basicAttackDamage(attacker, baseAmount) {
   if (!attacker.hasUsedOpeningCrit && attacker.openingCritMultiplier > 1) {
     attacker.hasUsedOpeningCrit = true;
     return { amount: baseAmount * attacker.openingCritMultiplier, critical: true, opening: true };
   }
-  if (Math.random() < (attacker.critChance || 0)) {
+  if (random() < (attacker.critChance || 0)) {
     return { amount: baseAmount * (attacker.critDamage || 1.5), critical: true, opening: false };
   }
   return { amount: baseAmount, critical: false, opening: false };
@@ -1423,7 +1671,7 @@ function basicAttack(attacker, enemies) {
       effects: [],
     };
   }
-  const variance = 0.86 + Math.random() * 0.28;
+  const variance = 0.86 + random() * 0.28;
   if (attacker.pattern === "nadja") {
     const nadjaPattern = bossPatterns.nadja;
     const targets = unitsInRange(attacker, enemies, unitAttackRange(attacker))
@@ -1448,7 +1696,13 @@ function basicAttack(attacker, enemies) {
   const bihyungEnhanced = (attacker.bihyungEnhancedAttacks || 0) > 0;
   const bihyungSecondStrike = bihyungEnhanced && attacker.bihyungEnhancedAttacks === 1;
   const hit = basicAttackDamage(attacker, attacker.atk * variance * balance.battle.basicDamageMultiplier);
-  const damage = dealDamage(attacker, target, (guardCounter ? hit.amount * 1.18 : hit.amount) * (bihyungEnhanced ? 1.35 : 1));
+  let attackAmount = (guardCounter ? hit.amount * 1.18 : hit.amount) * (bihyungEnhanced ? 1.35 : 1);
+  if (attacker.lukeCleaningBoost) {
+    const effect = unitAugmentEffect(attacker, "lukeCleaningService");
+    attackAmount += attacker.atk * (Number(effect?.nextAttackAtkRatioAdd) || 0);
+    attacker.lukeCleaningBoost = false;
+  }
+  const damage = dealDamage(attacker, target, attackAmount);
   const paintMark = damage > 0 ? markPaintTarget(attacker, target) : null;
   const lifeStealHeal = applyLifeSteal(attacker, damage);
   if (!flameAttack && !guardCounter && !bihyungEnhanced) gainMana(attacker, balance.battle.manaPerAttack);
@@ -1459,6 +1713,44 @@ function basicAttack(attacker, enemies) {
   if (bihyungEnhanced) attacker.bihyungEnhancedAttacks = Math.max(0, attacker.bihyungEnhancedAttacks - 1);
   attacker.status = "attacking";
   const effects = [combatEffect(attacker, target, "attack", { amount: damage, critical: hit.critical })];
+  const theodore = living(state.combatGrid || [])
+    .find((unit) => unit.side === attacker.side && unit !== attacker && unitAugmentEffect(unit, "theodoreSniperProtocol"));
+  if (theodore && (!theodore.theodoreAssistReadyAt || theodore.theodoreAssistReadyAt <= combatElapsedMs) && target.hp > 0) {
+    const effect = unitAugmentEffect(theodore, "theodoreSniperProtocol");
+    const assistDamage = dealSkillDamage(theodore, target, theodore.skillAmp * (Number(effect.assistDamageSkillAmpRatio) || 0));
+    const shield = Math.max(1, Math.round(attacker.maxHp * (Number(effect.allyShieldHpRatio) || 0)));
+    attacker.shield = (attacker.shield || 0) + shield;
+    theodore.theodoreAssistReadyAt = combatElapsedMs + (Number(effect.cooldownSeconds) || 2.5) * 1000;
+    if (assistDamage > 0) effects.push(combatEffect(theodore, target, "skill", { amount: assistDamage, extra: true }));
+    effects.push(combatEffect(theodore, attacker, "shield", { amount: shield }));
+  }
+  if (attacker.side === "ally") {
+    attacker.augmentSameTargetStacks ||= {};
+    attacker.augmentSameTargetStacks[target.id] = (attacker.augmentSameTargetStacks[target.id] || 0) + 1;
+    if (!attacker.augmentFirstAttackDone) {
+      attacker.augmentFirstAttackDone = true;
+      for (const effect of selectedAugmentEffects("firstAttackSnare")) {
+        applyRoot(target, Math.max(1, (Number(effect.duration) || 0.75) / (balance.battle.statusTurnMs ?? 500) * 1000));
+        target.augmentDamageTakenAdd = Math.max(target.augmentDamageTakenAdd || 0, Number(effect.damageTakenAdd) || 0);
+      }
+    }
+    for (const effect of selectedAugmentEffects("basicAttackStack")) {
+      const maxStacks = Number(effect.maxStacks) || 0;
+      const next = Math.min(maxStacks, (attacker.augmentBasicAttackStacks || 0) + 1);
+      if (next > (attacker.augmentBasicAttackStacks || 0)) {
+        attacker.augmentBasicAttackStacks = next;
+        if (effect.stat === "speed") attacker.speed += Number(effect.addPerStack) || 0;
+      }
+    }
+    for (const effect of selectedAugmentEffects("periodicBasicAttackMaxHpDamage")) {
+      const every = Math.max(1, Number(effect.everyHits) || 1);
+      if (((attacker.basicAttackCount || 0) + 1) % every === 0 && target.hp > 0) {
+        const ratio = target.boss ? Number(effect.bossRatio) || 0 : Number(effect.targetMaxHpRatio) || 0;
+        const bonus = dealDamage(attacker, target, target.maxHp * ratio, { fixed: true });
+        if (bonus > 0) effects.push(combatEffect(attacker, target, "skill", { amount: bonus, fixed: true, extra: true }));
+      }
+    }
+  }
   if (guardCounter) effects.push(combatEffect(attacker, target, "skill", { amount: 1 }));
   if (paintMark) effects.push({ ...combatEffect(attacker, target, "paint-mark"), kind: "paint-mark" });
   let extraMessage = "";
@@ -1714,19 +2006,25 @@ function castCathySkill(caster, enemies) {
   const damage = dealSkillDamage(caster, target, caster.atk * 0.35 + caster.skillAmp + 6);
   let collision = { moved: 0, collision: null, wall: false };
   if (target.hp > 0) collision = knockBackWithCollision(target, caster, 2);
+  const augment = unitAugmentEffect(caster, "cathyUnsealableSuture");
+  const collisionHappened = collision.wall || collision.collision;
+  let augmentDamage = 0;
   const bound = [];
-  if (target.hp > 0 && (collision.wall || collision.collision)) {
-    applyRoot(target, 2);
+  if (target.hp > 0 && collisionHappened) {
+    applyRoot(target, 2 + (Number(augment?.collisionBindAddSeconds) || 0) / ((balance.battle.statusTurnMs ?? 500) / 1000));
+    if (augment) augmentDamage = dealDamage(caster, target, caster.atk * (Number(augment.collisionTrueDamageAtkRatio) || 0), { fixed: true });
     bound.push(target);
     if (collision.collision?.hp > 0 && collision.collision.side === target.side) {
-      applyRoot(collision.collision, 2);
+      applyRoot(collision.collision, 2 + (Number(augment?.collisionBindAddSeconds) || 0) / ((balance.battle.statusTurnMs ?? 500) / 1000));
       bound.push(collision.collision);
     }
   }
   playSkillVisual?.({ type: "cathy-needle", fromId: caster.id, targetIds: [target.id] });
+  const effects = [combatEffect(caster, target, "skill", { amount: damage, timeline: "cathy-needle" })];
+  if (augmentDamage > 0) effects.push(combatEffect(caster, target, "skill", { amount: augmentDamage, fixed: true, extra: true }));
   return {
-    message: `${caster.name} 수처: ${target.name} ${damage} 피해 / ${collision.moved}칸 넉백${bound.length ? ` / ${bound.map((unit) => unit.name).join(", ")} 2턴 속박` : ""}`,
-    effects: [combatEffect(caster, target, "skill", { amount: damage, timeline: "cathy-needle" })],
+    message: `${caster.name} 수처: ${target.name} ${damage + augmentDamage} 피해 / ${collision.moved}칸 넉백${bound.length ? ` / ${bound.map((unit) => unit.name).join(", ")} 속박` : ""}`,
+    effects,
   };
 }
 
@@ -1827,6 +2125,24 @@ function castShoichiSkill(caster, enemies) {
     returnTotal += damage;
     effects.push({ ...combatEffect(caster, target, "skill", { amount: damage, timeline: "shoichi-return" }), kind: "slash", delayMs: 650 });
   }
+  const augment = unitAugmentEffect(caster, "shoichiSevenElixir");
+  let elixirTotal = 0;
+  if (augment && !caster.sevenElixirUsed) {
+    caster.sevenElixirUsed = true;
+    const dashCount = Math.max(1, Number(augment.dashCount) || 7);
+    const elixirTargets = living(enemies);
+    for (let dash = 0; dash < dashCount && elixirTargets.length; dash += 1) {
+      const target = elixirTargets[dash % elixirTargets.length];
+      if (!target || target.hp <= 0) continue;
+      const isFinal = dash === dashCount - 1;
+      const base = caster.atk * (isFinal ? Number(augment.finalDamageAtkRatio) || 0 : Number(augment.pathDamageAtkRatio) || 0)
+        + caster.skillAmp * (isFinal ? Number(augment.finalDamageSkillAmpRatio) || 0 : Number(augment.pathDamageSkillAmpRatio) || 0);
+      const amount = target.boss ? base * (Number(augment.bossDamageMultiplier) || 1) : base;
+      const damage = dealSkillDamage(caster, target, amount);
+      elixirTotal += damage;
+      effects.push({ ...combatEffect(caster, target, "skill", { amount: damage, extra: true }), kind: "slash", delayMs: 820 + dash * 85 });
+    }
+  }
   playSkillVisual?.({ type: "shoichi-dagger-ride", fromId: caster.id, targetIds: [farthest.id] });
   effects.unshift({
     from: caster.id,
@@ -1836,7 +2152,7 @@ function castShoichiSkill(caster, enemies) {
     value: { duration: 800, extension: 1.16, dx: rideOffset.x, dy: rideOffset.y },
   });
   return {
-    message: `${caster.name} 단검 타기: 경로 ${targets.length}명 / 전진 ${outboundTotal} + 복귀 ${returnTotal} 피해`,
+    message: `${caster.name} 단검 타기: 경로 ${targets.length}명 / 전진 ${outboundTotal} + 복귀 ${returnTotal}${elixirTotal ? ` / 7단비약 ${elixirTotal}` : ""} 피해`,
     effects,
   };
 }
@@ -1917,11 +2233,16 @@ function castHyejinSkill(caster, enemies) {
 function castHartSkill(caster, allies) {
   const targets = unitsInRange(caster, allies, 1);
   if (!targets.includes(caster)) targets.unshift(caster);
-  const duration = 1200;
-  const healAmount = Math.round(skillOutput(caster, caster.skillAmp * 0.95 + 12) * caster.healPower);
+  const augment = unitAugmentEffect(caster, "hartPeacemakerWorldTour");
+  const duration = augment ? (Number(augment.durationSeconds) || 5) * 1000 : 1200;
+  const healAmount = Math.round((augment ? caster.maxHp * (Number(augment.teamHealHpRatio) || 0) : skillOutput(caster, caster.skillAmp * 0.95 + 12)) * caster.healPower);
   for (const target of targets) {
     target.peaceRemainingMs = Math.max(target.peaceRemainingMs || 0, duration);
     target.peaceDurationMs = Math.max(target.peaceDurationMs || 0, duration);
+    if (augment) {
+      gainMana(target, Number(augment.teamManaAdd) || 0);
+      target.speed *= Number(augment.speedMultiply) || 1;
+    }
   }
   skillTimeline.schedule(combatElapsedMs, duration, {
     type: "hart-peacemaker-heal",
@@ -1988,8 +2309,13 @@ function resolveSisselaSkill(caster, enemies, storedLostHp = 0) {
 function castLenoxSkill(caster, enemies) {
   const target = living(enemies).slice().sort((a, b) => distanceBetween(caster, b) - distanceBetween(caster, a) || a.hp - b.hp)[0];
   if (!target) return { message: "", effects: [] };
+  const augment = unitAugmentEffect(caster, "lenoxChainSentence");
   const moved = moveNextToUnit(target, caster);
-  applyStun(target, 2);
+  applyStun(target, 2 + (Number(augment?.bindSeconds) || 0) / ((balance.battle.statusTurnMs ?? 500) / 1000));
+  if (augment) {
+    target.augmentDamageTakenAdd = Math.max(target.augmentDamageTakenAdd || 0, Number(augment.damageTakenAdd) || 0);
+    target.augmentLenoxSuppressSeconds = Number(augment.onDeathNearbySuppressSeconds) || 0;
+  }
   const damage = dealSkillDamage(caster, target, caster.atk * 0.35 + caster.skillAmp * 1.15 + 6);
   return {
     message: `${caster.name} 날카로운 독니: ${target.name} 끌어오기${moved ? "" : " 실패"} / 기절 / ${damage} 피해`,
@@ -2036,6 +2362,16 @@ function castElenaSkill(caster, enemies) {
 }
 
 function castPriyaSkill(caster, enemies) {
+  const augment = unitAugmentEffect(caster, "priyaGrandFinale");
+  const effects = [{ from: caster.id, to: caster.id, type: "shield", kind: "magic", value: { amount: 1 } }];
+  if (augment) {
+    const allies = living(state.combatGrid || []).filter((unit) => unit.side === caster.side && distanceBetween(caster, unit) <= 2);
+    for (const ally of allies) {
+      const shield = Math.max(1, Math.round(ally.maxHp * (Number(augment.allyShieldHpRatio) || 0)));
+      ally.shield = (ally.shield || 0) + shield;
+      effects.push(combatEffect(caster, ally, "shield", { amount: shield }));
+    }
+  }
   caster.actionLockRemainingMs = 800;
   caster.actionLockDurationMs = 800;
   caster.status = "channeling";
@@ -2046,7 +2382,7 @@ function castPriyaSkill(caster, enemies) {
   });
   return {
     message: `${caster.name} 대지의메아리: 0.8초 정신집중`,
-    effects: [{ from: caster.id, to: caster.id, type: "shield", kind: "magic", value: { amount: 1 } }],
+    effects,
   };
 }
 
@@ -2193,15 +2529,27 @@ function castXiukaiSkill(caster, allies) {
 function castShouMealTimeSkill(caster, allies) {
   const target = lowestHpAllies(allies, 1)[0];
   if (!target) return { message: `${caster.name} 식사시간: 대상 없음`, effects: [] };
+  const augment = unitAugmentEffect(caster, "shouBattlefieldChef");
   const castCount = caster.mealTimeCasts || 0;
-  const ramp = 1 + castCount * 0.25;
+  const rampAdd = augment ? Number(augment.healStackMultiplyAdd) || 0.08 : 0.25;
+  const maxStacks = augment ? Number(augment.maxStacks) || 8 : 99;
+  const ramp = 1 + Math.min(castCount, maxStacks) * rampAdd;
   const rawHeal = skillOutput(caster, (caster.skillAmp * 0.9 + 18) * caster.healPower * ramp);
+  const beforeMissing = Math.max(0, target.maxHp - target.hp);
   const heal = applyHeal(target, rawHeal);
+  let shield = 0;
+  if (augment && rawHeal > beforeMissing) {
+    shield = Math.max(0, Math.round((rawHeal - beforeMissing) * (Number(augment.overhealShieldRatio) || 0)));
+    target.shield = (target.shield || 0) + shield;
+  }
   caster.mealTimeCasts = castCount + 1;
   playSkillVisual?.({ type: "xiukai-hot-taste", fromId: caster.id, targetIds: [target.id] });
+  const effects = [];
+  if (heal > 0) effects.push(combatEffect(caster, target, "heal", { amount: heal }));
+  if (shield > 0) effects.push(combatEffect(caster, target, "shield", { amount: shield }));
   return {
-    message: `${caster.name} 식사시간: ${target.name} ${heal} 회복 / 다음 식사 +25%`,
-    effects: heal > 0 ? [combatEffect(caster, target, "heal", { amount: heal })] : [],
+    message: `${caster.name} 식사시간: ${target.name} ${heal} 회복${shield ? ` / 보호막 ${shield}` : ""}`,
+    effects,
   };
 }
 
@@ -2327,8 +2675,14 @@ function hitTargets(caster, targets, amount, kind = "skill", delayStep = 0) {
 function castAlexSkill(caster, enemies) {
   const target = farthestEnemy(caster, enemies);
   if (!target) return { message: "", effects: [] };
+  const augment = unitAugmentEffect(caster, "alexFocusedBarrage");
   const targets = targetsAroundUnit(target, enemies, 1);
   const impact = hitTargets(caster, targets, caster.atk * 0.25 + caster.skillAmp * 0.52 + 5, "magic", 45);
+  if (augment) {
+    const repeat = hitTargets(caster, targets, caster.skillAmp * (Number(augment.repeatHitDamageSkillAmpRatio) || 0), "magic", 45);
+    impact.effects.push(...repeat.effects.map((effect) => ({ ...effect, delayMs: (effect.delayMs || 0) + 180 })));
+    impact.total += repeat.total;
+  }
   for (let tick = 1; tick <= 3; tick += 1) {
     skillTimeline.schedule(combatElapsedMs, tick * 450, {
       type: "alex-precision-bombardment-dot",
@@ -2336,6 +2690,15 @@ function castAlexSkill(caster, enemies) {
       center: target,
       enemies: enemies.slice(),
       tick,
+    });
+  }
+  for (let extra = 0; extra < (Number(augment?.extraStrike) || 0); extra += 1) {
+    skillTimeline.schedule(combatElapsedMs, 650 + extra * 220, {
+      type: "alex-precision-bombardment-dot",
+      caster,
+      center: target,
+      enemies: enemies.slice(),
+      tick: 4 + extra,
     });
   }
   playSkillVisual?.({ type: "celine-plasma-bomb", fromId: caster.id, targetIds: [target.id] });
@@ -2748,14 +3111,16 @@ function castIremSkill(caster, enemies) {
 function castJanSkill(caster, enemies) {
   const target = pickTarget(caster, enemies);
   if (!target) return { message: "", effects: [] };
+  const augment = unitAugmentEffect(caster, "yanRingDomination");
   const effects = [];
   let total = 0;
-  for (let hit = 0; hit < 4; hit += 1) {
-    const damage = target.hp > 0 ? dealSkillDamage(caster, target, caster.atk * 0.35 + caster.skillAmp * 0.35 + 3) : 0;
+  const hits = Math.max(1, Number(augment?.comboHits) || 4);
+  for (let hit = 0; hit < hits; hit += 1) {
+    const damage = target.hp > 0 ? dealSkillDamage(caster, target, caster.atk * (augment ? Number(augment.bonusAtkRatio) || 1 : 0.35) + caster.skillAmp * 0.35 + 3) : 0;
     total += damage;
     effects.push({ ...combatEffect(caster, target, "skill", { amount: damage }), kind: "slash", delayMs: hit * 80 });
   }
-  if (target.hp > 0) applyStun(target, 1);
+  if (target.hp > 0) applyStunMs(target, augment ? (Number(augment.stunSeconds) || 0.6) * 1000 : durationFromTurns(1));
   playSkillVisual?.({ type: "rozzi-double-shot", fromId: caster.id, targetIds: [target.id] });
   return { message: `${caster.name} 쿼드라곤: ${target.name} ${total} 피해 / 기절`, effects };
 }
@@ -2824,11 +3189,12 @@ function resolveSkillTimelineEvents(elapsedMs) {
     }
     if (event.type === "priya-earth-echo") {
       const targets = unitsInRange(event.caster, event.enemies, 3);
+      const augment = unitAugmentEffect(event.caster, "priyaGrandFinale");
       let total = 0;
       for (const target of targets) {
         const damage = dealSkillDamage(event.caster, target, event.caster.skillAmp * 0.75 + 9);
         total += damage;
-        if (target.hp > 0) applyStunMs(target, 1600);
+        if (target.hp > 0) applyStunMs(target, 1600 + (Number(augment?.edgeStunAddSeconds) || 0) * 1000);
         effects.push(combatEffect(event.caster, target, "skill", { amount: damage }));
       }
       playSkillVisual?.({ type: "priya-earth-echo", fromId: event.caster.id, targetIds: targets.map((unit) => unit.id) });
@@ -2924,6 +3290,60 @@ function withSkillName(caster, action) {
       ...action.effects,
     ],
   };
+}
+
+function resolveAugmentActionEffects(actor, friends, foes, action) {
+  if (!actor || actor.side !== "ally" || !action?.effects?.length) return { effects: [], messages: [] };
+  const effects = [];
+  const messages = [];
+  const skillHits = action.effects
+    .filter((effect) => effect.type === "skill" && effect.to && (effect.value?.amount || 0) > 0)
+    .map((effect) => living(foes).find((unit) => unit.id === effect.to))
+    .filter(Boolean);
+  if (!skillHits.length) return { effects, messages };
+
+  for (const effect of selectedAugmentEffects("skillChainLightning")) {
+    if (actor.augmentChainLightningReadyAt && actor.augmentChainLightningReadyAt > combatElapsedMs) continue;
+    const first = skillHits[0];
+    const target = living(foes)
+      .filter((unit) => unit !== first)
+      .sort((a, b) => distanceBetween(first, a) - distanceBetween(first, b))[0];
+    if (!target) continue;
+    const damage = dealSkillDamage(actor, target, actor.skillAmp * (Number(effect.damageSkillAmpRatio) || 0));
+    if (damage > 0) {
+      effects.push({ ...combatEffect(actor, target, "skill", { amount: damage, extra: true }), kind: "magic" });
+      messages.push(`${actor.name} 번개 증강: ${target.name} ${damage} 피해`);
+    }
+    actor.augmentChainLightningReadyAt = combatElapsedMs + (Number(effect.cooldownSeconds) || 1.5) * 1000;
+  }
+  for (const target of skillHits) {
+    for (const effect of selectedAugmentEffects("skillCurseStack")) {
+      target.augmentCurseStacks = Math.min(Number(effect.maxStacks) || 5, (target.augmentCurseStacks || 0) + 1);
+      target.healReduction = Math.max(target.healReduction || 0, Number(effect.healingReduction) || 0);
+      target.healReductionRemainingMs = Math.max(target.healReductionRemainingMs || 0, 1800);
+      target.healReductionDurationMs = Math.max(target.healReductionDurationMs || 0, 1800);
+    }
+    for (const effect of selectedAugmentEffects("skillMaxHpDamage")) {
+      actor.augmentCorrosionHits ||= {};
+      const previous = actor.augmentCorrosionHits[target.id] || 0;
+      actor.augmentCorrosionHits[target.id] = previous + 1;
+      const decay = previous > 0 ? Number(effect.repeatedTargetDecay) || 0.5 : 1;
+      const ratio = (target.boss ? Number(effect.bossRatio) || 0 : Number(effect.targetMaxHpRatio) || 0) * decay;
+      const damage = dealDamage(actor, target, target.maxHp * ratio, { fixed: true });
+      if (damage > 0) effects.push(combatEffect(actor, target, "skill", { amount: damage, fixed: true, extra: true }));
+    }
+  }
+
+  for (const effect of selectedAugmentEffects("traitSkillManaShare")) {
+    if (actor.augmentManaShareReadyAt && actor.augmentManaShareReadyAt > combatElapsedMs) continue;
+    const traits = unitTraits(actor);
+    const targets = living(friends).filter((unit) => unit !== actor && unitTraits(unit).some((trait) => traits.includes(trait)));
+    for (const target of targets) gainMana(target, Number(effect.manaAdd) || 0);
+    if (targets.length) messages.push(`${actor.name} 전투 동기화: ${targets.length}명 마나 회복`);
+    actor.augmentManaShareReadyAt = combatElapsedMs + (Number(effect.cooldownSeconds) || 1.5) * 1000;
+  }
+
+  return { effects, messages };
 }
 
 function castSkill(caster, allies, enemies) {
@@ -3260,6 +3680,11 @@ async function simulate() {
   skillTimeline.clear();
   clearSkillVisuals?.();
   try {
+  const combatSeed = state.nextCombatSeed || createCombatSeed(battleRound, state.debugMode ? "debug" : "pve");
+  state.nextCombatSeed = "";
+  state.lastCombatSeed = combatSeed;
+  state.augmentInheritedThreeStar = false;
+  combatRng = createSeededRng(combatSeed);
   const traitCounts = activeTraits();
   state.enemies = makeEnemies();
   allies.forEach((unit) => {
@@ -3321,17 +3746,18 @@ async function simulate() {
   for (const rule of openingHiddenEffects) addLog(`${rule.name} 발동.`);
   state.pendingHiddenEffects = [];
   state.enemies.filter(Boolean).forEach((unit) => prepareCombatUnit(unit, "enemy"));
-  state.combatGrid = Array(48).fill(null);
+  state.combatGrid = Array(combatGridSize()).fill(null);
   state.enemies.forEach((unit, index) => {
     if (unit) state.combatGrid[index] = unit;
   });
   state.board.forEach((unit, index) => {
-    if (unit && !unit.hiddenAbsorbed) state.combatGrid[16 + index] = unit;
+    if (unit && !unit.hiddenAbsorbed) state.combatGrid[balance.battle.enemySlots + index] = unit;
   });
   const hiddenClones = summonHiddenClones(allies);
   if (hiddenClones.length) {
     addLog(`둘이서 하나! 발동: ${hiddenClones.map(({ owner }) => owner.name).join(", ")} 분신 소환.`);
   }
+  const openingAugmentEffects = applyOpeningAugments(allies);
   beginCombatMetrics(allies);
   const hasTacticalPull = allies.some((unit) => unit.pullBacklineTargets > 0);
   if (hasTacticalPull) {
@@ -3353,6 +3779,7 @@ async function simulate() {
   }
   if (diverCount) addLog(`기습 전개: 기습형 ${diverCount}명이 후열로 진입.`);
   render();
+  if (openingAugmentEffects.length) playCombatEffects(openingAugmentEffects);
 
   const simulationStepMs = balance.battle.simulationStepMs ?? 50;
   const renderIntervalMs = balance.battle.renderIntervalMs ?? 100;
@@ -3398,14 +3825,20 @@ async function simulate() {
       actedThisStep = true;
       const overdueMs = Math.min(0, actor.actionCooldownMs || 0);
       actor.actionCooldownMs = Math.max(0, cooldownForAction(actor, action) + overdueMs);
+      const augmentResult = resolveAugmentActionEffects(actor, friends, foes, action);
       if (action.message) tickLogs.push(action.message);
+      tickLogs.push(...augmentResult.messages);
       effects.push(...action.effects);
+      effects.push(...augmentResult.effects);
       if (state.pendingHiddenEffects?.length) effects.push(...state.pendingHiddenEffects.splice(0));
     }
 
     const timelineResult = resolveSkillTimelineEvents(combatElapsedMs);
     tickLogs.push(...timelineResult.messages);
     effects.push(...timelineResult.effects);
+    effects.push(...applyTimedAugments(allies));
+    const lastSurvivorEffect = applyLastSurvivorAugment(allies);
+    if (lastSurvivorEffect) effects.push(lastSurvivorEffect);
     if (actedThisStep || tickLogs.length || effects.length || timelineResult.messages.length || timelineResult.effects.length) {
       lastProgressAt = combatElapsedMs;
     } else if (combatElapsedMs - lastProgressAt > 3000) {
@@ -3433,6 +3866,13 @@ async function simulate() {
   const win = living(allies).length > 0 && living(state.enemies).length === 0;
   const wasBossRound = isBossRound();
   const survivors = win ? living(allies).length : living(state.enemies).length;
+  const frontlineSurvivalGold = win ? selectedAugmentEffects("frontlineSurvivalGold").reduce((sum, effect) => {
+    const survivorsInFront = living(allies).filter((unit) => {
+      const slot = unitSlot(unit);
+      return slot && slot.y <= allyStartRow() + 1;
+    }).length;
+    return sum + Math.min(Number(effect.maxGold) || 0, survivorsInFront * (Number(effect.goldPerSurvivor) || 0));
+  }, 0) : 0;
   document.body.classList.remove("fighting");
   state.busy = false;
   state.round += 1;
@@ -3526,10 +3966,30 @@ async function simulate() {
     delete unit.fusedSkillName;
     unit.hasPickedOpeningTarget = false;
     unit.hasUsedOpeningCrit = false;
+    delete unit.augmentBasicAttackStacks;
+    delete unit.augmentChainLightningReadyAt;
+    delete unit.augmentCorrosionHits;
+    delete unit.augmentCurseStacks;
+    delete unit.augmentDamageTakenAdd;
+    delete unit.augmentFirstAttackDone;
+    delete unit.augmentKillCombatStacks;
+    delete unit.augmentLastSurvivorApplied;
+    delete unit.augmentLenoxSuppressSeconds;
+    delete unit.augmentManaShareReadyAt;
+    delete unit.augmentSameTargetStacks;
+    delete unit.augmentThreeStarRevived;
+    delete unit.augmentWarmupStacks;
+    delete unit.lukeCleaningBoost;
+    delete unit.sevenElixirUsed;
+    delete unit.theodoreAssistReadyAt;
+    for (const key of Object.keys(unit)) {
+      if (key.startsWith("augmentLowHp")) delete unit[key];
+    }
   }
   state.board = originalBoard;
   clearSkillVisuals?.();
   state.pendingHiddenEffects = [];
+  state.augmentInheritedThreeStar = false;
   state.temporaryBoosts = {
     hp: 0,
     atk: 0,
@@ -3537,8 +3997,14 @@ async function simulate() {
   };
   if (win) {
     grantRoundIncome(true);
+    if (frontlineSurvivalGold > 0) {
+      state.gold += frontlineSurvivalGold;
+      addLog(`전방 보급 증강: ${frontlineSurvivalGold}크레딧 획득.`);
+    }
     addLog(`승리! 생존 ${survivors}명.`);
     refs.phase.textContent = "승리했습니다. 다음 전투를 준비하세요.";
+    if (wasBossRound) offerAugments?.(battleRound);
+    if (wasBossRound && battleRound === balance.battle.bossInterval) offerPvpEntry?.(battleRound, originalBoard);
   } else {
     const previousHp = state.hp;
     const damage = wasBossRound ? state.hp : Math.min(20, survivorStarDamage(state.enemies));
@@ -3548,6 +4014,24 @@ async function simulate() {
     addLog(`패배. 남은 적 ${survivors}명. 체력 ${damage} 감소.`);
     refs.phase.textContent = state.hp ? "패배했습니다. 조합을 재정비하세요." : "체력이 0이 되었습니다. 랭킹을 등록할 수 있습니다.";
   }
+  state.lastCombatResult = {
+    seed: state.lastCombatSeed,
+    round: battleRound,
+    win,
+    survivors,
+    hp: state.hp,
+    allyMetrics: (state.lastCombatMetrics || [])
+      .map((metric) => ({
+        name: metric.name,
+        damageDone: Math.round(metric.damageDone || 0),
+        damageTaken: Math.round(metric.damageTaken || 0),
+        healingDone: Math.round(metric.healingDone || 0),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    remainingEnemies: living(state.enemies)
+      .map((unit) => ({ name: unit.name, hp: Math.round(unit.hp), mana: Math.round(unit.mana || 0) }))
+      .sort((a, b) => a.name.localeCompare(b.name) || a.hp - b.hp),
+  };
   state.enemies = [];
   if (state.shopLocked) {
     addLog("상점 잠금 유지: 현재 상점을 보존합니다.");
@@ -3555,6 +4039,7 @@ async function simulate() {
   } else {
     rollShop();
   }
+  return state.lastCombatResult;
   } catch (error) {
     console.error("[rumia-combat-stall-guard]", error);
     unlockCombatUi(`전투 처리 오류 감지: ${error?.message || error || "unknown"} / 전투 상태를 복구했습니다.`);

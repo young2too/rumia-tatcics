@@ -1,0 +1,279 @@
+[
+  {
+    "active": true,
+    "id": "common_gold_mercenary_slot",
+    "name": "용병 모집",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "boardSize"
+    ],
+    "summary": "배치 가능 유닛 +1",
+    "description": "전장에 배치할 수 있는 최대 유닛 수가 1 증가합니다.",
+    "effect": {
+      "type": "boardLimit",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_premium_guest",
+    "name": "고급 손님",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "shop",
+      "odds"
+    ],
+    "summary": "상점 확률 +1레벨",
+    "description": "상점의 코스트 확률을 현재 레벨보다 1 높게 계산합니다.",
+    "effect": {
+      "type": "shopOddsLevelBonus",
+      "add": 1
+    }
+  },
+  {
+    "active": false,
+    "id": "common_gold_expanded_display",
+    "name": "확장 진열대",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "shop",
+      "shopSize"
+    ],
+    "summary": "상점 칸 +1",
+    "description": "상점에 등장하는 기물 수가 1칸 증가합니다.",
+    "effect": {
+      "type": "shopSize",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_weak_point",
+    "name": "취약",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "debuff"
+    ],
+    "summary": "반복 공격 대상 받는 피해 증가",
+    "description": "같은 대상을 반복 공격하면 해당 대상이 받는 피해가 증가합니다.",
+    "effect": {
+      "type": "sameTargetVulnerability",
+      "stacks": 5,
+      "damageTakenAddPerStack": 0.025
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_warmup",
+    "name": "예열",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "scaling"
+    ],
+    "summary": "전투 지속 시 피해 증가",
+    "description": "전투가 길어질수록 아군의 공격력과 스킬 증폭이 증가합니다.",
+    "effect": {
+      "type": "combatTimeScalingStat",
+      "intervalSeconds": 3,
+      "maxStacks": 6,
+      "atkMultiplyAdd": 0.025,
+      "skillAmpMultiplyAdd": 0.025
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_chain_lightning",
+    "name": "벼락",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "skill",
+      "combat"
+    ],
+    "summary": "스킬 적중 시 연쇄 피해",
+    "description": "스킬이 적중하면 가장 가까운 다른 적에게 벼락 피해가 튑니다.",
+    "effect": {
+      "type": "skillChainLightning",
+      "damageSkillAmpRatio": 0.55,
+      "bounces": 1,
+      "cooldownSeconds": 1.5
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_golden_armor",
+    "name": "금갑",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "frontline",
+      "survival"
+    ],
+    "summary": "전열 보호막/방어 증가",
+    "description": "전투 시작 시 앞 2열 아군이 보호막과 방어력을 얻습니다.",
+    "effect": {
+      "type": "frontlineShieldAndDefense",
+      "rows": "front2",
+      "shieldHpRatio": 0.14,
+      "defenseMultiply": 1.12
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_amp_research",
+    "name": "증폭 실험",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "skillAmp",
+      "support"
+    ],
+    "summary": "고스증 스킬 시 주변 스증 증가",
+    "description": "스킬 증폭이 가장 높은 아군이 스킬을 사용하면 주변 아군의 스킬 증폭이 증가합니다.",
+    "effect": {
+      "type": "highestSkillAmpRelay",
+      "range": 2,
+      "skillAmpMultiply": 1.12,
+      "durationSeconds": 4
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_healing_research",
+    "name": "치유 실험",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "heal",
+      "survival"
+    ],
+    "summary": "저체력 시 주변 회복",
+    "description": "아군이 처음으로 체력 35% 이하가 되면 자신과 주변 아군을 회복합니다.",
+    "effect": {
+      "type": "lowHpHealPulse",
+      "thresholdHpRatio": 0.35,
+      "healHpRatio": 0.14,
+      "range": 1,
+      "oncePerUnit": true
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_interest_lion",
+    "name": "이자 사자",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "economy",
+      "interest"
+    ],
+    "summary": "최대 이자 +2",
+    "description": "10크레딧 단위 이자의 최대치가 2 증가합니다.",
+    "effect": {
+      "type": "interestCapBonus",
+      "add": 2
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_flow_engine",
+    "name": "흐름 증폭",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "economy",
+      "streak"
+    ],
+    "summary": "연승/연패 보너스 증가",
+    "description": "연승 또는 연패 보너스 수입의 최대치가 증가합니다.",
+    "effect": {
+      "type": "streakIncomeBonus",
+      "capAdd": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_resale_license",
+    "name": "재활용 허가",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "economy",
+      "sell"
+    ],
+    "summary": "판매 수익 증가",
+    "description": "유닛을 판매할 때 받는 크레딧이 증가합니다.",
+    "effect": {
+      "type": "sellValueBonus",
+      "multiply": 1.25
+    }
+  }
+]

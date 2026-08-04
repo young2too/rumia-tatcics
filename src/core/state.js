@@ -1,11 +1,11 @@
 const LOCAL_TEST_GOLD = 999999;
 
-export function createGameState({ balance, roster, createUnitPool, communityBoardConfig }) {
+export function createGameState({ balance, roster, createUnitPool, communityBoardConfig, pvpRoomsConfig = {} }) {
   const localTest = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
   const state = {
     debugMode: localTest,
     debugDummyPlacement: false,
-    debugDummies: Array(16).fill(null),
+    debugDummies: Array(balance.battle.enemySlots).fill(null),
     round: 1,
     hp: balance.player.startHp,
     gold: localTest ? LOCAL_TEST_GOLD : balance.player.startGold,
@@ -15,6 +15,20 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
     shopPanelTab: "shop",
     combatMetricMode: "damageDone",
     lastCombatMetrics: [],
+    lastCombatSeed: "",
+    lastCombatResult: null,
+    nextCombatSeed: "",
+    augmentOpen: false,
+    augmentStage: 0,
+    augmentChoices: [],
+    augmentRerollsRemaining: 0,
+    augmentOfferSeed: "",
+    augmentOfferRarity: "",
+    augmentOfferRerollIndex: 0,
+    augmentRerolledSlots: [],
+    selectedAugments: [],
+    freeShopRerollsRemaining: 0,
+    augmentTranscendTargetId: null,
     pool: createUnitPool(roster, balance),
     combatGrid: null,
     shopLocked: balance.shop.locked,
@@ -60,6 +74,11 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
     communityBoardError: "",
     communityBoardCommentError: "",
     communityBoardMode: "list",
+    pvpRoomsOpen: false,
+    pvpRooms: Array.isArray(pvpRoomsConfig.rooms) ? pvpRoomsConfig.rooms.map((room) => ({ ...room })) : [],
+    pvpRoomsLoaded: false,
+    pvpRoomsLoading: false,
+    pvpRoomsError: "",
     traitRosterOpen: false,
     traitRosterTrait: "",
     traitTableOpen: false,

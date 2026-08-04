@@ -32,6 +32,18 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
       refs.debugRecruitUnit.disabled = state.busy;
       refs.debugDummyToggle.disabled = state.busy;
       refs.debugDummyClear.disabled = state.busy;
+      if (refs.debugRoundInput) refs.debugRoundInput.disabled = state.busy;
+      if (refs.debugRoundJump) refs.debugRoundJump.disabled = state.busy;
+      refs.debugShop.querySelectorAll("[data-debug-round]").forEach((button) => {
+        button.disabled = state.busy;
+        button.classList.toggle("active", Number(button.dataset.debugRound) === state.round);
+      });
+      refs.debugShop.querySelectorAll("[data-debug-augment-stage]").forEach((button) => {
+        button.disabled = state.busy;
+      });
+      if (refs.debugRoundInput && document.activeElement !== refs.debugRoundInput) {
+        refs.debugRoundInput.value = String(state.round);
+      }
       refs.debugDummyToggle.classList.toggle("active", state.debugDummyPlacement);
       refs.debugDummyToggle.textContent = state.debugDummyPlacement ? "더미 배치 ON" : "더미 배치 OFF";
       if (state.debugMode && !refs.debugUnitList.children.length) {

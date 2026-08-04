@@ -31,7 +31,9 @@ export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit
 
   function renderBoard() {
     refs.board.innerHTML = "";
-    const visibleBoard = state.combatGrid ? state.combatGrid.slice(16, 48) : state.board;
+    const boardStart = balance.battle.enemySlots;
+    const boardEnd = boardStart + state.board.length;
+    const visibleBoard = state.combatGrid ? state.combatGrid.slice(boardStart, boardEnd) : state.board;
     visibleBoard.forEach((unit, index) => {
       const side = state.combatGrid && unit?.side ? unit.side : "ally";
       refs.board.append(createCell(unit, index, side, true));
@@ -39,7 +41,7 @@ export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit
 
     refs.enemyBoard.innerHTML = "";
     const visibleEnemies = state.combatGrid
-      ? state.combatGrid.slice(0, 16)
+      ? state.combatGrid.slice(0, balance.battle.enemySlots)
       : state.debugMode && state.debugDummies.some(Boolean) ? state.debugDummies
       : state.enemies.some(Boolean) ? state.enemies : previewBossEnemies();
     visibleEnemies.forEach((unit, index) => {

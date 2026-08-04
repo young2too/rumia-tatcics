@@ -1,0 +1,45 @@
+[
+  {
+    "active": true,
+    "id": "stage3_silver_reinforced_boost",
+    "name": "강화 중독",
+    "rarity": "silver",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "creditSink",
+      "temporaryBoost"
+    ],
+    "summary": "강화 비용/효과 증가",
+    "description": "일시 강화 비용이 증가하지만 강화 효과가 더 강해집니다.",
+    "effect": {
+      "type": "temporaryBoostTuning",
+      "costAdd": 10,
+      "amountAdd": 0.08
+    }
+  },
+  {
+    "active": true,
+    "id": "stage3_silver_overclock_light",
+    "name": "가벼운 오버클럭",
+    "rarity": "silver",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "threeStar",
+      "mana"
+    ],
+    "summary": "3성 요구 마나 소폭 감소",
+    "description": "3성 아군의 스킬 요구 마나가 5 감소합니다.",
+    "effect": {
+      "type": "threeStarStat",
+      "stats": {
+        "maxManaReductionAdd": 5
+      }
+    }
+  }
+]

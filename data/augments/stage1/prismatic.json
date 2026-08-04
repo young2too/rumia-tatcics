@@ -1,0 +1,371 @@
+[
+  {
+    "active": true,
+    "id": "stage1_prismatic_free_market_contract",
+    "name": "공짜의 대가",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "contract",
+      "shop",
+      "ruleBreak"
+    ],
+    "summary": "구매 비용 0, 판매 불가",
+    "description": "유닛 구매 비용이 0이 됩니다. 대신 더 이상 유닛을 판매할 수 없습니다.",
+    "effect": {
+      "type": "contractFreeUnitsNoSell",
+      "unitCostOverride": 0,
+      "disableSell": true
+    }
+  },
+  {
+    "active": false,
+    "id": "stage1_prismatic_closed_market",
+    "name": "닫힌 시장",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "contract",
+      "shop",
+      "ruleBreak"
+    ],
+    "summary": "리롤 불가, 상점 10칸",
+    "description": "상점 리롤을 사용할 수 없습니다. 대신 매 라운드 상점이 10칸으로 열립니다.",
+    "effect": {
+      "type": "contractNoRerollBigShop",
+      "disableReroll": true,
+      "shopSizeSet": 10
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_cathy_unsealable_suture",
+    "name": "수처: 봉합불가",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "캐시",
+      "control"
+    ],
+    "summary": "캐시 수처 충돌 피해/속박 강화",
+    "description": "캐시의 수처가 적을 밀쳐 벽 또는 다른 적에게 충돌시키면 추가 고정 피해를 주고 속박 시간이 늘어납니다. 선택 시 캐시 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "cathyUnsealableSuture",
+      "unit": "캐시",
+      "collisionTrueDamageAtkRatio": 0.8,
+      "collisionBindAddSeconds": 1,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_luke_cleaning_service",
+    "name": "클리닝 서비스",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "루크",
+      "execute"
+    ],
+    "summary": "루크 처치 시 다음 표적 청소",
+    "description": "루크가 적을 처치하면 다음 공격이 더 강해지고 대상이 받는 피해가 잠시 증가합니다. 선택 시 루크 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "lukeCleaningService",
+      "unit": "루크",
+      "markedDamageTakenAdd": 0.18,
+      "nextAttackAtkRatioAdd": 0.9,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_shou_battlefield_chef",
+    "name": "전장의 주방장",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "쇼우",
+      "heal"
+    ],
+    "summary": "쇼우 힐 초과분 보호막화",
+    "description": "쇼우의 식사시간 회복이 초과 회복분을 보호막으로 전환하고, 시전할수록 이번 전투의 회복량이 증가합니다. 선택 시 쇼우 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "shouBattlefieldChef",
+      "unit": "쇼우",
+      "overhealShieldRatio": 0.55,
+      "healStackMultiplyAdd": 0.08,
+      "maxStacks": 8,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_yan_ring_domination",
+    "name": "링 위의 폭군",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "얀",
+      "control"
+    ],
+    "summary": "얀 근접 연계 피해/기절 강화",
+    "description": "얀이 근접 콤보로 주변 적을 연속 타격하고 마지막 공격에 기절을 부여합니다. 선택 시 얀 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "yanRingDomination",
+      "unit": "얀",
+      "comboHits": 3,
+      "bonusAtkRatio": 1.1,
+      "stunSeconds": 0.6,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_hart_peacemaker_world_tour",
+    "name": "피스메이커 월드투어",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "하트",
+      "support"
+    ],
+    "summary": "하트 피스메이커 후 앙코르 버프",
+    "description": "하트의 피스메이커가 아군을 더 크게 회복시키고 마나와 공격 속도를 함께 올립니다. 선택 시 하트 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "hartPeacemakerWorldTour",
+      "unit": "하트",
+      "teamHealHpRatio": 0.12,
+      "teamManaAdd": 18,
+      "speedMultiply": 1.18,
+      "durationSeconds": 5,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_alex_focused_barrage",
+    "name": "정밀폭격: 집중포화",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "알렉스",
+      "area"
+    ],
+    "summary": "알렉스 폭격 장판 2회 강화",
+    "description": "알렉스의 정밀폭격이 한 번 더 떨어지고, 같은 대상에게 다시 적중하면 더 큰 피해를 줍니다. 선택 시 알렉스 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "alexFocusedBarrage",
+      "unit": "알렉스",
+      "extraStrike": 1,
+      "repeatHitDamageSkillAmpRatio": 1.1,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_priya_grand_finale",
+    "name": "그랜드 피날레",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "프리야",
+      "support"
+    ],
+    "summary": "프리야 파장 보호막/기절 강화",
+    "description": "프리야의 장판 보호막이 강화되고, 장판 가장자리의 적에게 추가 기절을 부여합니다. 선택 시 프리야 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "priyaGrandFinale",
+      "unit": "프리야",
+      "allyShieldHpRatio": 0.12,
+      "edgeStunAddSeconds": 0.75,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_daniel_moonlight_execution",
+    "name": "월광 처형식",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "다니엘",
+      "execute"
+    ],
+    "summary": "다니엘 후열 처형 피해 강화",
+    "description": "다니엘이 후열 대상에게 더 큰 피해를 주고, 낮은 체력의 대상을 추가 피해로 처형합니다. 선택 시 다니엘 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "danielMoonlightExecution",
+      "unit": "다니엘",
+      "backlineDamageMultiply": 1.22,
+      "executeThresholdHpRatio": 0.16,
+      "executeDamageAtkRatio": 1.5,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_lenox_chain_sentence",
+    "name": "단죄의 사슬",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "레녹스",
+      "control"
+    ],
+    "summary": "레녹스 끌어온 적 속박/받피증",
+    "description": "레녹스의 사슬이 적을 더 오래 속박합니다. 속박된 대상이 쓰러지면 주변 적이 잠시 제압됩니다. 선택 시 레녹스 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "lenoxChainSentence",
+      "unit": "레녹스",
+      "bindSeconds": 1.25,
+      "damageTakenAdd": 0.16,
+      "onDeathNearbySuppressSeconds": 0.6,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_irem_catfish_mayhem",
+    "name": "고양이와 물고기",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "이렘",
+      "scaling"
+    ],
+    "summary": "이렘 처치 시 변신 스탯 성장",
+    "description": "이렘이 적을 처치할수록 공격력과 스킬 증폭이 영구히 오르고, 전술 표적 처치 시 성장량이 증가합니다. 선택 시 이렘 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "iremCatfishMayhem",
+      "unit": "이렘",
+      "killAtkAdd": 1,
+      "killSkillAmpAdd": 2,
+      "tacticalTargetBonusMultiply": 2,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_theodore_sniper_protocol",
+    "name": "저격 프로토콜",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "테오도르",
+      "support"
+    ],
+    "summary": "테오도르 후열 지원 사격 강화",
+    "description": "테오도르가 먼 아군의 공격을 지원해 추가 피해를 주고, 해당 아군에게 보호막을 부여합니다. 선택 시 테오도르 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "theodoreSniperProtocol",
+      "unit": "테오도르",
+      "assistDamageSkillAmpRatio": 0.75,
+      "allyShieldHpRatio": 0.08,
+      "cooldownSeconds": 2.5,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_shoichi_seven_elixir",
+    "name": "7단비약",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "쇼이치",
+      "dash"
+    ],
+    "summary": "쇼이치 스킬 시 7연속 비약",
+    "description": "쇼이치가 스킬 시전 후 전투당 1회 7단비약을 사용합니다. 여러 차례 단검을 타며 경로의 적에게 피해를 주고 마지막에 큰 피해를 줍니다. 선택 시 쇼이치 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "shoichiSevenElixir",
+      "unit": "쇼이치",
+      "oncePerCombat": true,
+      "dashCount": 7,
+      "pathDamageAtkRatio": 0.35,
+      "pathDamageSkillAmpRatio": 0.45,
+      "finalDamageAtkRatio": 1.1,
+      "finalDamageSkillAmpRatio": 1.4,
+      "bossDamageMultiplier": 0.45,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  }
+]
