@@ -58,6 +58,9 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       pullBacklineTargets: unit.pullBacklineTargets ?? 0,
       openingMana: unit.openingMana ?? 0,
       manaOnHitBonus: unit.manaOnHitBonus ?? 0,
+      supportAidHpRatio: unit.supportAidHpRatio ?? 0,
+      supportAidDefense: unit.supportAidDefense ?? 0,
+      supportAidDamageReduction: unit.supportAidDamageReduction ?? 0,
     };
     for (const trait of unitTraits(unit)) {
       const rule = traitRules[trait];

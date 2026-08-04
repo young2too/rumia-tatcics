@@ -42,6 +42,8 @@ export function createCombatController(context) {
 const skillTimeline = createSkillTimeline();
 let combatElapsedMs = 0;
 
+const SUPPORT_ROLE = "\uc9c0\uc6d0";
+
 const statusTurnMs = () => balance.battle.statusTurnMs ?? 500;
 const durationFromTurns = (turns) => Math.max(0, Number(turns) || 0) * statusTurnMs();
 const attackIntervalMs = (unit) => Math.max(
@@ -1077,6 +1079,9 @@ function prepareCombatUnit(unit, side, counts = {}) {
     pullBacklineTargets: unit.pullBacklineTargets ?? 0,
     openingMana: unit.openingMana ?? 0,
     manaOnHitBonus: unit.manaOnHitBonus ?? 0,
+    supportAidHpRatio: unit.supportAidHpRatio ?? 0,
+    supportAidDefense: unit.supportAidDefense ?? 0,
+    supportAidDamageReduction: unit.supportAidDamageReduction ?? 0,
   };
   if (side === "ally") {
     const boosts = state.temporaryBoosts || {};
@@ -1118,6 +1123,10 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.pullBacklineTargets = Math.max(0, Math.round(stats.pullBacklineTargets ?? 0));
   unit.openingMana = Math.max(0, Math.round(stats.openingMana ?? 0));
   unit.manaOnHitBonus = Math.max(0, stats.manaOnHitBonus ?? 0);
+  unit.supportAidHpRatio = Math.max(0, stats.supportAidHpRatio ?? 0);
+  unit.supportAidDefense = Math.max(0, Math.round(stats.supportAidDefense ?? 0));
+  unit.supportAidDamageReduction = Math.max(0, Math.min(0.5, stats.supportAidDamageReduction ?? 0));
+  unit.supportAidBuff = null;
   unit.range = unitAttackRange(unit);
   unit.status = "";
   unit.stunRemainingMs = 0;
@@ -1359,6 +1368,7 @@ function combatEffect(from, to, type = "attack", value = null) {
   if (skillCritical && value?.amount > 0) {
     value = { ...value, critical: true };
   }
+  if (type === "heal" || type === "shield") applySupportAidBuff(from, to);
   recordCombatMetric(from, to, type, value);
   return { from: from.id, to: to.id, type, weapon: from.weapon, kind: weaponEffectKind(from, type), value };
 }
@@ -1395,6 +1405,30 @@ function recordCombatMetric(from, to, type, value) {
   const targetMetric = ensureCombatMetric(to);
   if (attackerMetric) attackerMetric.damageDone += amount;
   if (targetMetric) targetMetric.damageTaken += amount;
+}
+
+function applySupportAidBuff(source, target) {
+  if (!source || !target || source.side !== target.side || source.role !== SUPPORT_ROLE || target.hp <= 0) return;
+  const next = {
+    hpBonus: Math.max(0, Math.round((target.combatBase?.maxHp || target.maxHp) * (source.supportAidHpRatio || 0))),
+    defenseBonus: Math.max(0, Math.round(source.supportAidDefense || 0)),
+    damageReductionBonus: Math.max(0, Math.min(0.5, source.supportAidDamageReduction || 0)),
+  };
+  if (!next.hpBonus && !next.defenseBonus && !next.damageReductionBonus) return;
+  const current = target.supportAidBuff || { hpBonus: 0, defenseBonus: 0, damageReductionBonus: 0 };
+  const hpDelta = Math.max(0, next.hpBonus - current.hpBonus);
+  const defenseDelta = Math.max(0, next.defenseBonus - current.defenseBonus);
+  const reductionDelta = Math.max(0, next.damageReductionBonus - current.damageReductionBonus);
+  if (!hpDelta && !defenseDelta && !reductionDelta) return;
+  target.maxHp += hpDelta;
+  target.hp = Math.min(target.maxHp, target.hp + hpDelta);
+  target.defense += defenseDelta;
+  target.damageReduction = Math.max(0, Math.min(0.8, (target.damageReduction || 0) + reductionDelta));
+  target.supportAidBuff = {
+    hpBonus: Math.max(current.hpBonus, next.hpBonus),
+    defenseBonus: Math.max(current.defenseBonus, next.defenseBonus),
+    damageReductionBonus: Math.max(current.damageReductionBonus, next.damageReductionBonus),
+  };
 }
 
 function beginCombatMetrics(units) {
@@ -3309,6 +3343,9 @@ async function simulate() {
       pullBacklineTargets: unit.pullBacklineTargets ?? 0,
       openingMana: unit.openingMana ?? 0,
       manaOnHitBonus: unit.manaOnHitBonus ?? 0,
+      supportAidHpRatio: unit.supportAidHpRatio ?? 0,
+      supportAidDefense: unit.supportAidDefense ?? 0,
+      supportAidDamageReduction: unit.supportAidDamageReduction ?? 0,
     };
     unit.critChance = critBase.critChance;
     unit.critDamage = critBase.critDamage;
@@ -3488,9 +3525,13 @@ async function simulate() {
       unit.pullBacklineTargets = unit.combatBase.pullBacklineTargets;
       unit.openingMana = unit.combatBase.openingMana;
       unit.manaOnHitBonus = unit.combatBase.manaOnHitBonus;
+      unit.supportAidHpRatio = unit.combatBase.supportAidHpRatio;
+      unit.supportAidDefense = unit.combatBase.supportAidDefense;
+      unit.supportAidDamageReduction = unit.combatBase.supportAidDamageReduction;
       delete unit.combatBase;
     }
     delete unit._skillCriticalQueue;
+    delete unit.supportAidBuff;
     unit.hp = unit.maxHp;
     unit.mana = 0;
     unit.status = "";
@@ -3600,8 +3641,13 @@ async function simulate() {
         unit.speed = unit.combatBase.speed;
         unit.skillAmp = unit.combatBase.skillAmp;
         unit.defense = unit.combatBase.defense;
+        unit.damageReduction = unit.combatBase.damageReduction;
+        unit.supportAidHpRatio = unit.combatBase.supportAidHpRatio;
+        unit.supportAidDefense = unit.combatBase.supportAidDefense;
+        unit.supportAidDamageReduction = unit.combatBase.supportAidDamageReduction;
         delete unit.combatBase;
       }
+      delete unit.supportAidBuff;
       unit.hp = unit.maxHp;
       unit.mana = 0;
       unit.status = "";
