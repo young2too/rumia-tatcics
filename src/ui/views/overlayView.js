@@ -251,9 +251,11 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
     }
     if (!refs.rankingVersionFilter) return;
     const currentVersion = rankingConfig.majorVersion || patchNotesConfig.version || "";
+    const versionOptions = Array.from(new Set([currentVersion, ...(state.rankingVersions || [])].filter(Boolean)))
+      .map((version) => ({ value: version, label: version }));
     const options = [
+      ...versionOptions,
       { value: "all", label: "통합랭킹" },
-      ...Array.from(new Set([currentVersion, ...(state.rankingVersions || [])].filter(Boolean))).map((version) => ({ value: version, label: version })),
     ];
     refs.rankingVersionFilter.innerHTML = "";
     for (const option of options) {
@@ -262,7 +264,9 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
       node.textContent = option.label;
       refs.rankingVersionFilter.append(node);
     }
-    if (!options.some((option) => option.value === state.rankingVersionFilter)) state.rankingVersionFilter = "all";
+    if (!state.rankingVersionFilter || !options.some((option) => option.value === state.rankingVersionFilter)) {
+      state.rankingVersionFilter = currentVersion || versionOptions[0]?.value || "all";
+    }
     refs.rankingVersionFilter.value = state.rankingVersionFilter;
   }
 

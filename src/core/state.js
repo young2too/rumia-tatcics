@@ -51,7 +51,7 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
     rankingError: "",
     rankingSortBy: "stage",
     rankingSortOrder: "desc",
-    rankingVersionFilter: "all",
+    rankingVersionFilter: "",
     rankingVersions: [],
     bgmOn: false,
     bgmError: "",

@@ -27,6 +27,8 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       defense: unit.defense,
       critChance: unit.critChance ?? 0,
       critDamage: unit.critDamage ?? 1.5,
+      skillCritChance: unit.skillCritChance ?? 0,
+      skillCritDamage: unit.skillCritDamage ?? 1.5,
       openingCritMultiplier: unit.openingCritMultiplier ?? 1,
       lifeSteal: unit.lifeSteal ?? 0,
       damageReduction: unit.damageReduction ?? 0,
@@ -164,6 +166,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       ["마나", `${Math.round(unit.mana || 0)} / ${unitMaxMana(effective)}`],
     ];
     if (effective.critChance > 0) stats.push(["치명", `${Math.round(effective.critChance * 100)}%`]);
+    if (effective.skillCritChance > 0) stats.push(["스킬치명", `${Math.round(effective.skillCritChance * 100)}%`]);
     if (effective.openingCritMultiplier > 1) stats.push(["첫 치명", `${Math.round(effective.openingCritMultiplier * 100)}%`]);
     if (effective.lifeSteal > 0) stats.push(["흡혈", `${Math.round(effective.lifeSteal * 100)}%`]);
     if (effective.damageReduction > 0) stats.push(["피해감소", `${Math.round(effective.damageReduction * 100)}%`]);

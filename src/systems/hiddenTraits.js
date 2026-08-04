@@ -182,33 +182,36 @@ export function createHiddenTraitController({ hiddenTraitRules, boardUnits }) {
     return results;
   }
 
-  function triggerKillUtilities(killer, defeated) {
+  function triggerKillUtilities(killer, defeated, contributors = []) {
     const results = [];
     if (killer?.hiddenKillBlink && killer.hp > 0) {
       results.push({ type: "killBlink", rule: killer.hiddenKillBlink, unit: killer });
     }
-    if (killer?.hiddenTacticalGrowth && killer.hp > 0 && defeated?.tacticalTarget) {
-      const rule = killer.hiddenTacticalGrowth;
+    const participants = Array.from(new Map([killer, ...contributors]
+      .filter((unit) => unit?.hp > 0)
+      .map((unit) => [unit.id, unit])).values());
+    for (const unit of participants.filter((candidate) => candidate.hiddenTacticalGrowth && defeated?.tacticalTarget)) {
+      const rule = unit.hiddenTacticalGrowth;
       const atk = Number(rule.effect.atk) || 0;
       const skillAmp = Number(rule.effect.skillAmp) || 0;
       const maxHp = Number(rule.effect.maxHp) || 0;
-      killer.atk += atk;
-      killer.skillAmp += skillAmp;
-      killer.maxHp += maxHp;
-      killer.hp += maxHp;
-      if (killer.combatBase) {
-        killer.combatBase.atk += atk;
-        killer.combatBase.skillAmp += skillAmp;
-        killer.combatBase.maxHp += maxHp;
+      unit.atk += atk;
+      unit.skillAmp += skillAmp;
+      unit.maxHp += maxHp;
+      unit.hp += maxHp;
+      if (unit.combatBase) {
+        unit.combatBase.atk += atk;
+        unit.combatBase.skillAmp += skillAmp;
+        unit.combatBase.maxHp += maxHp;
       }
-      results.push({ type: "tacticalGrowth", rule, unit: killer, atk, skillAmp, maxHp });
+      results.push({ type: "tacticalGrowth", rule, unit, atk, skillAmp, maxHp });
     }
-    if (killer?.hiddenKillGrowth && killer.hp > 0) {
-      const rule = killer.hiddenKillGrowth;
+    for (const unit of participants.filter((candidate) => candidate.hiddenKillGrowth)) {
+      const rule = unit.hiddenKillGrowth;
       const atk = Number(rule.effect.atk) || 0;
-      killer.atk += atk;
-      if (killer.combatBase) killer.combatBase.atk += atk;
-      results.push({ type: "killGrowth", rule, unit: killer, atk });
+      unit.atk += atk;
+      if (unit.combatBase) unit.combatBase.atk += atk;
+      results.push({ type: "killGrowth", rule, unit, atk });
     }
     return results;
   }

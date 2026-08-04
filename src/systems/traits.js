@@ -40,6 +40,8 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       healTargets: unit.healTargets ?? 2,
       critChance: unit.critChance ?? 0,
       critDamage: unit.critDamage ?? 1.5,
+      skillCritChance: unit.skillCritChance ?? 0,
+      skillCritDamage: unit.skillCritDamage ?? 1.5,
       openingCritMultiplier: unit.openingCritMultiplier ?? 1,
       lifeSteal: unit.lifeSteal ?? 0,
       damageReduction: unit.damageReduction ?? 0,
@@ -60,6 +62,9 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       pullBacklineTargets: unit.pullBacklineTargets ?? 0,
       openingMana: unit.openingMana ?? 0,
       manaOnHitBonus: unit.manaOnHitBonus ?? 0,
+      supportAidHpRatio: unit.supportAidHpRatio ?? 0,
+      supportAidDefense: unit.supportAidDefense ?? 0,
+      supportAidDamageReduction: unit.supportAidDamageReduction ?? 0,
     };
     for (const trait of unitTraits(unit)) {
       const rule = traitRules[trait];
