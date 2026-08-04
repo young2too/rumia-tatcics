@@ -58,7 +58,10 @@ const skillOutput = (unit, amount) => amount * skillOutputMultiplier(unit);
 
 function dealSkillDamage(source, target, amount, options = {}) {
   if (options.fixed) return dealDamage(source, target, amount, options);
-  return dealDamage(source, target, skillOutput(source, amount), options);
+  const critical = Math.random() < (source?.skillCritChance || 0);
+  source._skillCriticalQueue ||= [];
+  source._skillCriticalQueue.push(critical);
+  return dealDamage(source, target, skillOutput(source, amount) * (critical ? (source.skillCritDamage || 1.5) : 1), options);
 }
 
 function enemyDifficultyStage() {
@@ -1052,6 +1055,8 @@ function prepareCombatUnit(unit, side, counts = {}) {
     healTargets: unit.healTargets ?? (unit.role === "지원" ? 2 : 1),
     critChance: unit.critChance ?? 0,
     critDamage: unit.critDamage ?? 1.5,
+    skillCritChance: unit.skillCritChance ?? 0,
+    skillCritDamage: unit.skillCritDamage ?? 1.5,
     openingCritMultiplier: unit.openingCritMultiplier ?? 1,
     lifeSteal: unit.lifeSteal ?? 0,
     damageReduction: unit.damageReduction ?? 0,
@@ -1091,6 +1096,8 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.healTargets = Math.max(1, Math.round(stats.healTargets ?? 1));
   unit.critChance = Math.max(0, Math.min(1, stats.critChance ?? 0));
   unit.critDamage = Math.max(1, stats.critDamage ?? 1.5);
+  unit.skillCritChance = Math.max(0, Math.min(1, stats.skillCritChance ?? 0));
+  unit.skillCritDamage = Math.max(1, stats.skillCritDamage ?? 1.5);
   unit.openingCritMultiplier = Math.max(1, stats.openingCritMultiplier ?? 1);
   unit.lifeSteal = Math.max(0, stats.lifeSteal ?? 0);
   unit.damageReduction = Math.max(0, Math.min(0.8, stats.damageReduction ?? 0));
@@ -1346,6 +1353,12 @@ function weaponEffectKind(unit, type = "attack") {
 }
 
 function combatEffect(from, to, type = "attack", value = null) {
+  const skillCritical = type === "skill" && value?.amount > 0
+    ? Boolean(from._skillCriticalQueue?.shift())
+    : false;
+  if (skillCritical && value?.amount > 0) {
+    value = { ...value, critical: true };
+  }
   recordCombatMetric(from, to, type, value);
   return { from: from.id, to: to.id, type, weapon: from.weapon, kind: weaponEffectKind(from, type), value };
 }
@@ -3274,6 +3287,8 @@ async function simulate() {
       healTargets: unit.healTargets ?? 1,
       critChance: critBase.critChance,
       critDamage: critBase.critDamage,
+      skillCritChance: unit.skillCritChance ?? 0,
+      skillCritDamage: unit.skillCritDamage ?? 1.5,
       openingCritMultiplier: critBase.openingCritMultiplier,
       lifeSteal: unit.lifeSteal ?? 0,
       damageReduction: unit.damageReduction ?? 0,
@@ -3297,6 +3312,8 @@ async function simulate() {
     };
     unit.critChance = critBase.critChance;
     unit.critDamage = critBase.critDamage;
+    unit.skillCritChance = unit.skillCritChance ?? 0;
+    unit.skillCritDamage = unit.skillCritDamage ?? 1.5;
     unit.openingCritMultiplier = critBase.openingCritMultiplier;
   });
   allies.forEach((unit) => prepareCombatUnit(unit, "ally", traitCounts));
@@ -3449,6 +3466,8 @@ async function simulate() {
       unit.healTargets = unit.combatBase.healTargets;
       unit.critChance = unit.combatBase.critChance;
       unit.critDamage = unit.combatBase.critDamage;
+      unit.skillCritChance = unit.combatBase.skillCritChance;
+      unit.skillCritDamage = unit.combatBase.skillCritDamage;
       unit.openingCritMultiplier = unit.combatBase.openingCritMultiplier;
       unit.lifeSteal = unit.combatBase.lifeSteal;
       unit.damageReduction = unit.combatBase.damageReduction;
@@ -3471,6 +3490,7 @@ async function simulate() {
       unit.manaOnHitBonus = unit.combatBase.manaOnHitBonus;
       delete unit.combatBase;
     }
+    delete unit._skillCriticalQueue;
     unit.hp = unit.maxHp;
     unit.mana = 0;
     unit.status = "";

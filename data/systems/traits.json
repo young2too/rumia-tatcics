@@ -231,7 +231,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "주술형 스킬 피해 +35%, 마나 획득량 +12%, 요구 마나 -5",
+        "text": "주술형 스킬 피해 +35%, 마나 획득량 +12%, 요구 마나 -5, 스킬 치명 확률 +6%",
         "effects": [
           {
             "stat": "skillAmp",
@@ -244,12 +244,16 @@
           {
             "stat": "maxManaReduction",
             "add": 5
+          },
+          {
+            "stat": "skillCritChance",
+            "add": 0.06
           }
         ]
       },
       {
         "need": 4,
-        "text": "주술형 스킬 피해 +80%, 마나 획득량 +25%, 요구 마나 -10",
+        "text": "주술형 스킬 피해 +80%, 마나 획득량 +25%, 요구 마나 -10, 스킬 치명 확률 +14%",
         "effects": [
           {
             "stat": "skillAmp",
@@ -262,12 +266,16 @@
           {
             "stat": "maxManaReduction",
             "add": 10
+          },
+          {
+            "stat": "skillCritChance",
+            "add": 0.14
           }
         ]
       },
       {
         "need": 6,
-        "text": "주술형 스킬 피해 +135%, 마나 획득량 +38%, 요구 마나 -15",
+        "text": "주술형 스킬 피해 +135%, 마나 획득량 +38%, 요구 마나 -15, 스킬 치명 확률 +24%",
         "effects": [
           {
             "stat": "skillAmp",
@@ -280,12 +288,16 @@
           {
             "stat": "maxManaReduction",
             "add": 15
+          },
+          {
+            "stat": "skillCritChance",
+            "add": 0.24
           }
         ]
       },
       {
         "need": 8,
-        "text": "주술형 스킬 피해 +220%, 마나 획득량 +50%, 요구 마나 -20",
+        "text": "주술형 스킬 피해 +220%, 마나 획득량 +50%, 요구 마나 -20, 스킬 치명 확률 +35%",
         "effects": [
           {
             "stat": "skillAmp",
@@ -298,6 +310,10 @@
           {
             "stat": "maxManaReduction",
             "add": 20
+          },
+          {
+            "stat": "skillCritChance",
+            "add": 0.35
           }
         ]
       }
@@ -523,7 +539,7 @@
         "effects": [
           {
             "stat": "maxManaReduction",
-            "set": 5
+            "add": 5
           }
         ]
       },
@@ -533,7 +549,7 @@
         "effects": [
           {
             "stat": "maxManaReduction",
-            "set": 10
+            "add": 10
           }
         ]
       },
@@ -543,7 +559,7 @@
         "effects": [
           {
             "stat": "maxManaReduction",
-            "set": 20
+            "add": 20
           }
         ]
       }
@@ -755,11 +771,15 @@
     "tiers": [
       {
         "need": 2,
-        "text": "지원형 회복량 +35%, 마나 획득량 +10%, 요구 마나 -5",
+        "text": "지원형 회복량 +15%, 체력 +6%, 마나 획득량 +10%, 요구 마나 -5",
         "effects": [
           {
             "stat": "heal",
-            "multiply": 1.35
+            "multiply": 1.15
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.06
           },
           {
             "stat": "manaGain",
@@ -773,11 +793,19 @@
       },
       {
         "need": 4,
-        "text": "지원형 회복량 +80%, 마나 획득량 +20%, 요구 마나 -10",
+        "text": "지원형 회복량 +25%, 체력 +10%, 방어 +4, 마나 획득량 +20%, 요구 마나 -10",
         "effects": [
           {
             "stat": "heal",
-            "multiply": 1.8
+            "multiply": 1.25
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.1
+          },
+          {
+            "stat": "defense",
+            "add": 4
           },
           {
             "stat": "manaGain",
@@ -791,11 +819,23 @@
       },
       {
         "need": 6,
-        "text": "지원형 회복량 +135%, 마나 획득량 +32%, 요구 마나 -15",
+        "text": "지원형 회복량 +35%, 체력 +15%, 방어 +8, 받는 피해 -5%, 마나 획득량 +32%, 요구 마나 -15",
         "effects": [
           {
             "stat": "heal",
-            "multiply": 2.35
+            "multiply": 1.35
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.15
+          },
+          {
+            "stat": "defense",
+            "add": 8
+          },
+          {
+            "stat": "damageReduction",
+            "add": 0.05
           },
           {
             "stat": "manaGain",
@@ -809,11 +849,23 @@
       },
       {
         "need": 8,
-        "text": "지원형 회복량 +210%, 마나 획득량 +45%, 요구 마나 -20",
+        "text": "지원형 회복량 +50%, 체력 +22%, 방어 +12, 받는 피해 -8%, 마나 획득량 +45%, 요구 마나 -20",
         "effects": [
           {
             "stat": "heal",
-            "multiply": 3.1
+            "multiply": 1.5
+          },
+          {
+            "stat": "hp",
+            "multiply": 1.22
+          },
+          {
+            "stat": "defense",
+            "add": 12
+          },
+          {
+            "stat": "damageReduction",
+            "add": 0.08
           },
           {
             "stat": "manaGain",

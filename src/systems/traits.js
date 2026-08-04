@@ -36,6 +36,8 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       healTargets: unit.healTargets ?? 2,
       critChance: unit.critChance ?? 0,
       critDamage: unit.critDamage ?? 1.5,
+      skillCritChance: unit.skillCritChance ?? 0,
+      skillCritDamage: unit.skillCritDamage ?? 1.5,
       openingCritMultiplier: unit.openingCritMultiplier ?? 1,
       lifeSteal: unit.lifeSteal ?? 0,
       damageReduction: unit.damageReduction ?? 0,
