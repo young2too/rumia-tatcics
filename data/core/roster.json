@@ -329,7 +329,7 @@
     "defense": 8,
     "skill": "대지의메아리",
     "skillId": "priya_earth_echo",
-    "skillTooltip": "0.8초간 정신집중 후 사거리 3칸의 적에게 스킬 증폭의 75% + 9 피해를 주고 0.8초간 기절시킵니다.",
+    "skillTooltip": "시전 시작 시 아군 전체에 지원 시너지 대상 버프를 부여합니다. 0.8초간 정신집중 후 사거리 3칸의 적에게 스킬 증폭의 75% + 9 피해를 주고 0.8초간 기절시킵니다.",
     "art": "./assets/characters/051_Priya.png",
     "active": true,
     "maxMana": 125

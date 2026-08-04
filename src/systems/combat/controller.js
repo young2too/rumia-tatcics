@@ -1267,6 +1267,10 @@ function dealDamage(source, target, amount, options = {}) {
   }
   const hpDamage = Math.max(0, damage - absorbed);
   target.hp = Math.max(0, target.hp - hpDamage);
+  if (hpDamage > 0 && source?.id && source.side !== target.side) {
+    target.killContributors ||= new Set();
+    target.killContributors.add(source.id);
+  }
   if (hpDamage > 0 && target.lifeShareRemainingMs > 0) {
     redistributeLifeShare(target);
   }
@@ -1324,7 +1328,10 @@ function dealDamage(source, target, amount, options = {}) {
         if (heal > 0) state.pendingHiddenEffects.push(combatEffect(unit, unit, "heal", { amount: heal }));
       }
     }
-    const killUtilities = triggerKillUtilities(source, target);
+    const contributors = [...(target.killContributors || [])]
+      .map((id) => units.find((unit) => unit.id === id))
+      .filter(Boolean);
+    const killUtilities = triggerKillUtilities(source, target, contributors);
     removeDeadUnits([target]);
     if (source?.skillId === "jackie_assault" && source.hp > 0 && !options.skipKillFollowup) {
       const nextTarget = blinkNextToTarget(source, units.filter((unit) => unit.side !== source.side && unit.hp > 0));
@@ -1341,10 +1348,10 @@ function dealDamage(source, target, amount, options = {}) {
         if (nextTarget) addLog(`${utility.rule.name} 발동: ${source.name}이 ${nextTarget.name}의 옆으로 이동.`);
       }
       if (utility.type === "tacticalGrowth") {
-        addLog(`${utility.rule.name} 발동: ${source.name} 공격 +${utility.atk} / 스증 +${utility.skillAmp} / 체력 +${utility.maxHp}.`);
+        addLog(`${utility.rule.name} 발동: ${utility.unit.name} 공격 +${utility.atk} / 스증 +${utility.skillAmp} / 체력 +${utility.maxHp}.`);
       }
       if (utility.type === "killGrowth") {
-        addLog(`${utility.rule.name} 발동: ${source.name} 공격력 영구 +${utility.atk}.`);
+        addLog(`${utility.rule.name} 발동: ${utility.unit.name} 공격력 영구 +${utility.atk}.`);
       }
     }
   }
@@ -2082,18 +2089,20 @@ function castElenaSkill(caster, enemies) {
   };
 }
 
-function castPriyaSkill(caster, enemies) {
+function castPriyaSkill(caster, allies, enemies) {
   caster.actionLockRemainingMs = 800;
   caster.actionLockDurationMs = 800;
   caster.status = "channeling";
+  const supportTargets = living(allies);
   skillTimeline.schedule(combatElapsedMs, 800, {
     type: "priya-earth-echo",
     caster,
     enemies: enemies.slice(),
   });
+  playSkillVisual?.({ type: "priya-earth-echo", fromId: caster.id, targetIds: supportTargets.map((unit) => unit.id) });
   return {
-    message: `${caster.name} 대지의메아리: 0.8초 정신집중`,
-    effects: [{ from: caster.id, to: caster.id, type: "shield", kind: "magic", value: { amount: 1 } }],
+    message: `${caster.name} 대지의메아리: 0.8초 정신집중 / 아군 전체 지원`,
+    effects: supportTargets.map((unit) => combatEffect(caster, unit, "shield", { amount: 1 })),
   };
 }
 
@@ -2995,7 +3004,7 @@ function castSkill(caster, allies, enemies) {
   if (caster.skillId === "lenox_sharp_fang") return withSkillName(caster, castLenoxSkill(caster, enemies));
   if (caster.skillId === "mai_shawl_curtain") return withSkillName(caster, castMaiSkill(caster));
   if (caster.skillId === "elena_danse_macabre") return withSkillName(caster, castElenaSkill(caster, enemies));
-  if (caster.skillId === "priya_earth_echo") return withSkillName(caster, castPriyaSkill(caster, enemies));
+  if (caster.skillId === "priya_earth_echo") return withSkillName(caster, castPriyaSkill(caster, allies, enemies));
   if (caster.skillId === "haze_rocket_launcher") return withSkillName(caster, castHazeSkill(caster, enemies));
   if (caster.skillId === "chloe_life_share") return withSkillName(caster, castChloeSkill(caster, allies));
   if (caster.skillId === "fiora_thrust_combo") return withSkillName(caster, castFioraSkill(caster, enemies));
@@ -3565,6 +3574,7 @@ async function simulate() {
     unit.mealTimeCasts = 0;
     unit.bihyungEnhancedAttacks = 0;
     unit.garnetIronMaiden = null;
+    unit.killContributors = null;
     unit.biancaReignUsed = false;
     unit.focusTargetId = null;
     unit.forcedFocusTargetId = null;
@@ -3583,6 +3593,7 @@ async function simulate() {
     delete unit.hiddenExclusiveRescue;
     delete unit.hiddenExclusivePartnerId;
     delete unit.hiddenExclusiveRescueState;
+    delete unit.killContributors;
     delete unit.fusedSkillRole;
     delete unit.fusedSkillName;
     unit.hasPickedOpeningTarget = false;
@@ -3667,3 +3678,4 @@ async function simulate() {
     simulate,
   };
 }
+
