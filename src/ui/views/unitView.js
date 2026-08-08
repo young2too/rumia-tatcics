@@ -91,6 +91,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
   function unitNode(unit, source, index, compact = false) {
     const node = document.getElementById("unitTemplate").content.firstElementChild.cloneNode(true);
     node.classList.add(source);
+    node.classList.add(`tier-${Math.max(1, Math.min(3, unit.tier || 1))}`);
     if (unit.boss) {
       node.classList.add("boss-unit");
       if (unit.pattern) node.classList.add(`boss-${unit.pattern}`);

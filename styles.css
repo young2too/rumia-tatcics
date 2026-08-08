@@ -2367,13 +2367,22 @@ h2 {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
 }
 
+.cell .unit:not(.boss-unit).tier-2 .name {
+  color: #9ee7ff;
+}
+
+.cell .unit:not(.boss-unit).tier-3 .name {
+  color: #ffd86b;
+}
+
 .cell .unit .meta {
   display: none;
 }
 
 .cell .unit .stars {
   position: absolute;
-  top: 64px;
+  top: 1px;
+  z-index: 3;
   font-size: 10px;
   line-height: 1;
   max-width: 64px;
