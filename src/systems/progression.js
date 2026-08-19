@@ -1,3 +1,5 @@
+import { augmentEffects, augmentInterestCap, augmentMaxLevelShopRerolls, augmentStreakCapAdd } from "./augmentEffects.js";
+
 export function createProgressionController({ state, balance, addLog, render, boardLimit }) {
   function xpToNextLevel() {
     return balance.player.levelXp[state.level] || 0;
@@ -35,14 +37,18 @@ export function createProgressionController({ state, balance, addLog, render, bo
   }
 
   function streakBonus() {
-    if (state.streakCount >= 5) return 3;
-    if (state.streakCount >= 4) return 2;
-    if (state.streakCount >= 2) return 1;
-    return 0;
+    const capAdd = augmentStreakCapAdd(state);
+    const cap = 3 + capAdd;
+    let bonus = 0;
+    if (state.streakCount >= 5) bonus = 3;
+    else if (state.streakCount >= 4) bonus = 2;
+    else if (state.streakCount >= 2) bonus = 1;
+    if (capAdd > 0 && state.streakCount >= 6) bonus += Math.min(capAdd, Math.floor((state.streakCount - 4) / 2));
+    return Math.min(cap, bonus);
   }
 
   function interestGold() {
-    return Math.min(balance.battle.maxInterest, Math.floor(state.gold / balance.battle.interestStep));
+    return Math.min(augmentInterestCap(state, balance.battle.maxInterest), Math.floor(state.gold / balance.battle.interestStep));
   }
 
   function grantRoundIncome(win) {
@@ -54,6 +60,11 @@ export function createProgressionController({ state, balance, addLog, render, bo
     const total = base + winGold + streakGold + interest;
     state.gold += total;
     state.lastIncome = total;
+    const baseFreeRerolls = augmentEffects(state, "freeRerollPerRound")
+      .reduce((sum, effect) => sum + (Number(effect.count) || 0), 0);
+    const maxLevelOddsRerolls = augmentMaxLevelShopRerolls(state, state.level, balance.player.maxLevel);
+    state.shopOddsMaxLevelRerollsRemaining = maxLevelOddsRerolls;
+    state.freeShopRerollsRemaining = baseFreeRerolls + maxLevelOddsRerolls;
     const streakLabel = state.streakType === "win" ? "연승" : "연패";
     addLog(`수입 +${total}: 기본 ${base}, ${win ? `승리 ${winGold}, ` : ""}${streakLabel} ${state.streakCount} (${streakGold}), 이자 ${interest}.`);
     return total;

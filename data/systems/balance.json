@@ -176,7 +176,8 @@
   },
   "battle": {
     "columns": 8,
-    "enemySlots": 16,
+    "enemySlots": 32,
+    "enemyBossSpawnIndex": 19,
     "maxFieldEnemies": 11,
     "enemySegmentCounts": [
       1,
@@ -188,6 +189,18 @@
       4
     ],
     "enemySpawnOrder": [
+      27,
+      28,
+      26,
+      29,
+      25,
+      30,
+      19,
+      20,
+      18,
+      21,
+      17,
+      22,
       11,
       12,
       10,
@@ -200,6 +213,10 @@
       5,
       1,
       6,
+      24,
+      31,
+      16,
+      23,
       0,
       7,
       8,
@@ -416,6 +433,14 @@
       "maxDamageNumbersPerBatch": 16,
       "maxMinorDamageNumbersPerBatch": 8,
       "minorDamageThreshold": 45,
+      "mobileLowSpec": {
+        "maxWidth": 760,
+        "maxConcurrentSkillEffects": 10,
+        "maxConcurrentProjectiles": 16,
+        "maxDamageNumbersPerBatch": 9,
+        "maxMinorDamageNumbersPerBatch": 3,
+        "minorDamageThreshold": 70
+      },
       "alwaysShowTypes": [
         "skill-name",
         "shoichi-ride"

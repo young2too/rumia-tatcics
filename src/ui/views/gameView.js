@@ -21,8 +21,16 @@ export function createGameView({ state, refs, balance, audio, combat, boardUnits
       ? "최대 레벨"
       : `${balance.player.buyXpCost}크레딧 → ${balance.player.buyXpAmount}XP`;
     refs.levelUp.disabled = state.busy || state.level >= balance.player.maxLevel;
+    const hasPendingAugmentChoice = !state.augmentOpen
+      && (state.augmentChoices || []).length > 0
+      && !(state.selectedAugments || []).some((augment) => augment.stage === state.augmentStage);
+    const hasPendingAugmentTarget = Boolean(state.pendingAugmentTarget);
     refs.battle.disabled = state.busy;
-    refs.battle.textContent = state.busy ? "전투 중" : "전투 시작";
+    refs.battle.textContent = state.busy ? "전투 중" : hasPendingAugmentTarget ? "대상 선택" : hasPendingAugmentChoice ? "증강 선택" : "전투 시작";
+    if (refs.augmentResumeCenter) {
+      refs.augmentResumeCenter.hidden = state.busy || state.combatGrid || !hasPendingAugmentChoice;
+      refs.augmentResumeCenter.textContent = `${state.augmentStage || 1}단계 증강 선택`;
+    }
     const bossInfo = combat.currentBossInfo();
     refs.boardCapacity.classList.toggle("boss-warning", Boolean(bossInfo));
     refs.boardCapacityMain.textContent = bossInfo ? "BOSS" : `${boardUnits().length}/${boardLimit()}`;
@@ -40,6 +48,8 @@ export function createGameView({ state, refs, balance, audio, combat, boardUnits
     views.unit.renderUnitDetail();
     views.overlays.renderRanking();
     views.overlays.renderPatchNotes();
+    views.overlays.renderAugments();
+    views.overlays.renderActiveAugments();
     views.traits.renderTraitRosterModal();
     views.traits.renderTraitTableModal();
     renderCommunityBoard();

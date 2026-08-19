@@ -1,3 +1,5 @@
+import { applyStatPatch, augmentOvercapEffects, augmentTraitCountAdditions } from "./augmentEffects.js";
+
 export function createTraitController({ state, traitRules, boardUnits }) {
   function unitTraits(unit) {
     const traits = Array.isArray(unit.traits) && unit.traits.length ? unit.traits : [unit.trait];
@@ -14,6 +16,8 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       }
     }
     for (const [trait, names] of Object.entries(uniqueByTrait)) counts[trait] = names.size;
+    const additions = augmentTraitCountAdditions(state);
+    for (const [trait, add] of Object.entries(additions)) counts[trait] = (counts[trait] || 0) + add;
     return counts;
   }
 
@@ -71,6 +75,10 @@ export function createTraitController({ state, traitRules, boardUnits }) {
         if (Number.isFinite(effect.multiply)) stats[effect.stat] *= effect.multiply;
         if (Number.isFinite(effect.add)) stats[effect.stat] += effect.add;
       }
+    }
+    const overcap = augmentOvercapEffects(state, traitRules, counts);
+    for (const trait of unitTraits(unit)) {
+      if (overcap[trait]) applyStatPatch(stats, overcap[trait]);
     }
     return stats;
   }

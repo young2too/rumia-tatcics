@@ -1,4 +1,5 @@
 import { sellValue, unitCopyCount, stockLimit } from "../core/units.js";
+import { augmentSellValue, augmentShopOddsLevel, augmentShopSize, augmentUnitCost, augmentCanSell, augmentEffects } from "./augmentEffects.js";
 
 export function createShopController({
   state,
@@ -20,7 +21,8 @@ export function createShopController({
   }
 
   function weightedCostForLevel(level) {
-    const odds = balance.shop.costOdds[level] || balance.shop.costOdds[balance.player.maxLevel];
+    const oddsLevel = augmentShopOddsLevel(state, level, balance.player.maxLevel);
+    const odds = balance.shop.costOdds[oddsLevel] || balance.shop.costOdds[balance.player.maxLevel];
     const roll = Math.random() * 100;
     let sum = 0;
     for (let i = 0; i < odds.length; i++) {
@@ -39,7 +41,8 @@ export function createShopController({
     const preferred = availableRosterByCost(preferredCost);
     if (preferred.length) return sample(preferred);
 
-    const odds = balance.shop.costOdds[state.level] || balance.shop.costOdds[balance.player.maxLevel];
+    const oddsLevel = augmentShopOddsLevel(state, state.level, balance.player.maxLevel);
+    const odds = balance.shop.costOdds[oddsLevel] || balance.shop.costOdds[balance.player.maxLevel];
     const fallbackCosts = odds
       .map((chance, index) => ({ cost: index + 1, chance }))
       .filter((entry) => entry.chance > 0)
@@ -59,7 +62,7 @@ export function createShopController({
   }
 
   function rollShop() {
-    const size = Math.min(balance.shop.maxSize, balance.shop.baseSize + state.level);
+    const size = augmentShopSize(state, Math.min(balance.shop.maxSize, balance.shop.baseSize + state.level), balance.shop.maxSize);
     state.shop = Array.from({ length: size }, () => {
       const base = pickShopUnitBase();
       return base ? makeUnit(base, 1) : null;
@@ -150,8 +153,9 @@ export function createShopController({
     if (!unit) return;
     if (slot < 0 && !combinesImmediately) return addLog("벤치가 가득 찼습니다.");
     if ((state.pool[unit.name] || 0) <= 0) return addLog(`${unit.name} 재고가 없습니다.`);
-    if (state.gold < unit.cost) return addLog("크레딧이 부족합니다.");
-    state.gold -= unit.cost;
+    const cost = augmentUnitCost(state, unit);
+    if (state.gold < cost) return addLog("크레딧이 부족합니다.");
+    state.gold -= cost;
     state.pool[unit.name] -= 1;
     if (slot >= 0) {
       state.bench[slot] = unit;
@@ -159,7 +163,7 @@ export function createShopController({
       forceCombinePurchasedUnit(unit);
     }
     state.shop.splice(index, 1);
-    addLog(`${unit.name} 영입 완료.`);
+    addLog(`${unit.name} 영입 완료${cost !== unit.cost ? ` (${cost}크레딧)` : ""}.`);
     combineAllUnits();
     render();
   }
@@ -185,12 +189,14 @@ export function createShopController({
     const unit = arr?.[state.selected.index];
     if (!unit || state.selected.source === "enemy") return;
     const value = sellValue(unit);
+    if (!augmentCanSell(state)) return addLog("현재 증강 효과로 유닛을 판매할 수 없습니다.");
+    const adjustedValue = augmentSellValue(state, value);
     const returned = unitCopyCount(unit);
-    state.gold += value;
+    state.gold += adjustedValue;
     state.pool[unit.name] = Math.min(stockLimit(unit, balance), (state.pool[unit.name] || 0) + returned);
     arr[state.selected.index] = null;
     state.selected = null;
-    addLog(`${unit.name} 판매: ${value} 크레딧 획득, 풀 ${returned}개 반환.`);
+    addLog(`${unit.name} 판매: ${adjustedValue} 크레딧 획득, 풀 ${returned}개 반환.`);
     render();
   }
 
@@ -211,6 +217,15 @@ export function createShopController({
     const unit = srcArr[from.index];
     if (!unit) return;
     const limit = boardLimit();
+    const duplicateLimit = Math.max(1, ...augmentEffects(state, "duplicateFieldLimit").map((effect) => Number(effect.maxSameCharacterOnBoard) || 1));
+    if (target === "board" && unit && from.source !== "board") {
+      const sameNameCount = state.board.filter((candidate, index) => candidate?.name === unit.name && index !== targetIndex).length;
+      if (sameNameCount >= duplicateLimit) {
+        addLog(`${unit.name}은 전장에 최대 ${duplicateLimit}명까지 배치할 수 있습니다.`);
+        render();
+        return;
+      }
+    }
     const addsBoardUnit = from.source !== "board" && target === "board" && !dstArr[targetIndex];
     if (addsBoardUnit && boardUnits().length >= limit) {
       addLog(`현재 레벨 배치 한도는 ${limit}명입니다.`);

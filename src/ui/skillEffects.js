@@ -21,12 +21,15 @@ export function createSkillEffectRenderer() {
     "rozzi-double-shot": true,
     "aya-double-burst": true,
     "shoichi-dagger-ride": true,
+    "shoichi-seven-elixir": true,
     "leni-carrot-bazooka": true,
     "hart-peacemaker": true,
     "sissela-channel": true,
     "sissela-liberation": true,
     "elena-danse-macabre": true,
     "priya-earth-echo": true,
+    "theodore-energy-field": true,
+    "emma-magic-hat": true,
     "haze-rocket-launcher": true,
     "bernice-snare-trap": true,
     "rio-kaeyumi": true,
@@ -49,6 +52,19 @@ export function createSkillEffectRenderer() {
     return { battlefield, rect, width: rect.width, height: rect.height };
   }
 
+  function isLowSpecEffectMode() {
+    return window.innerWidth <= 760 || window.matchMedia?.("(pointer: coarse)")?.matches;
+  }
+
+  function effectResolutionCap(kind = "canvas") {
+    if (isLowSpecEffectMode()) return kind === "pixi" ? 0.85 : 0.9;
+    return kind === "pixi" ? 1.25 : 1.35;
+  }
+
+  function effectParticleCount(count) {
+    return Math.max(8, Math.round(count * (isLowSpecEffectMode() ? 0.55 : 1)));
+  }
+
   function ensureCanvas() {
     const layout = ensureLayout();
     if (!layout) return null;
@@ -61,7 +77,7 @@ export function createSkillEffectRenderer() {
       battlefield.append(canvas);
       context = canvas.getContext("2d");
     }
-    const ratio = Math.min(window.devicePixelRatio || 1, 1.35);
+    const ratio = Math.min(window.devicePixelRatio || 1, effectResolutionCap("canvas"));
     const width = Math.max(1, Math.round(rect.width * ratio));
     const height = Math.max(1, Math.round(rect.height * ratio));
     if (canvas.width !== width || canvas.height !== height) {
@@ -76,7 +92,7 @@ export function createSkillEffectRenderer() {
 
   async function ensurePixiLayer(layout) {
     if (pixiApp && pixiHost === layout.battlefield) {
-      pixiApp.renderer.resize(layout.width, layout.height, Math.min(window.devicePixelRatio || 1, 1.25));
+      pixiApp.renderer.resize(layout.width, layout.height, Math.min(window.devicePixelRatio || 1, effectResolutionCap("pixi")));
       return pixiApp;
     }
     if (pixiInitPromise) return pixiInitPromise;
@@ -87,7 +103,7 @@ export function createSkillEffectRenderer() {
       await pixiApp.init({
         width: layout.width,
         height: layout.height,
-        resolution: Math.min(window.devicePixelRatio || 1, 1.25),
+        resolution: Math.min(window.devicePixelRatio || 1, effectResolutionCap("pixi")),
         backgroundAlpha: 0,
         antialias: false,
         preference: "webgl",
@@ -143,12 +159,15 @@ export function createSkillEffectRenderer() {
       "rozzi-double-shot": 620,
       "aya-double-burst": 560,
       "shoichi-dagger-ride": 800,
+      "shoichi-seven-elixir": 1380,
       "leni-carrot-bazooka": 720,
       "hart-peacemaker": 1400,
       "sissela-channel": 760,
       "sissela-liberation": 850,
       "elena-danse-macabre": 680,
       "priya-earth-echo": 1250,
+      "theodore-energy-field": 760,
+      "emma-magic-hat": 760,
       "haze-rocket-launcher": 780,
       "bernice-snare-trap": 760,
       "rio-kaeyumi": 660,
@@ -178,10 +197,13 @@ export function createSkillEffectRenderer() {
 
   function destroyPixiApp() {
     if (!pixiApp) return;
+    const app = pixiApp;
+    pixiApp = null;
     try {
-      pixiApp.destroy(true);
+      if (typeof app._cancelResize !== "function") app._cancelResize = () => {};
+      app.destroy(true);
     } catch (error) {
-      console.warn("[rumia-pixi-destroy]", error);
+      if (!String(error?.message || error).includes("_cancelResize")) console.warn("[rumia-pixi-destroy]", error);
       pixiLayer?.remove();
     }
   }
@@ -589,6 +611,169 @@ export function createSkillEffectRenderer() {
     for (const hit of animation.targets) drawPixiImpact(graphics, hit, progress, "#e9fbff", 16, 0.58);
   }
 
+  function drawPixiTheodore(animation, progress, graphics) {
+    const origin = animation.origin;
+    const alpha = Math.sin(Math.PI * progress);
+    const eased = 1 - Math.pow(1 - progress, 2.2);
+    for (const target of animation.targets) {
+      drawPixiLineProjectile(graphics, origin, target, eased, {
+        color: "#dff8ff",
+        accent: "#83d9ff",
+        width: 3,
+        radius: 4,
+        lift: 8,
+      });
+      graphics.circle(target.x, target.y + 2, 18 + progress * 12);
+      pixiStroke(graphics, "#bff6ff", 3, alpha * 0.72);
+      graphics.circle(target.x, target.y + 2, 8 + progress * 8);
+      pixiFill(graphics, "#83d9ff", alpha * 0.12);
+    }
+    drawPixiRadial(graphics, origin, progress, { color: "#eafcff", fill: "#7fdcff", radius: 30, alpha: 0.45, rings: 1 });
+  }
+
+  function drawPixiSisselaLiberation(animation, progress, graphics) {
+    drawPixiRadial(graphics, animation.origin, progress, { color: "#fff0ff", fill: "#b45cff", radius: 130, alpha: 0.78, rings: 4 });
+    const local = Math.min(1, Math.max(0, progress * 1.45 - 0.22));
+    for (const target of animation.targets) {
+      drawPixiImpact(graphics, target, local, "#f4e9ff", 24, 0.82);
+      const alpha = Math.sin(Math.PI * local) * 0.55;
+      if (alpha <= 0) continue;
+      graphics.ellipse(target.x, target.y + 4, 28 + local * 10, 11 + local * 4);
+      pixiStroke(graphics, "#72dcff", 2, alpha);
+    }
+  }
+
+  function drawPixiEmmaHat(animation, progress, graphics) {
+    const target = animation.targets[0];
+    if (!target) return;
+    const flight = Math.min(1, progress / 0.62);
+    drawPixiLineProjectile(graphics, animation.origin, target, flight, {
+      color: "#f5dcff",
+      accent: "#a86dff",
+      width: 4,
+      radius: 7,
+      lift: 34,
+    });
+    const impact = Math.min(1, Math.max(0, (progress - 0.42) / 0.58));
+    const alpha = Math.sin(Math.PI * impact);
+    if (impact <= 0) return;
+    drawPixiRadial(graphics, target, impact, { color: "#f5dcff", fill: "#9f67ff", radius: 42, alpha: 0.58, rings: 2 });
+    for (let star = 0; star < 10; star += 1) {
+      const angle = progress * 3.4 + star * 0.628;
+      const distance = 12 + impact * (22 + (star % 3) * 7);
+      const x = target.x + Math.cos(angle) * distance;
+      const y = target.y - 4 + Math.sin(angle) * distance * 0.72;
+      const size = 2.4 + (star % 2) + impact * 1.4;
+      graphics.moveTo(x, y - size);
+      graphics.lineTo(x + size * 0.4, y - size * 0.35);
+      graphics.lineTo(x + size, y);
+      graphics.lineTo(x + size * 0.4, y + size * 0.35);
+      graphics.lineTo(x, y + size);
+      graphics.lineTo(x - size * 0.4, y + size * 0.35);
+      graphics.lineTo(x - size, y);
+      graphics.lineTo(x - size * 0.4, y - size * 0.35);
+      graphics.lineTo(x, y - size);
+      pixiFill(graphics, star % 2 ? "#fff5a8" : "#f5dcff", alpha * 0.92);
+    }
+  }
+
+  function shoichiSevenPoints(animation) {
+    const width = Math.max(240, animation.width || 640);
+    const height = Math.max(220, animation.height || 480);
+    const battlefield = document.querySelector(".battlefield");
+    const fieldRect = battlefield?.getBoundingClientRect();
+    const cells = fieldRect ? Array.from(battlefield.querySelectorAll(".enemy-board .cell, .board .cell"))
+      .map((cell) => {
+        const rect = cell.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width / 2 - fieldRect.left,
+          y: rect.top + rect.height / 2 - fieldRect.top,
+          left: rect.left - fieldRect.left,
+          right: rect.right - fieldRect.left,
+          top: rect.top - fieldRect.top,
+          bottom: rect.bottom - fieldRect.top,
+        };
+      }) : [];
+    const area = cells.length ? {
+      left: Math.min(...cells.map((cell) => cell.left)),
+      right: Math.max(...cells.map((cell) => cell.right)),
+      top: Math.min(...cells.map((cell) => cell.top)),
+      bottom: Math.max(...cells.map((cell) => cell.bottom)),
+    } : {
+      left: Math.max(24, width * 0.075),
+      right: width - Math.max(24, width * 0.075),
+      top: Math.max(24, height * 0.085),
+      bottom: height - Math.max(24, height * 0.085),
+    };
+    const snap = (point) => cells.length
+      ? cells.reduce((best, cell) => {
+          const bestDistance = (best.x - point.x) ** 2 + (best.y - point.y) ** 2;
+          const cellDistance = (cell.x - point.x) ** 2 + (cell.y - point.y) ** 2;
+          return cellDistance < bestDistance ? cell : best;
+        }, cells[0])
+      : point;
+    const bounds = { minX: 760, maxX: 1150, minY: 330, maxY: 735 };
+    const map = ([x, y]) => snap({
+      x: area.left + ((x - bounds.minX) / (bounds.maxX - bounds.minX)) * (area.right - area.left),
+      y: area.top + ((y - bounds.minY) / (bounds.maxY - bounds.minY)) * (area.bottom - area.top),
+    });
+    return {
+      daggers: [
+        map([806, 696]),
+        map([1106, 681]),
+        map([1105, 385]),
+        map([818, 388]),
+      ],
+      path: [
+        map([962, 501]),
+        map([1104, 384]),
+        map([1111, 371]),
+        map([923, 544]),
+        map([1105, 681]),
+        map([927, 472]),
+        map([806, 696]),
+        map([991, 471]),
+        map([818, 388]),
+        map([997, 543]),
+      ],
+    };
+  }
+
+  function drawPixiShoichiSeven(animation, progress, graphics) {
+    const origin = animation.origin;
+    const route = shoichiSevenPoints(animation);
+    const chain = [origin, ...route.path];
+    const segmentCount = chain.length - 1;
+    const total = Math.max(0, Math.min(1, progress));
+    const pulse = Math.sin(total * Math.PI * 8) * 0.5 + 0.5;
+    for (const [index, point] of route.daggers.entries()) {
+      const born = Math.max(0, Math.min(1, total * 4 - index * 0.12));
+      drawPixiDaggerMarker(graphics, point, total + index * 0.23, index % 2 ? "#ffffff" : "#c9b8ff");
+      if (born > 0) {
+        graphics.circle(point.x, point.y + 4, 12 + pulse * 7);
+        pixiStroke(graphics, "#9f6dff", 2, Math.max(0, 0.5 - total * 0.15));
+      }
+    }
+    const routeProgress = Math.max(0, Math.min(1, (total - 0.12) / 0.78));
+    const raw = routeProgress * segmentCount;
+    const segment = Math.min(segmentCount - 1, Math.floor(raw));
+    const local = raw - segment;
+    for (let index = 0; index < segment; index += 1) {
+      const start = chain[index];
+      const end = chain[index + 1];
+      if (!end) continue;
+      const age = Math.max(0, segment - index);
+      const alpha = Math.max(0.14, 0.52 - age * 0.045);
+      graphics.moveTo(start.x, start.y);
+      graphics.lineTo(end.x, end.y);
+      pixiStroke(graphics, "#f5f0ff", 4, alpha);
+      graphics.moveTo(start.x, start.y);
+      graphics.lineTo(end.x, end.y);
+      pixiStroke(graphics, "#7d45e8", 1.5, alpha * 0.45);
+    }
+    for (const hit of animation.targets) drawPixiImpact(graphics, hit, total, "#f4e9ff", 20, 0.7);
+  }
+
   function drawPixiRocket(animation, progress, graphics, options = {}) {
     const target = animation.targets[0];
     if (!target) return;
@@ -638,12 +823,15 @@ export function createSkillEffectRenderer() {
     else if (animation.type === "rozzi-double-shot") drawPixiDoubleShot(animation, progress, graphics, { color: "#fff0a8", accent: "#ffb347", width: 5, radius: 5, lift: 12, secondOffset: 7 });
     else if (animation.type === "aya-double-burst") drawPixiDoubleShot(animation, progress, graphics, { color: "#d8f7ff", accent: "#68c8ff", width: 4, radius: 5, lift: 18, secondOffset: -7 });
     else if (animation.type === "shoichi-dagger-ride") drawPixiShoichi(animation, progress, graphics);
+    else if (animation.type === "shoichi-seven-elixir") drawPixiShoichiSeven(animation, progress, graphics);
     else if (animation.type === "leni-carrot-bazooka") drawPixiRocket(animation, progress, graphics, { color: "#ffd587", accent: "#70ff98", shots: 1, lift: 26 });
     else if (animation.type === "hart-peacemaker") drawPixiRadial(graphics, animation.origin, progress, { color: "#ffeeb8", fill: "#8affc1", radius: 120, alpha: 0.7, rings: 3 });
     else if (animation.type === "sissela-channel") drawPixiRadial(graphics, animation.origin, progress, { color: "#d7c6ff", fill: "#6c54ff", radius: 70, alpha: 0.65, rings: 3 });
-    else if (animation.type === "sissela-liberation") drawPixiRadial(graphics, animation.origin, progress, { color: "#fff0ff", fill: "#b45cff", radius: 130, alpha: 0.78, rings: 4 });
+    else if (animation.type === "sissela-liberation") drawPixiSisselaLiberation(animation, progress, graphics);
     else if (animation.type === "elena-danse-macabre") drawPixiElena(animation, progress, graphics);
     else if (animation.type === "priya-earth-echo") drawPixiPriya(animation, progress, graphics);
+    else if (animation.type === "theodore-energy-field") drawPixiTheodore(animation, progress, graphics);
+    else if (animation.type === "emma-magic-hat") drawPixiEmmaHat(animation, progress, graphics);
     else if (animation.type === "haze-rocket-launcher") drawPixiRocket(animation, progress, graphics, { color: "#ffe29a", accent: "#ff6945", shots: 4, lift: 18 });
     else if (animation.type === "bernice-snare-trap") drawPixiRocket(animation, progress, graphics, { color: "#ffd181", accent: "#ff8a33", shots: 1, lift: 12 });
     else if (animation.type === "rio-kaeyumi") drawPixiDoubleShot(animation, progress, graphics, { color: "#d9ffab", accent: "#7dff6c", width: 4, radius: 5, lift: 36, secondOffset: 5 });
@@ -692,7 +880,7 @@ export function createSkillEffectRenderer() {
           origin,
           targets,
           target,
-          petals: seededPetals(origin, spec.type === "yuki-bloom" ? 34 : 24),
+          petals: seededPetals(origin, effectParticleCount(spec.type === "yuki-bloom" ? 34 : 24)),
           width: layout.width,
           height: layout.height,
           startedAt: performance.now(),
@@ -715,7 +903,7 @@ export function createSkillEffectRenderer() {
       width: layout.width,
       height: layout.height,
       angle: Math.atan2(target.y - origin.y, target.x - origin.x),
-      petals: seededPetals(origin, spec.type === "yuki-bloom" ? 34 : 24),
+      petals: seededPetals(origin, effectParticleCount(spec.type === "yuki-bloom" ? 34 : 24)),
       startedAt: performance.now(),
       duration: effectDuration(spec.type),
     });
@@ -1221,6 +1409,45 @@ export function createSkillEffectRenderer() {
     ctx.restore();
   }
 
+  function drawShoichiSevenElixir(ctx, animation, progress) {
+    const origin = animation.origin;
+    const route = shoichiSevenPoints(animation);
+    const chain = [origin, ...route.path];
+    const segmentCount = chain.length - 1;
+    const total = Math.max(0, Math.min(1, progress));
+    const routeProgress = Math.max(0, Math.min(1, (total - 0.12) / 0.78));
+    const raw = routeProgress * segmentCount;
+    const segment = Math.min(segmentCount - 1, Math.floor(raw));
+    const local = raw - segment;
+    const pulse = Math.sin(total * Math.PI * 8) * 0.5 + 0.5;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (const [index, point] of route.daggers.entries()) {
+      const alpha = Math.min(1, total * 5 - index * 0.16) * Math.max(0.35, 1 - total * 0.18);
+      if (alpha <= 0) continue;
+      drawDaggerMarker(ctx, point, total * 2.8 + index * 0.35, alpha, pulse);
+    }
+    for (let index = 0; index < segment; index += 1) {
+      const start = chain[index];
+      const end = chain[index + 1];
+      if (!end) continue;
+      const age = Math.max(0, segment - index);
+      const alpha = Math.max(0.14, 0.52 - age * 0.045);
+      ctx.strokeStyle = `rgba(245, 240, 255, ${alpha})`;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = "#a873ff";
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+    for (const hit of animation.targets) {
+      drawDaggerMarker(ctx, hit, -total * 3, Math.sin(Math.PI * total) * 0.38, pulse);
+    }
+  }
+
   function drawLeniCarrotBazooka(ctx, animation, progress) {
     const target = animation.targets[0];
     if (!target) return;
@@ -1353,13 +1580,6 @@ export function createSkillEffectRenderer() {
       ctx.stroke();
       ctx.restore();
     }
-    for (const target of animation.targets) {
-      ctx.globalAlpha = Math.max(0, progress - 0.15) * 0.3;
-      ctx.beginPath();
-      ctx.moveTo(target.x, target.y);
-      ctx.lineTo(origin.x, origin.y - 8);
-      ctx.stroke();
-    }
     ctx.restore();
   }
 
@@ -1389,6 +1609,11 @@ export function createSkillEffectRenderer() {
       ctx.beginPath();
       ctx.arc(target.x, target.y, 8 + local * 26, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.globalAlpha = Math.sin(Math.PI * local) * 0.38;
+      ctx.fillStyle = "rgba(114, 220, 255, 0.2)";
+      ctx.beginPath();
+      ctx.ellipse(target.x, target.y + 4, 28 + local * 10, 11 + local * 4, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -1427,6 +1652,46 @@ export function createSkillEffectRenderer() {
       ctx.beginPath();
       ctx.arc(target.x, target.y, 10 + local * 28, 0, Math.PI * 2);
       ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawEmmaMagicHat(ctx, animation, progress) {
+    const target = animation.targets[0];
+    if (!target) return;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    drawArcProjectile(ctx, animation.origin, target, Math.min(1, progress / 0.62), "#f5dcff", "#a86dff", 5, 34);
+    const impact = Math.min(1, Math.max(0, (progress - 0.42) / 0.58));
+    const alpha = Math.sin(Math.PI * impact);
+    if (impact > 0) {
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "rgba(142, 88, 255, 0.16)";
+      ctx.strokeStyle = "#f5dcff";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(target.x, target.y, 14 + impact * 34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      for (let star = 0; star < 10; star += 1) {
+        const angle = progress * 3.4 + star * 0.628;
+        const distance = 12 + impact * (22 + (star % 3) * 7);
+        const x = target.x + Math.cos(angle) * distance;
+        const y = target.y - 4 + Math.sin(angle) * distance * 0.72;
+        const size = 3 + (star % 2) + impact * 1.5;
+        ctx.fillStyle = star % 2 ? "#fff5a8" : "#f5dcff";
+        ctx.beginPath();
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x + size * 0.4, y - size * 0.35);
+        ctx.lineTo(x + size, y);
+        ctx.lineTo(x + size * 0.4, y + size * 0.35);
+        ctx.lineTo(x, y + size);
+        ctx.lineTo(x - size * 0.4, y + size * 0.35);
+        ctx.lineTo(x - size, y);
+        ctx.lineTo(x - size * 0.4, y - size * 0.35);
+        ctx.closePath();
+        ctx.fill();
+      }
     }
     ctx.restore();
   }
@@ -2012,12 +2277,14 @@ export function createSkillEffectRenderer() {
       else if (animation.type === "rozzi-double-shot") drawRozziDoubleShot(context, animation, progress);
       else if (animation.type === "aya-double-burst") drawAyaDoubleBurst(context, animation, progress);
       else if (animation.type === "shoichi-dagger-ride") drawShoichiDaggerRide(context, animation, progress);
+      else if (animation.type === "shoichi-seven-elixir") drawShoichiSevenElixir(context, animation, progress);
       else if (animation.type === "leni-carrot-bazooka") drawLeniCarrotBazooka(context, animation, progress);
       else if (animation.type === "hart-peacemaker") drawHartPeacemaker(context, animation, progress);
       else if (animation.type === "sissela-channel") drawSisselaChannel(context, animation, progress);
       else if (animation.type === "sissela-liberation") drawSisselaLiberation(context, animation, progress);
       else if (animation.type === "elena-danse-macabre") drawElenaDanseMacabre(context, animation, progress);
       else if (animation.type === "priya-earth-echo") drawPriyaEarthEcho(context, animation, progress);
+      else if (animation.type === "emma-magic-hat") drawEmmaMagicHat(context, animation, progress);
       else if (animation.type === "haze-rocket-launcher") drawHazeRocketLauncher(context, animation, progress);
       else if (animation.type === "bernice-snare-trap") drawBerniceSnareTrap(context, animation, progress);
       else if (animation.type === "rio-kaeyumi") drawRioKaeyumi(context, animation, progress);

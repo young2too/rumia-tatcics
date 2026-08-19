@@ -1,0 +1,118 @@
+[
+  {
+    "active": true,
+    "id": "stage1_gold_adrenaline",
+    "name": "아드레날린",
+    "rarity": "gold",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "combat",
+      "basicAttack",
+      "speed"
+    ],
+    "summary": "기본공격 시 공속 스택",
+    "description": "기본 공격을 할 때마다 전투 종료까지 공격 속도가 조금씩 증가합니다.",
+    "effect": {
+      "type": "basicAttackStack",
+      "stat": "speed",
+      "addPerStack": 0.03,
+      "maxStacks": 14
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_gold_stand_firm",
+    "name": "불괴",
+    "rarity": "gold",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "combat",
+      "survival"
+    ],
+    "summary": "저체력 1회 생존력 증가",
+    "description": "아군이 처음으로 체력 35% 이하가 되면 잠시 피해 감소와 공격력을 얻습니다.",
+    "effect": {
+      "type": "lowHpOnceBuff",
+      "triggerHpRatio": 0.35,
+      "durationMs": 2500,
+      "stats": {
+        "damageReductionAdd": 0.22,
+        "atkMultiply": 1.15
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_gold_rally",
+    "name": "집결",
+    "rarity": "gold",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "position",
+      "hp"
+    ],
+    "summary": "인접 아군이 많으면 깡체급 증가",
+    "description": "전투 시작 시 인접한 아군이 2명 이상인 유닛은 체력, 공격력, 스킬 증폭, 방어력이 증가합니다.",
+    "effect": {
+      "type": "adjacentAllyStat",
+      "minAdjacentAllies": 2,
+      "stats": {
+        "hpMultiply": 1.14,
+        "atkMultiply": 1.08,
+        "skillAmpMultiply": 1.08,
+        "defenseMultiply": 1.14
+      }
+    }
+  },
+  {
+    "active": false,
+    "id": "stage1_gold_mobile_strike",
+    "name": "기동 타격대",
+    "rarity": "gold",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "movement",
+      "speed"
+    ],
+    "summary": "이동한 아군 공속 증가",
+    "description": "전투 시작 후 2칸 이상 이동한 아군은 잠시 공격 속도가 증가합니다.",
+    "effect": {
+      "type": "afterMoveAttackSpeed",
+      "movedHexes": 2,
+      "speedMultiply": 1.22,
+      "durationSeconds": 5
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_gold_pandora_bench",
+    "name": "판도라의 벤치",
+    "rarity": "gold",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "bench",
+      "reroll"
+    ],
+    "summary": "벤치 오른쪽 3칸 유닛 변환",
+    "description": "전투 종료 시 판도라의 벤치에 올라간 유닛이 같은 코스트, 같은 성급의 무작위 유닛으로 변합니다. 변환 후 합성 가능한 유닛은 즉시 합성됩니다.",
+    "effect": {
+      "type": "pandoraBench",
+      "slots": 3
+    }
+  }
+]

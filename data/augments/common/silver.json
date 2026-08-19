@@ -1,0 +1,275 @@
+[
+  {
+    "active": false,
+    "id": "common_silver_tidy_bench",
+    "name": "정리 정돈",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "bench",
+      "operation"
+    ],
+    "summary": "벤치 +2",
+    "description": "벤치 칸이 2칸 증가합니다.",
+    "effect": {
+      "type": "benchSize",
+      "add": 2
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_discount_coupon",
+    "name": "할인 쿠폰",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "shop",
+      "reroll"
+    ],
+    "summary": "매 라운드 첫 리롤 무료",
+    "description": "매 라운드 첫 상점 리롤 비용이 0이 됩니다.",
+    "effect": {
+      "type": "freeRerollPerRound",
+      "count": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_emergency_care",
+    "name": "응급 구조",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "playerHp"
+    ],
+    "summary": "플레이어 체력 회복",
+    "description": "플레이어 체력을 최대치까지 회복합니다.",
+    "effect": {
+      "type": "playerHp",
+      "setTo": 100
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_frontline_formation",
+    "name": "전열 대형",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "frontline"
+    ],
+    "summary": "앞 2열 방어 증가",
+    "description": "전투 시작 시 앞 2열에 배치된 아군의 방어력이 증가합니다.",
+    "effect": {
+      "type": "positionStat",
+      "rows": "front2",
+      "stats": {
+        "defenseMultiply": 1.18
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_armor_piercer",
+    "name": "철갑탄",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "debuff"
+    ],
+    "summary": "생존 적 중 고방어 대상 피해 증가",
+    "description": "생존 중인 적 가운데 방어력이 가장 높은 적을 공격할 때 입히는 피해가 증가합니다.",
+    "effect": {
+      "type": "damageAgainstHighestDefense",
+      "damageMultiply": 1.12
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_harvest",
+    "name": "열정",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "scaling"
+    ],
+    "summary": "처치 시 전투 중 스탯 증가",
+    "description": "아군이 적을 처치할 때마다 해당 전투 동안 공격력과 스킬 증폭이 증가합니다.",
+    "effect": {
+      "type": "teamKillCombatStack",
+      "stacks": 6,
+      "atkMultiplyAdd": 0.015,
+      "skillAmpMultiplyAdd": 0.015
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_lone_wolf",
+    "name": "론울프",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "combat"
+    ],
+    "summary": "고립 아군 공격/스증 증가",
+    "description": "주변 1칸에 아군이 없는 유닛은 공격력과 스킬 증폭이 증가합니다.",
+    "effect": {
+      "type": "isolatedAllyStat",
+      "range": 1,
+      "atkMultiply": 1.1,
+      "skillAmpMultiply": 1.1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_thorn_snare",
+    "name": "가시덤불",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "debuff"
+    ],
+    "summary": "첫 공격 대상 이동 방해/피해 취약",
+    "description": "아군의 첫 기본 공격이 대상에게 짧은 이동 방해를 걸고, 그 대상이 받는 피해를 8% 증가시킵니다.",
+    "effect": {
+      "type": "firstAttackSnare",
+      "duration": 0.75,
+      "damageTakenAdd": 0.08
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_emergency_fund",
+    "name": "비상금",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "economy"
+    ],
+    "summary": "즉시 크레딧 획득",
+    "description": "선택 즉시 20크레딧을 획득합니다.",
+    "effect": {
+      "type": "instantGold",
+      "add": 20
+    }
+  },
+  {
+    "active": false,
+    "id": "common_silver_cataclysm",
+    "name": "대격변",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "gamble",
+      "transform"
+    ],
+    "summary": "보유 유닛을 한 단계 높은 코스트로 변환",
+    "description": "보드와 벤치의 모든 유닛이 성급을 유지한 채 현재보다 1코스트 높은 무작위 유닛으로 변합니다. 5코스트 유닛은 다른 5코스트 유닛으로 변합니다.",
+    "effect": {
+      "type": "cataclysmTransform",
+      "costAdd": 1,
+      "preserveTier": true
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_random_gold",
+    "name": "황금 주사위",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "gamble",
+      "augment"
+    ],
+    "summary": "무작위 골드 증강 1개 획득",
+    "description": "현재 단계의 무작위 골드 증강을 1개 즉시 획득합니다.",
+    "effect": {
+      "type": "randomAugmentGrant",
+      "rarity": "gold",
+      "count": 1
+    }
+  },
+  {
+    "active": false,
+    "id": "common_silver_random_prismatic",
+    "name": "찬란한 도박",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "gamble",
+      "augment"
+    ],
+    "summary": "무작위 프리즘 증강 1개 획득",
+    "description": "현재 단계의 무작위 프리즘 증강을 1개 즉시 획득합니다.",
+    "effect": {
+      "type": "randomAugmentGrant",
+      "rarity": "prismatic",
+      "count": 1
+    }
+  }
+]

@@ -1,0 +1,234 @@
+[
+  {
+    "active": true,
+    "id": "stage3_prismatic_assault_crown",
+    "name": "맹공 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "trait",
+      "crown",
+      "overcap",
+      "맹공"
+    ],
+    "summary": "맹공 +2, 오버캡 공격 보너스",
+    "description": "맹공 시너지 카운트가 2 증가합니다. 최대 단계 초과분마다 맹공형 공격력이 추가로 증가합니다.",
+    "requires": {
+      "trait": "맹공",
+      "minOwned": 1
+    },
+    "effect": {
+      "type": "traitCrown",
+      "trait": "맹공",
+      "add": 2,
+      "overcap": {
+        "atkMultiplyAddPerCount": 0.08
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage3_prismatic_guardian_crown",
+    "name": "수호 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "trait",
+      "crown",
+      "overcap",
+      "수호"
+    ],
+    "summary": "수호 +2, 오버캡 체력 보너스",
+    "description": "수호 시너지 카운트가 2 증가합니다. 최대 단계 초과분마다 수호형 체력이 추가로 증가합니다.",
+    "requires": {
+      "trait": "수호",
+      "minOwned": 1
+    },
+    "effect": {
+      "type": "traitCrown",
+      "trait": "수호",
+      "add": 2,
+      "overcap": {
+        "hpMultiplyAddPerCount": 0.1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage3_prismatic_caster_crown",
+    "name": "주술 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "trait",
+      "crown",
+      "overcap",
+      "주술"
+    ],
+    "summary": "주술 +2, 오버캡 스킬 보너스",
+    "description": "주술 시너지 카운트가 2 증가합니다. 최대 단계 초과분마다 주술형 스킬 증폭이 추가로 증가합니다.",
+    "requires": {
+      "trait": "주술",
+      "minOwned": 1
+    },
+    "effect": {
+      "type": "traitCrown",
+      "trait": "주술",
+      "add": 2,
+      "overcap": {
+        "skillAmpMultiplyAddPerCount": 0.09
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage3_prismatic_overclock",
+    "name": "오버클럭",
+    "rarity": "prismatic",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "team",
+      "mana"
+    ],
+    "summary": "모든 아군 요구 마나 감소",
+    "description": "모든 아군의 스킬 요구 마나가 15 감소합니다.",
+    "effect": {
+      "type": "teamStat",
+      "stats": {
+        "maxManaReductionAdd": 15
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage3_prismatic_support_crown",
+    "name": "지원 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "trait",
+      "지원",
+      "crown",
+      "overcap"
+    ],
+    "summary": "지원 +2, 오버캡 회복 보너스",
+    "description": "지원 시너지 카운트가 2 증가합니다. 최대 단계 초과분마다 지원형 회복량이 추가로 증가합니다.",
+    "requires": {
+      "trait": "지원",
+      "minOwned": 1
+    },
+    "effect": {
+      "type": "traitCrown",
+      "trait": "지원",
+      "add": 2,
+      "overcap": {
+        "healMultiplyAdd": 0.08
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage3_prismatic_precision_crown",
+    "name": "정밀 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "trait",
+      "정밀",
+      "crown",
+      "overcap"
+    ],
+    "summary": "정밀 +2, 오버캡 치명 보너스",
+    "description": "정밀 시너지 카운트가 2 증가합니다. 최대 단계 초과분마다 정밀형 치명 확률이 추가로 증가합니다.",
+    "requires": {
+      "trait": "정밀",
+      "minOwned": 1
+    },
+    "effect": {
+      "type": "traitCrown",
+      "trait": "정밀",
+      "add": 2,
+      "overcap": {
+        "critChanceAdd": 0.05
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage3_prismatic_duel_crown",
+    "name": "결투 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "trait",
+      "결투",
+      "crown",
+      "overcap"
+    ],
+    "summary": "결투 +2, 오버캡 흡혈 보너스",
+    "description": "결투 시너지 카운트가 2 증가합니다. 최대 단계 초과분마다 결투형 흡혈이 추가로 증가합니다.",
+    "requires": {
+      "trait": "결투",
+      "minOwned": 1
+    },
+    "effect": {
+      "type": "traitCrown",
+      "trait": "결투",
+      "add": 2,
+      "overcap": {
+        "lifestealAdd": 0.04
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage3_prismatic_ambush_crown",
+    "name": "기습 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      3
+    ],
+    "tags": [
+      "stage3",
+      "trait",
+      "기습",
+      "crown",
+      "overcap"
+    ],
+    "summary": "기습 +2, 오버캡 치명 보너스",
+    "description": "기습 시너지 카운트가 2 증가합니다. 최대 단계 초과분마다 기습형 치명 피해가 추가로 증가합니다.",
+    "requires": {
+      "trait": "기습",
+      "minOwned": 1
+    },
+    "effect": {
+      "type": "traitCrown",
+      "trait": "기습",
+      "add": 2,
+      "overcap": {
+        "critDamageAdd": 0.12
+      }
+    }
+  }
+]

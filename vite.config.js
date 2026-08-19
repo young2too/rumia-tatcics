@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         game: `${root}index.html`,
         statistics: `${root}stats.html`,
+        pvp: `${root}pvp.html`,
       },
     },
   },

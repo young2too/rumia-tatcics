@@ -1,6 +1,6 @@
 import { traitPills, unitTraitText } from "./traitHelpers.js";
 
-export function createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor = (unit) => unit.name, render }) {
+export function createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor = (unit) => unit.name, render, selectAugmentTarget }) {
   function unitRange(unit) {
     const base = ["사격", "술법", "지원"].includes(unit.role) ? balance.battle.rangedRange : balance.battle.meleeRange;
     return Math.max(1, base + Math.round(unit.rangeBonus || 0));
@@ -85,6 +85,9 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       const durationMs = Math.max(unit.shawlCurtainDurationMs || unit.shawlCurtainRemainingMs, 1);
       effects.push({ tone: "guard", label: "장막", ratio: unit.shawlCurtainRemainingMs / durationMs });
     }
+    if ((unit.augmentDamageTakenAdd || 0) > 0) {
+      effects.push({ tone: "vulnerable", label: `받피+${Math.round(unit.augmentDamageTakenAdd * 100)}%`, ratio: 1 });
+    }
     return effects;
   }
 
@@ -100,7 +103,11 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     node.dataset.index = String(index);
     node.dataset.unitId = unit.id;
     if (state.selected?.source === source && state.selected?.index === index) node.classList.add("selected");
+    if (state.pendingAugmentTarget && ["board", "bench"].includes(source)) {
+      node.classList.add((unit.tier || 1) >= 3 ? "augment-targetable" : "augment-untargetable");
+    }
     if (unit.status) node.classList.add(unit.status);
+    if (unit.untargetableRemainingMs > 0) node.classList.add("untargetable");
     if (displayNameFor(unit) !== unit.name) node.classList.add("renamed-unit");
     if (unit.tacticalTarget) node.classList.add("tactical-target");
     if (unit.hp <= 0) node.classList.add("dead");
@@ -140,6 +147,9 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     node.addEventListener("click", (event) => {
       event.stopPropagation();
       if (source === "enemy" || state.busy) return;
+      if (state.pendingAugmentTarget) {
+        if (selectAugmentTarget?.(source, index)) return;
+      }
       const selected = state.selected?.source === source && state.selected?.index === index;
       state.selected = selected ? null : { source, index };
       render();
