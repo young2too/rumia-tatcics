@@ -686,6 +686,11 @@ h2 {
   text-decoration: none;
 }
 
+.brand-actions [hidden],
+.pvp-rooms-button[hidden] {
+  display: none !important;
+}
+
 .skill-effect-canvas {
   position: absolute;
   z-index: 1200;
