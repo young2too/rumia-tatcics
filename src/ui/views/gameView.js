@@ -24,8 +24,13 @@ export function createGameView({ state, refs, balance, audio, combat, boardUnits
     const hasPendingAugmentChoice = !state.augmentOpen
       && (state.augmentChoices || []).length > 0
       && !(state.selectedAugments || []).some((augment) => augment.stage === state.augmentStage);
+    const hasPendingAugmentTarget = Boolean(state.pendingAugmentTarget);
     refs.battle.disabled = state.busy;
-    refs.battle.textContent = state.busy ? "전투 중" : hasPendingAugmentChoice ? "증강 선택" : "전투 시작";
+    refs.battle.textContent = state.busy ? "전투 중" : hasPendingAugmentTarget ? "대상 선택" : hasPendingAugmentChoice ? "증강 선택" : "전투 시작";
+    if (refs.augmentResumeCenter) {
+      refs.augmentResumeCenter.hidden = state.busy || state.combatGrid || !hasPendingAugmentChoice;
+      refs.augmentResumeCenter.textContent = `${state.augmentStage || 1}단계 증강 선택`;
+    }
     const bossInfo = combat.currentBossInfo();
     refs.boardCapacity.classList.toggle("boss-warning", Boolean(bossInfo));
     refs.boardCapacityMain.textContent = bossInfo ? "BOSS" : `${boardUnits().length}/${boardLimit()}`;

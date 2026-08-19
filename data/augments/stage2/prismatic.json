@@ -12,15 +12,15 @@
       "contract",
       "boardSize"
     ],
-    "summary": "배치 +2, 전체 스탯 감소",
-    "description": "배치 가능 유닛 수가 2 증가합니다. 대신 모든 아군의 체력/공격/스킬 증폭이 감소합니다.",
+    "summary": "배치 +3, 전체 스탯 감소",
+    "description": "배치 가능 유닛 수가 3 증가합니다. 대신 모든 아군의 체력/공격/스킬 증폭이 8% 감소합니다.",
     "effect": {
       "type": "contractMassTactics",
-      "boardLimitAdd": 2,
+      "boardLimitAdd": 3,
       "stats": {
-        "hpMultiply": 0.88,
-        "atkMultiply": 0.88,
-        "skillAmpMultiply": 0.88
+        "hpMultiply": 0.92,
+        "atkMultiply": 0.92,
+        "skillAmpMultiply": 0.92
       }
     }
   },
@@ -35,20 +35,28 @@
     "tags": [
       "stage2",
       "ruleBreak",
-      "duplicate"
+      "contract",
+      "position"
     ],
-    "summary": "같은 캐릭터 2개 배치 가능",
-    "description": "같은 캐릭터를 최대 2개까지 전장에 배치할 수 있습니다. 같은 캐릭터는 시너지에 1명만 기여합니다.",
+    "summary": "전열/후열 계약 칸의 두 유닛 결속",
+    "description": "전열 계약 칸과 후열 계약 칸 위의 두 아군이 전투 시작 시 계약합니다. 전열 계약자는 후열 계약자의 공격력/스킬 증폭 일부를 얻고, 후열 계약자는 전열 계약자의 최대 체력/방어력 일부를 얻습니다. 둘 중 하나가 쓰러지면 남은 계약자가 잠시 강화됩니다.",
     "effect": {
-      "type": "duplicateFieldLimit",
-      "maxSameCharacterOnBoard": 2,
-      "countDuplicateTraitsOnce": true
+      "type": "dualContractSlots",
+      "frontIndex": 3,
+      "backIndex": 28,
+      "frontAtkShareRatio": 0.2,
+      "frontSkillAmpShareRatio": 0.2,
+      "backHpShareRatio": 0.2,
+      "backDefenseShareRatio": 0.2,
+      "survivorDamageReductionAdd": 0.25,
+      "survivorManaAdd": 30,
+      "survivorDurationSeconds": 4
     }
   },
   {
     "active": true,
     "id": "stage2_prismatic_complete_rebirth",
-    "name": "완전 재생",
+    "name": "소생",
     "rarity": "prismatic",
     "stages": [
       2

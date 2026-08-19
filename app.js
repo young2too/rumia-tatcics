@@ -42,6 +42,10 @@ function hasPendingAugmentChoice() {
     && !(state.selectedAugments || []).some((augment) => augment.stage === state.augmentStage);
 }
 
+function hasPendingAugmentTarget() {
+  return Boolean(state.pendingAugmentTarget);
+}
+
 function exposeLocalDebug(name, value) {
   try {
     if (Object.isExtensible(window)) window[name] = value;
@@ -223,8 +227,18 @@ const traits = createTraitController({ state, traitRules, boardUnits });
 const { activeTraits, activeTraitTier, applySynergy, nextTraitNeed } = traits;
 const hiddenTraits = createHiddenTraitController({ hiddenTraitRules, boardUnits });
 const skillEffects = createSkillEffectRenderer();
-const playBudgetedSkillVisual = (spec) => {
+const isLowSpecEffectMode = () => {
+  const mobile = balance.battle.effectBudget?.mobileLowSpec || {};
+  const maxWidth = mobile.maxWidth ?? 760;
+  return window.innerWidth <= maxWidth || window.matchMedia?.("(pointer: coarse)")?.matches;
+};
+const effectiveEffectBudget = () => {
   const budget = balance.battle.effectBudget || {};
+  if (!isLowSpecEffectMode()) return budget;
+  return { ...budget, ...(budget.mobileLowSpec || {}) };
+};
+const playBudgetedSkillVisual = (spec) => {
+  const budget = effectiveEffectBudget();
   const max = budget.maxConcurrentSkillEffects ?? 18;
   const current = skillEffects.activeCount?.() ?? 0;
   const important = ["fate-absorb", "shoichi-dagger-ride", "zahir-vayvayastra", "bianca-reign", "yuki-cast", "yuki-bloom"].includes(spec?.type);
@@ -271,8 +285,8 @@ const {
 const shop = createShopController({ state, balance, roster, makeUnit, sample, boardUnits, boardLimit, addLog, render });
 const { buyUnit, debugRecruitUnit, moveSelected, moveUnit, rollShop, sellSelectedUnit } = shop;
 
-const unitView = createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor, render });
-const shopView = createShopView({ state, refs, balance, roster, buyUnit, displayNameFor });
+const unitView = createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor, render, selectAugmentTarget: augments.selectAugmentTarget });
+const shopView = createShopView({ state, refs, balance, roster, buyUnit, displayNameFor, augmentPools });
 const traitView = createTraitView({ state, refs, roster, traitRules, hiddenTraitRules, ownedUnits, activeTraits, activeHiddenTraits, activeTraitTier, nextTraitNeed, displayNameFor });
 overlayView = createOverlayView({ state, refs, rankingConfig, patchNotesConfig, augmentSettings });
 const battlefieldView = createBattlefieldView({
@@ -361,7 +375,10 @@ function rerollShop() {
   const free = Math.max(0, state.freeShopRerollsRemaining || 0);
   const cost = free > 0 ? 0 : balance.shop.rerollCost;
   if (state.gold < cost) return addLog(`새로고침에는 ${cost} 크레딧이 필요합니다.`);
-  if (free > 0) state.freeShopRerollsRemaining -= 1;
+  if (free > 0) {
+    state.freeShopRerollsRemaining -= 1;
+    if (state.shopOddsMaxLevelRerollsRemaining > 0) state.shopOddsMaxLevelRerollsRemaining -= 1;
+  }
   else state.gold -= cost;
   addLog(cost ? `상점 새로고침: ${cost} 크레딧 사용.` : "상점 새로고침: 무료 리롤 사용.");
   rollShop();
@@ -417,10 +434,12 @@ bindUiEvents({
     setShopPanelTab,
     setCombatMetricMode,
     debugRecruitUnit,
+    debugSelectAugment: augments.debugSelectAugment,
     toggleDebugDummyPlacement,
     clearDebugDummies,
     debugJumpRound,
     openAugments: augments.openAugments,
+    openAugmentDetail: augments.openAugmentDetail,
     reopenAugments: augments.reopenAugments,
     closeAugments: augments.closeAugments,
     rerollAugments: augments.rerollAugments,
@@ -434,6 +453,11 @@ bindUiEvents({
       if (hasPendingAugmentChoice()) {
         addLog("[증강] 증강을 선택해야 다음 전투를 시작할 수 있습니다.", { force: true });
         augments.reopenAugments();
+        return;
+      }
+      if (hasPendingAugmentTarget()) {
+        addLog("[증강] 초월 대상을 선택해야 다음 전투를 시작할 수 있습니다.", { force: true });
+        render();
         return;
       }
       saveController?.saveNow();

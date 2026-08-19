@@ -46,7 +46,7 @@
   {
     "active": true,
     "id": "stage1_prismatic_cathy_unsealable_suture",
-    "name": "수처: 봉합불가",
+    "name": "긴급 수술",
     "rarity": "prismatic",
     "stages": [
       1
@@ -57,8 +57,8 @@
       "캐시",
       "control"
     ],
-    "summary": "캐시 수처 충돌 피해/속박 강화",
-    "description": "캐시의 수처가 적을 밀쳐 벽 또는 다른 적에게 충돌시키면 추가 고정 피해를 주고 속박 시간이 늘어납니다. 선택 시 캐시 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "summary": "캐시 수처가 가까운 적/벽 방향으로 밀침",
+    "description": "캐시의 수처가 기존처럼 뒤로 밀지 않고, 가장 가까운 적 또는 벽에 반드시 충돌할 때까지 대상을 이동시킵니다. 벽 또는 다른 적에게 충돌시키면 추가 고정 피해를 주고 속박 시간이 늘어납니다. 선택 시 캐시 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
     "effect": {
       "type": "cathyUnsealableSuture",
       "unit": "캐시",
@@ -83,12 +83,12 @@
       "루크",
       "execute"
     ],
-    "summary": "루크 처치 시 다음 표적 청소",
-    "description": "루크가 적을 처치하면 다음 공격이 더 강해지고 대상이 받는 피해가 잠시 증가합니다. 선택 시 루크 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "summary": "루크 처치 시 다음 공격 강화",
+    "description": "루크가 적을 처치하면 다음 기본공격이 더 강해지고, 그 공격 대상이 모든 아군에게 받는 피해가 증가합니다. 선택 시 루크 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
     "effect": {
       "type": "lukeCleaningService",
       "unit": "루크",
-      "markedDamageTakenAdd": 0.18,
+      "markedDamageTakenAdd": 0.25,
       "nextAttackAtkRatioAdd": 0.9,
       "grantUnitCopy": {
         "tier": 1
@@ -98,7 +98,7 @@
   {
     "active": true,
     "id": "stage1_prismatic_shou_battlefield_chef",
-    "name": "전장의 주방장",
+    "name": "뜨거운 맛",
     "rarity": "prismatic",
     "stages": [
       1
@@ -125,7 +125,7 @@
   {
     "active": true,
     "id": "stage1_prismatic_yan_ring_domination",
-    "name": "링 위의 폭군",
+    "name": "열혈의 의지",
     "rarity": "prismatic",
     "stages": [
       1
@@ -136,8 +136,8 @@
       "얀",
       "control"
     ],
-    "summary": "얀 근접 연계 피해/기절 강화",
-    "description": "얀이 근접 콤보로 주변 적을 연속 타격하고 마지막 공격에 기절을 부여합니다. 선택 시 얀 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "summary": "얀 스킬을 3연타 강화 콤보로 변경",
+    "description": "얀의 쿼드라곤이 시전될 때마다 3연타 강화 콤보로 바뀝니다. 각 타격은 공격력의 110% + 스킬 증폭의 35% + 3 피해를 주고, 마지막 타격은 0.6초간 기절시킵니다. 선택 시 얀 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
     "effect": {
       "type": "yanRingDomination",
       "unit": "얀",
@@ -152,7 +152,7 @@
   {
     "active": true,
     "id": "stage1_prismatic_hart_peacemaker_world_tour",
-    "name": "피스메이커 월드투어",
+    "name": "피스메이커 : 강화",
     "rarity": "prismatic",
     "stages": [
       1
@@ -163,8 +163,8 @@
       "하트",
       "support"
     ],
-    "summary": "하트 피스메이커 후 앙코르 버프",
-    "description": "하트의 피스메이커가 아군을 더 크게 회복시키고 마나와 공격 속도를 함께 올립니다. 선택 시 하트 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "summary": "피스메이커가 생존 아군 전체로 확산",
+    "description": "하트의 피스메이커가 생존 아군 전체에 퍼지고, 회복과 함께 마나와 공격 속도를 올립니다. 선택 시 하트 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
     "effect": {
       "type": "hartPeacemakerWorldTour",
       "unit": "하트",
@@ -206,7 +206,7 @@
   {
     "active": true,
     "id": "stage1_prismatic_priya_grand_finale",
-    "name": "그랜드 피날레",
+    "name": "프리바티의 노래",
     "rarity": "prismatic",
     "stages": [
       1
@@ -217,13 +217,13 @@
       "프리야",
       "support"
     ],
-    "summary": "프리야 파장 보호막/기절 강화",
-    "description": "프리야의 장판 보호막이 강화되고, 장판 가장자리의 적에게 추가 기절을 부여합니다. 선택 시 프리야 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "summary": "프리야 보호막/기절 강화",
+    "description": "프리야가 스킬 시전 시 주변 아군에게 보호막을 부여하고, 대지의메아리에 적중한 모든 적의 기절 시간이 증가합니다. 선택 시 프리야 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
     "effect": {
       "type": "priyaGrandFinale",
       "unit": "프리야",
-      "allyShieldHpRatio": 0.12,
-      "edgeStunAddSeconds": 0.75,
+      "allyShieldHpRatio": 0.18,
+      "edgeStunAddSeconds": 1,
       "grantUnitCopy": {
         "tier": 1
       }
@@ -232,7 +232,7 @@
   {
     "active": true,
     "id": "stage1_prismatic_daniel_moonlight_execution",
-    "name": "월광 처형식",
+    "name": "고독한 예술가",
     "rarity": "prismatic",
     "stages": [
       1
@@ -243,14 +243,14 @@
       "다니엘",
       "execute"
     ],
-    "summary": "다니엘 후열 처형 피해 강화",
-    "description": "다니엘이 후열 대상에게 더 큰 피해를 주고, 낮은 체력의 대상을 추가 피해로 처형합니다. 선택 시 다니엘 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "summary": "다니엘 후열 암살/마무리 강화",
+    "description": "다니엘이 후열 적을 공격할 때 피해가 증가합니다. 피해를 준 뒤 대상 체력이 낮으면 추가 고정피해로 마무리합니다. 선택 시 다니엘 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
     "effect": {
       "type": "danielMoonlightExecution",
       "unit": "다니엘",
-      "backlineDamageMultiply": 1.22,
-      "executeThresholdHpRatio": 0.16,
-      "executeDamageAtkRatio": 1.5,
+      "backlineDamageMultiply": 1.35,
+      "executeThresholdHpRatio": 0.22,
+      "executeDamageAtkRatio": 2,
       "grantUnitCopy": {
         "tier": 1
       }
@@ -259,7 +259,7 @@
   {
     "active": true,
     "id": "stage1_prismatic_lenox_chain_sentence",
-    "name": "단죄의 사슬",
+    "name": "푸른 뱀",
     "rarity": "prismatic",
     "stages": [
       1
@@ -275,9 +275,9 @@
     "effect": {
       "type": "lenoxChainSentence",
       "unit": "레녹스",
-      "bindSeconds": 1.25,
-      "damageTakenAdd": 0.16,
-      "onDeathNearbySuppressSeconds": 0.6,
+      "bindSeconds": 1.75,
+      "damageTakenAdd": 0.25,
+      "onDeathNearbySuppressSeconds": 1,
       "grantUnitCopy": {
         "tier": 1
       }
@@ -297,23 +297,30 @@
       "이렘",
       "scaling"
     ],
-    "summary": "이렘 처치 시 변신 스탯 성장",
-    "description": "이렘이 적을 처치할수록 공격력과 스킬 증폭이 영구히 오르고, 전술 표적 처치 시 성장량이 증가합니다. 선택 시 이렘 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "summary": "이렘 처치 관여 시 변신 스탯 성장",
+    "description": "이렘이 적 처치에 관여할수록 공격력과 스킬 증폭이 영구히 오르고, 전술 표적 처치에 관여하면 성장량이 증가합니다. 선택 시 이렘 1성과 레녹스 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
     "effect": {
       "type": "iremCatfishMayhem",
       "unit": "이렘",
       "killAtkAdd": 1,
       "killSkillAmpAdd": 2,
       "tacticalTargetBonusMultiply": 2,
-      "grantUnitCopy": {
-        "tier": 1
-      }
+      "grantUnitCopies": [
+        {
+          "unit": "이렘",
+          "tier": 1
+        },
+        {
+          "unit": "레녹스",
+          "tier": 1
+        }
+      ]
     }
   },
   {
     "active": true,
     "id": "stage1_prismatic_theodore_sniper_protocol",
-    "name": "저격 프로토콜",
+    "name": "에너지 프로토콜",
     "rarity": "prismatic",
     "stages": [
       1
@@ -329,9 +336,9 @@
     "effect": {
       "type": "theodoreSniperProtocol",
       "unit": "테오도르",
-      "assistDamageSkillAmpRatio": 0.75,
-      "allyShieldHpRatio": 0.08,
-      "cooldownSeconds": 2.5,
+      "assistDamageSkillAmpRatio": 1.05,
+      "allyShieldHpRatio": 0.12,
+      "cooldownSeconds": 2,
       "grantUnitCopy": {
         "tier": 1
       }

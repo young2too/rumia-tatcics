@@ -101,6 +101,9 @@
               <strong id="boardCapacityMain">0/1</strong>
               <span id="boardCapacitySub"></span>
             </div>
+            <button id="augmentResumeCenter" class="augment-resume-center" type="button" data-augment-reopen hidden>
+              증강 선택
+            </button>
             <div id="activeAugments" class="active-augments" hidden></div>
             <div id="enemyBoard" class="enemy-board"></div>
             <div id="board" class="board"></div>
@@ -162,6 +165,11 @@
               </div>
               <div class="debug-augment-tools">
                 <label>증강 테스트</label>
+                <div>
+                  <input id="debugAugmentSearch" list="debugAugmentList" placeholder="증강 이름 검색" autocomplete="off" />
+                  <datalist id="debugAugmentList"></datalist>
+                  <button id="debugSelectAugment" type="button">즉시 선택</button>
+                </div>
                 <div>
                   <button type="button" data-debug-augment-stage="1">1단계</button>
                   <button type="button" data-debug-augment-stage="2">2단계</button>

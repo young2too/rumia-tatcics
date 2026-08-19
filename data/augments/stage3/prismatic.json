@@ -99,13 +99,13 @@
     ],
     "tags": [
       "stage3",
-      "threeStar",
+      "team",
       "mana"
     ],
-    "summary": "모든 3성 요구 마나 감소",
-    "description": "모든 3성 아군의 스킬 요구 마나가 크게 감소합니다.",
+    "summary": "모든 아군 요구 마나 감소",
+    "description": "모든 아군의 스킬 요구 마나가 15 감소합니다.",
     "effect": {
-      "type": "threeStarStat",
+      "type": "teamStat",
       "stats": {
         "maxManaReductionAdd": 15
       }

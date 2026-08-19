@@ -3,10 +3,19 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     actions.debugRecruitUnit(refs.debugUnitSearch.value);
     refs.debugUnitSearch.value = "";
   });
+  refs.debugSelectAugment?.addEventListener("click", () => {
+    actions.debugSelectAugment(refs.debugAugmentSearch.value);
+    refs.debugAugmentSearch.value = "";
+  });
   refs.debugUnitSearch?.addEventListener("keydown", (event) => {
     if (event.key !== "Enter") return;
     actions.debugRecruitUnit(refs.debugUnitSearch.value);
     refs.debugUnitSearch.value = "";
+  });
+  refs.debugAugmentSearch?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    actions.debugSelectAugment(refs.debugAugmentSearch.value);
+    refs.debugAugmentSearch.value = "";
   });
   refs.debugDummyToggle?.addEventListener("click", actions.toggleDebugDummyPlacement);
   refs.debugDummyClear?.addEventListener("click", actions.clearDebugDummies);
@@ -82,9 +91,15 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   });
   refs.augmentReroll?.addEventListener("click", actions.rerollAugments);
   refs.augmentClose?.addEventListener("click", actions.closeAugments);
+  refs.augmentResumeCenter?.addEventListener("click", actions.reopenAugments);
   refs.activeAugments?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : event.target?.parentElement;
-    if (target?.closest("[data-augment-reopen]")) actions.reopenAugments();
+    if (target?.closest("[data-augment-reopen]")) {
+      actions.reopenAugments();
+      return;
+    }
+    const detailIndex = target?.closest("[data-augment-detail-index]")?.dataset.augmentDetailIndex;
+    if (detailIndex !== undefined) actions.openAugmentDetail(Number(detailIndex));
   });
   refs.augmentPanel?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : event.target?.parentElement;

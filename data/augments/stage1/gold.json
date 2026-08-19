@@ -18,14 +18,14 @@
     "effect": {
       "type": "basicAttackStack",
       "stat": "speed",
-      "addPerStack": 0.025,
-      "maxStacks": 12
+      "addPerStack": 0.03,
+      "maxStacks": 14
     }
   },
   {
     "active": true,
     "id": "stage1_gold_stand_firm",
-    "name": "불굴",
+    "name": "불괴",
     "rarity": "gold",
     "stages": [
       1
@@ -60,18 +60,21 @@
       "position",
       "hp"
     ],
-    "summary": "인접 아군이 많으면 체력 증가",
-    "description": "전투 시작 시 인접한 아군이 2명 이상인 유닛은 최대 체력이 증가합니다.",
+    "summary": "인접 아군이 많으면 깡체급 증가",
+    "description": "전투 시작 시 인접한 아군이 2명 이상인 유닛은 체력, 공격력, 스킬 증폭, 방어력이 증가합니다.",
     "effect": {
       "type": "adjacentAllyStat",
       "minAdjacentAllies": 2,
       "stats": {
-        "hpMultiply": 1.18
+        "hpMultiply": 1.14,
+        "atkMultiply": 1.08,
+        "skillAmpMultiply": 1.08,
+        "defenseMultiply": 1.14
       }
     }
   },
   {
-    "active": true,
+    "active": false,
     "id": "stage1_gold_mobile_strike",
     "name": "기동 타격대",
     "rarity": "gold",
@@ -94,23 +97,22 @@
   },
   {
     "active": true,
-    "id": "stage1_gold_vanguard_supply",
-    "name": "전방 보급",
+    "id": "stage1_gold_pandora_bench",
+    "name": "판도라의 벤치",
     "rarity": "gold",
     "stages": [
       1
     ],
     "tags": [
       "stage1",
-      "economy",
-      "frontline"
+      "bench",
+      "reroll"
     ],
-    "summary": "전열 생존 시 크레딧 획득",
-    "description": "전투 종료 시 앞 2열에 배치했던 아군이 생존해 있으면 추가 크레딧을 얻습니다.",
+    "summary": "벤치 오른쪽 3칸 유닛 변환",
+    "description": "전투 종료 시 판도라의 벤치에 올라간 유닛이 같은 코스트, 같은 성급의 무작위 유닛으로 변합니다. 변환 후 합성 가능한 유닛은 즉시 합성됩니다.",
     "effect": {
-      "type": "frontlineSurvivalGold",
-      "goldPerSurvivor": 1,
-      "maxGold": 3
+      "type": "pandoraBench",
+      "slots": 3
     }
   }
 ]

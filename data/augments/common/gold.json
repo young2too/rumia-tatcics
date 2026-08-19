@@ -36,7 +36,7 @@
       "odds"
     ],
     "summary": "상점 확률 +1레벨",
-    "description": "상점의 코스트 확률을 현재 레벨보다 1 높게 계산합니다.",
+    "description": "상점의 코스트 확률을 현재 레벨보다 1 높게 계산합니다. 이미 최대 레벨이라면 무료 상점 리롤을 1회 얻습니다. 이 리롤을 사용하지 않으면 전투 시작 시 2크레딧을 획득합니다.",
     "effect": {
       "type": "shopOddsLevelBonus",
       "add": 1
@@ -115,7 +115,7 @@
   {
     "active": true,
     "id": "common_gold_chain_lightning",
-    "name": "벼락",
+    "name": "벽력",
     "rarity": "gold",
     "stages": [
       1,
@@ -128,7 +128,7 @@
       "combat"
     ],
     "summary": "스킬 적중 시 연쇄 피해",
-    "description": "스킬이 적중하면 가장 가까운 다른 적에게 벼락 피해가 튑니다.",
+    "description": "스킬이 적중하면 가장 가까운 다른 적에게 벽력 피해가 튑니다.",
     "effect": {
       "type": "skillChainLightning",
       "damageSkillAmpRatio": 0.55,
@@ -235,7 +235,7 @@
   {
     "active": true,
     "id": "common_gold_flow_engine",
-    "name": "흐름 증폭",
+    "name": "수집가",
     "rarity": "gold",
     "stages": [
       1,
@@ -245,17 +245,22 @@
     "tags": [
       "common",
       "economy",
-      "streak"
+      "scaling"
     ],
-    "summary": "연승/연패 보너스 증가",
-    "description": "연승 또는 연패 보너스 수입의 최대치가 증가합니다.",
+    "summary": "보유 크레딧에 따라 공/스증 증가",
+    "description": "보유 크레딧 10당 모든 아군의 공격력과 스킬 증폭이 1% 증가합니다. 최대 10%까지 증가합니다.",
     "effect": {
-      "type": "streakIncomeBonus",
-      "capAdd": 1
+      "type": "goldHeldTeamStat",
+      "goldPerStack": 10,
+      "maxStacks": 10,
+      "statsPerStack": {
+        "atkMultiplyAdd": 0.01,
+        "skillAmpMultiplyAdd": 0.01
+      }
     }
   },
   {
-    "active": true,
+    "active": false,
     "id": "common_gold_resale_license",
     "name": "재활용 허가",
     "rarity": "gold",

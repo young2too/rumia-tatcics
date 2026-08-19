@@ -14,11 +14,11 @@
       "boardSize",
       "ruleBreak"
     ],
-    "summary": "배치 가능 유닛 +1",
-    "description": "전장에 배치할 수 있는 최대 유닛 수가 1 증가합니다.",
+    "summary": "배치 가능 유닛 +2",
+    "description": "전장에 배치할 수 있는 최대 유닛 수가 2 증가합니다.",
     "effect": {
       "type": "boardLimit",
-      "add": 1
+      "add": 2
     }
   },
   {
@@ -69,6 +69,7 @@
     "effect": {
       "type": "transcendThreeStar",
       "target": "selected",
+      "absorbedEfficiency": 0.5,
       "stats": {
         "hpMultiply": 1.28,
         "atkMultiply": 1.18,
@@ -80,7 +81,7 @@
   {
     "active": true,
     "id": "common_prismatic_collector",
-    "name": "수집가",
+    "name": "별무리",
     "rarity": "prismatic",
     "stages": [
       1,
@@ -116,16 +117,19 @@
     ],
     "tags": [
       "common",
-      "basicAttack",
+      "skill",
+      "area",
       "damage"
     ],
-    "summary": "기본공격마다 최대체력 피해",
-    "description": "아군의 일정 횟수마다 발동하는 기본 공격이 대상 최대 체력 비례 추가 피해를 줍니다.",
+    "summary": "스킬 적중 지점 주변 체력비례 피해",
+    "description": "아군의 스킬이 적중하면 대상 주변 1칸 적들에게 스킬 증폭에 비례한 최대 체력 비례 피해를 줍니다.",
     "effect": {
-      "type": "periodicBasicAttackMaxHpDamage",
-      "everyHits": 4,
-      "targetMaxHpRatio": 0.045,
-      "bossRatio": 0.018
+      "type": "skillRupturePulse",
+      "radius": 1,
+      "skillAmpToMaxHpRatio": 0.00035,
+      "maxRatio": 0.05,
+      "bossRatio": 0.35,
+      "cooldownSeconds": 0.6
     }
   },
   {
@@ -155,7 +159,7 @@
   {
     "active": true,
     "id": "common_prismatic_corrosion",
-    "name": "부식",
+    "name": "부패",
     "rarity": "prismatic",
     "stages": [
       1,
@@ -214,8 +218,8 @@
       "death",
       "scaling"
     ],
-    "summary": "첫 사망 3성 능력 계승",
-    "description": "처음 사망한 3성 아군의 일부 능력치를 생존 아군이 계승합니다.",
+    "summary": "첫 사망 3성 능력 전체 계승",
+    "description": "처음 사망한 3성 아군의 일부 능력치를 생존 아군 전체가 계승합니다.",
     "effect": {
       "type": "inheritFirstDeadThreeStar",
       "inheritAtkRatio": 0.12,
@@ -263,7 +267,7 @@
       "trait"
     ],
     "summary": "같은 시너지 스킬 사용 시 마나 회복",
-    "description": "아군이 스킬을 사용하면 같은 시너지를 가진 다른 아군들이 마나를 회복합니다.",
+    "description": "아군이 스킬을 사용하면 같은 시너지를 가진 다른 아군들이 마나를 회복합니다. 이 효과는 시너지별 공용 쿨다운을 가집니다.",
     "effect": {
       "type": "traitSkillManaShare",
       "manaAdd": 12,

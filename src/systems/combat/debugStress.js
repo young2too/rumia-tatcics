@@ -1,4 +1,4 @@
-// 전투 스트레스 테스트: 로컬 개발 환경에서 10대13 최대 교전 부하를 자동 구성하고 프레임을 측정합니다.
+// 전투 스트레스 테스트: 로컬 개발 환경에서 대규모 교전 부하를 자동 구성하고 프레임을 측정합니다.
 const localHostnames = new Set(["127.0.0.1", "localhost"]);
 
 const PRESET_ALLIES = {
@@ -97,8 +97,8 @@ export function installCombatStressTools({
 
   const runCombatStress = async (options = {}) => {
     if (state.busy) return null;
-    const allyCount = Math.max(1, Math.min(10, Math.round(options.allyCount || Number(searchParams.get("ally-count")) || 10)));
-    const enemyCount = Math.max(1, Math.min(16, Math.round(options.enemyCount || Number(searchParams.get("enemy-count")) || 13)));
+    const allyCount = Math.max(1, Math.min(16, Math.round(options.allyCount || Number(searchParams.get("ally-count")) || 10)));
+    const enemyCount = Math.max(1, Math.min(balance.battle.enemySlots || 16, Math.round(options.enemyCount || Number(searchParams.get("enemy-count")) || 13)));
     const tier = Math.max(1, Math.min(3, Math.round(options.tier || Number(searchParams.get("tier")) || 3)));
     const round = Math.max(1, Math.round(options.round || Number(searchParams.get("round")) || 90));
     const runId = String(options.runId || searchParams.get("run-id") || Date.now());
@@ -123,6 +123,13 @@ export function installCombatStressTools({
     ];
     const unitByArt = (art) => roster.find((unit) => String(unit.art || "").endsWith(art) && unit.active !== false);
     const unitByName = (name) => roster.find((unit) => unit.name === name && unit.active !== false);
+    const activeRoster = roster.filter((unit) => unit.active !== false);
+    const stressAllyBases = Array.from({ length: allyCount }, (_, index) => (
+      unitByName(allyNames[index % allyNames.length]) || activeRoster[index % activeRoster.length]
+    )).filter(Boolean);
+    const stressEnemyBases = Array.from({ length: enemyCount }, (_, index) => (
+      unitByArt(enemyArts[index % enemyArts.length]) || activeRoster[(index + allyCount) % activeRoster.length]
+    )).filter(Boolean);
     const tuneStressUnit = (unit, side) => {
       unit.maxHp = Math.max(unit.maxHp, side === "ally" ? 1800 : 2100);
       unit.hp = unit.maxHp;
@@ -135,7 +142,7 @@ export function installCombatStressTools({
       unit.manaGain = 1.7;
       return unit;
     };
-    const boardPositions = [17, 18, 19, 20, 21, 22, 25, 26, 27, 28];
+    const boardPositions = [1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 17, 18, 19, 20, 25, 26];
     state.board = Array(32).fill(null);
     state.bench = Array(8).fill(null);
     state.debugDummies = Array(balance.battle.enemySlots).fill(null);
@@ -147,16 +154,14 @@ export function installCombatStressTools({
     const previousShopLocked = state.shopLocked;
     state.shopLocked = true;
     if (options.seed) state.nextCombatSeed = String(options.seed);
-    allyNames.slice(0, allyCount).forEach((name, index) => {
-      const base = unitByName(name);
+    stressAllyBases.slice(0, allyCount).forEach((base, index) => {
       if (base) {
         const unit = tuneStressUnit(makeUnit(base, tier), "ally");
         unit.id = `stress-ally-${index}`;
         state.board[boardPositions[index]] = unit;
       }
     });
-    enemyArts.slice(0, enemyCount).forEach((art, index) => {
-      const base = unitByArt(art);
+    stressEnemyBases.slice(0, enemyCount).forEach((base, index) => {
       const slot = balance.battle.enemySpawnOrder[index] ?? index;
       if (base) {
         const unit = tuneStressUnit(makeUnit(base, tier), "enemy");

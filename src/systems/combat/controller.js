@@ -1,6 +1,7 @@
 // 전투 컨트롤러: 전투 상태 생성, 전투 루프, 캐릭터 스킬 실행을 조립합니다.
 import { createCombatSeed, createSeededRng } from "../../core/rng.js";
 import { tierStatMultiplier } from "../../core/tier.js";
+import { makeUnit, stockLimit, unitCopyCount } from "../../core/units.js";
 import { applyAugmentStatsToUnit, applyStatPatch, augmentEffects, unitTraits } from "../augmentEffects.js";
 
 import { createSkillTimeline } from "./timeline.js";
@@ -373,6 +374,33 @@ function enemyGroupsForCount(count) {
   });
 }
 
+function enemySlotRow(index) {
+  return Math.floor(index / balance.battle.columns);
+}
+
+function enemySlotPoolForGroup(group) {
+  const rows = enemyRows();
+  const frontlineStart = Math.max(0, rows - 2);
+  const order = balance.battle.enemySpawnOrder?.length
+    ? balance.battle.enemySpawnOrder
+    : Array.from({ length: balance.battle.enemySlots }, (_, index) => index);
+  const pools = {
+    frontline: order.filter((index) => enemySlotRow(index) >= frontlineStart),
+    dealer: order.filter((index) => enemySlotRow(index) < frontlineStart),
+    support: order.filter((index) => enemySlotRow(index) < frontlineStart),
+  };
+  return pools[group] || pools.dealer;
+}
+
+function placeEnemyUnit(slots, unit, group) {
+  const preferred = enemySlotPoolForGroup(group);
+  const fallback = balance.battle.enemySpawnOrder?.length
+    ? balance.battle.enemySpawnOrder
+    : Array.from({ length: balance.battle.enemySlots }, (_, index) => index);
+  const index = [...preferred, ...fallback].find((slotIndex) => slotIndex >= 0 && slotIndex < slots.length && !slots[slotIndex]);
+  if (index !== undefined) slots[index] = unit;
+}
+
 function makeEnemies() {
   const stage = enemyDifficultyStage();
   const slots = Array(balance.battle.enemySlots).fill(null);
@@ -407,7 +435,7 @@ function makeEnemies() {
     const unit = makeEnemyUnit(base, rollEnemyTier(stage), stage, hpScale, atkScale);
     picked.push(base);
     countByName[base.name] = (countByName[base.name] || 0) + 1;
-    slots[balance.battle.enemySpawnOrder[i] ?? i] = unit;
+    placeEnemyUnit(slots, unit, groups[i] || "dealer");
   });
   return slots;
 }
@@ -1666,6 +1694,118 @@ function applyTimedAugments(allies) {
     }
   }
   return effects;
+}
+
+function ownedThreeStarNames() {
+  return new Set([...(state.board || []), ...(state.bench || [])]
+    .filter((unit) => unit?.tier >= 3)
+    .map((unit) => unit.name));
+}
+
+function pandoraBenchIndexes() {
+  const slots = Math.max(0, ...selectedAugmentEffects("pandoraBench").map((effect) => Number(effect.slots) || 3));
+  if (!slots) return [];
+  const start = Math.max(0, state.bench.length - slots);
+  return Array.from({ length: state.bench.length - start }, (_, offset) => start + offset);
+}
+
+function combineOwnedUnits(name) {
+  let changed = false;
+  while (true) {
+    const owned = [...state.bench, ...state.board].filter((unit) => unit?.name === name);
+    const sameTier = [2, 1].find((tier) => owned.filter((unit) => unit.tier === tier).length >= 3);
+    if (!sameTier) return changed;
+    let removed = 0;
+    let firstRemoved = null;
+    for (const arr of [state.bench, state.board]) {
+      for (let index = 0; index < arr.length; index += 1) {
+        if (arr[index]?.name === name && arr[index].tier === sameTier && removed < 3) {
+          firstRemoved ||= { arr, index };
+          arr[index] = null;
+          removed += 1;
+        }
+      }
+    }
+    const base = roster.find((unit) => unit.name === name);
+    if (base && firstRemoved) {
+      firstRemoved.arr[firstRemoved.index] = makeUnit(base, balance, sameTier + 1);
+      addLog(`${name} ${sameTier + 1}성 합성!`);
+    }
+    changed = true;
+  }
+}
+
+function combineAllOwnedUnits() {
+  let changed = false;
+  do {
+    changed = false;
+    const names = new Set([...state.bench, ...state.board].filter(Boolean).map((unit) => unit.name));
+    for (const name of names) {
+      if (combineOwnedUnits(name)) changed = true;
+    }
+  } while (changed);
+}
+
+function applyPandoraBench() {
+  const indexes = pandoraBenchIndexes().filter((index) => state.bench[index]);
+  if (!indexes.length) return 0;
+  let changed = 0;
+  for (const index of indexes) {
+    const unit = state.bench[index];
+    const copies = unitCopyCount(unit);
+    const blockedThreeStars = ownedThreeStarNames();
+    const candidates = roster.filter((base) => {
+      if (!base || base.active === false) return false;
+      if (base.name === unit.name) return false;
+      if (base.cost !== unit.cost) return false;
+      if (blockedThreeStars.has(base.name)) return false;
+      return (state.pool?.[base.name] || 0) >= copies;
+    });
+    const base = randomChoice(candidates);
+    if (!base) continue;
+    if (state.pool?.[unit.name] !== undefined) {
+      state.pool[unit.name] = Math.min(stockLimit(unit, balance), (state.pool[unit.name] || 0) + copies);
+    }
+    if (state.pool?.[base.name] !== undefined) {
+      state.pool[base.name] = Math.max(0, (state.pool[base.name] || 0) - copies);
+    }
+    state.bench[index] = makeUnit(base, balance, unit.tier || 1);
+    addLog(`판도라의 벤치: ${unit.name} -> ${base.name} (${unit.cost}코 ${unit.tier || 1}성).`);
+    changed += 1;
+  }
+  if (changed) combineAllOwnedUnits();
+  return changed;
+}
+
+function clearAmpRelay(unit) {
+  if (!unit?.augmentAmpRelayBonus) return;
+  unit.skillAmp = Math.max(0, unit.skillAmp - unit.augmentAmpRelayBonus);
+  unit.augmentAmpRelayBonus = 0;
+}
+
+function applyHighestSkillAmpRelay(actor, friends) {
+  const effects = [];
+  const messages = [];
+  for (const effect of selectedAugmentEffects("highestSkillAmpRelay")) {
+    const allies = living(friends);
+    const highestSkillAmp = Math.max(0, ...allies.map((unit) => unit.skillAmp || 0));
+    if ((actor.skillAmp || 0) < highestSkillAmp) continue;
+    const range = Math.max(0, Number(effect.range) || 2);
+    const durationMs = Math.max(0.2, Number(effect.durationSeconds) || 4) * 1000;
+    for (const target of allies) {
+      if (target === actor || distanceBetween(actor, target) > range) continue;
+      clearAmpRelay(target);
+      const bonus = Math.round((target.skillAmp || 0) * ((Number(effect.skillAmpMultiply) || 1) - 1));
+      if (bonus <= 0) continue;
+      target.skillAmp += bonus;
+      target.augmentAmpRelayBonus = bonus;
+      target.augmentAmpRelayRemainingMs = durationMs;
+      target.augmentAmpRelayDurationMs = durationMs;
+      effects.push(combatEffect(actor, target, "shield", { amount: 1 }));
+    }
+    if (effects.length) messages.push(`${actor.name} 증폭 실험: 주변 아군 스증 강화`);
+  }
+  return { effects, messages };
 }
 
 function triggerLowHpAugments(target) {
@@ -3398,6 +3538,10 @@ function resolveAugmentActionEffects(actor, friends, foes, action) {
     actor.augmentManaShareReadyAt = combatElapsedMs + (Number(effect.cooldownSeconds) || 1.5) * 1000;
   }
 
+  const ampRelay = applyHighestSkillAmpRelay(actor, friends);
+  effects.push(...ampRelay.effects);
+  messages.push(...ampRelay.messages);
+
   return { effects, messages };
 }
 
@@ -3492,7 +3636,12 @@ function clearCombatStatus(units) {
 }
 
 function effectBudget() {
-  return balance.battle.effectBudget || {};
+  const budget = balance.battle.effectBudget || {};
+  const mobile = budget.mobileLowSpec || {};
+  const maxWidth = mobile.maxWidth ?? 760;
+  const lowSpec = typeof window !== "undefined"
+    && (window.innerWidth <= maxWidth || window.matchMedia?.("(pointer: coarse)")?.matches);
+  return lowSpec ? { ...budget, ...mobile } : budget;
 }
 
 function currentProjectileCount() {
@@ -3672,6 +3821,13 @@ function advanceTimedStatuses(units, stepMs) {
     if (unit.actionLockRemainingMs > 0) unit.actionLockRemainingMs = Math.max(0, unit.actionLockRemainingMs - stepMs);
     if (unit.rootRemainingMs > 0) unit.rootRemainingMs = Math.max(0, unit.rootRemainingMs - stepMs);
     if (unit.healReductionRemainingMs > 0) unit.healReductionRemainingMs = Math.max(0, unit.healReductionRemainingMs - stepMs);
+    if (unit.augmentAmpRelayRemainingMs > 0) {
+      unit.augmentAmpRelayRemainingMs = Math.max(0, unit.augmentAmpRelayRemainingMs - stepMs);
+      if (unit.augmentAmpRelayRemainingMs <= 0) {
+        clearAmpRelay(unit);
+        unit.augmentAmpRelayDurationMs = 0;
+      }
+    }
     if (unit.peaceRemainingMs > 0) unit.peaceRemainingMs = Math.max(0, unit.peaceRemainingMs - stepMs);
     if (unit.lifeShareRemainingMs > 0) unit.lifeShareRemainingMs = Math.max(0, unit.lifeShareRemainingMs - stepMs);
     if (unit.shawlCurtainRemainingMs > 0) unit.shawlCurtainRemainingMs = Math.max(0, unit.shawlCurtainRemainingMs - stepMs);
@@ -3720,6 +3876,14 @@ function unlockCombatUi(message = "전투 상태를 복구했습니다. 다시 �
 
 async function simulate() {
   if (state.busy) return;
+  const unusedMaxLevelShopRerolls = Math.max(0, Number(state.shopOddsMaxLevelRerollsRemaining) || 0);
+  if (unusedMaxLevelShopRerolls > 0) {
+    const refund = unusedMaxLevelShopRerolls * 2;
+    state.gold += refund;
+    state.freeShopRerollsRemaining = Math.max(0, (Number(state.freeShopRerollsRemaining) || 0) - unusedMaxLevelShopRerolls);
+    state.shopOddsMaxLevelRerollsRemaining = 0;
+    addLog(`고급 손님: 사용하지 않은 최대 레벨 무료 리롤 ${unusedMaxLevelShopRerolls}회를 ${refund}크레딧으로 전환.`);
+  }
   const boardAllies = boardUnits();
   if (!boardAllies.length) {
     addLog("보드에 캐릭터를 배치해야 합니다.");
@@ -4041,6 +4205,9 @@ async function simulate() {
     delete unit.augmentChainLightningReadyAt;
     delete unit.augmentCorrosionHits;
     delete unit.augmentCurseStacks;
+    delete unit.augmentAmpRelayBonus;
+    delete unit.augmentAmpRelayRemainingMs;
+    delete unit.augmentAmpRelayDurationMs;
     delete unit.augmentDamageTakenAdd;
     delete unit.augmentFirstAttackDone;
     delete unit.augmentKillCombatStacks;
@@ -4066,6 +4233,7 @@ async function simulate() {
     atk: 0,
     skillAmp: 0,
   };
+  applyPandoraBench();
   if (win) {
     grantRoundIncome(true);
     if (frontlineSurvivalGold > 0) {

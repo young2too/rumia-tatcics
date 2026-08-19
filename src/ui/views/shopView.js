@@ -1,6 +1,6 @@
 import { traitPills } from "./traitHelpers.js";
 
-export function createShopView({ state, refs, balance, roster, buyUnit, displayNameFor = (unit) => unit.name }) {
+export function createShopView({ state, refs, balance, roster, buyUnit, displayNameFor = (unit) => unit.name, augmentPools = {} }) {
   const metricModes = {
     damageDone: { label: "딜량", iconClass: "sword", empty: "아직 기록된 피해량이 없습니다." },
     damageTaken: { label: "받은 피해", iconClass: "shield", empty: "아직 기록된 받은 피해량이 없습니다." },
@@ -30,6 +30,8 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
     if (refs.debugShop) {
       refs.debugShop.hidden = !state.debugMode;
       refs.debugRecruitUnit.disabled = state.busy;
+      if (refs.debugSelectAugment) refs.debugSelectAugment.disabled = state.busy;
+      if (refs.debugAugmentSearch) refs.debugAugmentSearch.disabled = state.busy;
       refs.debugDummyToggle.disabled = state.busy;
       refs.debugDummyClear.disabled = state.busy;
       if (refs.debugRoundInput) refs.debugRoundInput.disabled = state.busy;
@@ -51,6 +53,15 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
           .slice()
           .sort((a, b) => a.name.localeCompare(b.name, "ko"))
           .map((unit) => `<option value="${unit.name}">${unit.cost}코</option>`)
+          .join("");
+      }
+      if (state.debugMode && refs.debugAugmentList && !refs.debugAugmentList.children.length) {
+        const rarityLabel = { silver: "실버", gold: "골드", prismatic: "프리즘" };
+        refs.debugAugmentList.innerHTML = Object.values(augmentPools)
+          .flatMap((group) => ["silver", "gold", "prismatic"].flatMap((rarity) => (group?.[rarity] || []).map((augment) => ({ augment, rarity }))))
+          .filter(({ augment }) => augment.active !== false)
+          .sort((a, b) => a.augment.name.localeCompare(b.augment.name, "ko"))
+          .map(({ augment, rarity }) => `<option value="${augment.name}">${rarityLabel[rarity] || rarity} · ${(augment.stages || []).map((stage) => `${stage}단계`).join(", ") || "공용"}</option>`)
           .join("");
       }
     }

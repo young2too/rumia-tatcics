@@ -58,10 +58,10 @@
       "playerHp"
     ],
     "summary": "플레이어 체력 회복",
-    "description": "플레이어 체력을 12 회복합니다.",
+    "description": "플레이어 체력을 최대치까지 회복합니다.",
     "effect": {
       "type": "playerHp",
-      "add": 12
+      "setTo": 100
     }
   },
   {
@@ -104,8 +104,8 @@
       "combat",
       "debuff"
     ],
-    "summary": "고방어 대상 피해 증가",
-    "description": "방어력이 가장 높은 적을 공격할 때 입히는 피해가 증가합니다.",
+    "summary": "생존 적 중 고방어 대상 피해 증가",
+    "description": "생존 중인 적 가운데 방어력이 가장 높은 적을 공격할 때 입히는 피해가 증가합니다.",
     "effect": {
       "type": "damageAgainstHighestDefense",
       "damageMultiply": 1.12
@@ -114,7 +114,7 @@
   {
     "active": true,
     "id": "common_silver_harvest",
-    "name": "수확",
+    "name": "열정",
     "rarity": "silver",
     "stages": [
       1,
@@ -138,7 +138,7 @@
   {
     "active": true,
     "id": "common_silver_lone_wolf",
-    "name": "빈틈 공략",
+    "name": "론울프",
     "rarity": "silver",
     "stages": [
       1,
@@ -174,8 +174,8 @@
       "combat",
       "debuff"
     ],
-    "summary": "첫 공격 대상 이동 방해",
-    "description": "아군의 첫 기본 공격이 대상에게 짧은 이동 방해를 걸고 받는 피해를 증가시킵니다.",
+    "summary": "첫 공격 대상 이동 방해/피해 취약",
+    "description": "아군의 첫 기본 공격이 대상에게 짧은 이동 방해를 걸고, 그 대상이 받는 피해를 8% 증가시킵니다.",
     "effect": {
       "type": "firstAttackSnare",
       "duration": 0.75,
@@ -197,14 +197,14 @@
       "economy"
     ],
     "summary": "즉시 크레딧 획득",
-    "description": "선택 즉시 12크레딧을 획득합니다.",
+    "description": "선택 즉시 20크레딧을 획득합니다.",
     "effect": {
       "type": "instantGold",
-      "add": 12
+      "add": 20
     }
   },
   {
-    "active": true,
+    "active": false,
     "id": "common_silver_cataclysm",
     "name": "대격변",
     "rarity": "silver",
@@ -250,7 +250,7 @@
     }
   },
   {
-    "active": true,
+    "active": false,
     "id": "common_silver_random_prismatic",
     "name": "찬란한 도박",
     "rarity": "silver",

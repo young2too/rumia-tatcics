@@ -52,6 +52,21 @@ export function applyStatPatch(stats, patch = {}) {
   return stats;
 }
 
+function scaledStatPatch(patch = {}, ratio = 1) {
+  if (ratio >= 0.999) return patch;
+  const scaled = {};
+  for (const [key, value] of Object.entries(patch || {})) {
+    if (!Number.isFinite(value)) {
+      scaled[key] = value;
+      continue;
+    }
+    if (key.endsWith("Multiply")) scaled[key] = 1 + (value - 1) * ratio;
+    else if (key.endsWith("MultiplyAdd") || key.endsWith("Add")) scaled[key] = value * ratio;
+    else scaled[key] = value;
+  }
+  return scaled;
+}
+
 export function augmentBoardLimitAdd(state) {
   return augmentEffects(state)
     .reduce((sum, effect) => sum + (Number(effect.boardLimitAdd) || (effect.type === "boardLimit" ? Number(effect.add) || 0 : 0)), 0);
@@ -67,6 +82,11 @@ export function augmentShopSize(state, baseSize, maxSize) {
 export function augmentShopOddsLevel(state, level, maxLevel) {
   const add = augmentEffects(state, "shopOddsLevelBonus").reduce((sum, effect) => sum + (Number(effect.add) || 0), 0);
   return Math.max(1, Math.min(maxLevel, level + add));
+}
+
+export function augmentMaxLevelShopRerolls(state, level, maxLevel) {
+  if (level < maxLevel) return 0;
+  return augmentEffects(state, "shopOddsLevelBonus").reduce((sum, effect) => sum + (Number(effect.add) || 0), 0);
 }
 
 export function augmentUnitCost(state, unit) {
@@ -115,9 +135,15 @@ export function applyImmediateAugmentEffect(state, augment, addLog) {
     addLog?.(`[증강] ${augment.name}: ${amount}크레딧 획득.`, { force: true });
   }
   if (effect.type === "playerHp") {
-    const amount = Math.round(Number(effect.add) || 0);
-    state.hp = Math.max(0, state.hp + amount);
-    addLog?.(`[증강] ${augment.name}: 체력 ${amount >= 0 ? "+" : ""}${amount}.`, { force: true });
+    if (Number.isFinite(effect.setTo)) {
+      const before = state.hp;
+      state.hp = Math.max(state.hp, Math.round(effect.setTo));
+      addLog?.(`[증강] ${augment.name}: 체력 ${before} → ${state.hp}.`, { force: true });
+    } else {
+      const amount = Math.round(Number(effect.add) || 0);
+      state.hp = Math.max(0, state.hp + amount);
+      addLog?.(`[증강] ${augment.name}: 체력 ${amount >= 0 ? "+" : ""}${amount}.`, { force: true });
+    }
   }
 }
 
@@ -139,6 +165,19 @@ export function applyAugmentStatsToUnit(state, unit, stats, context = {}) {
   }
   for (const effect of augmentEffects(state, "threeStarStat")) {
     if ((unit.tier || 1) >= 3) applyStatPatch(stats, effect.stats);
+  }
+  for (const effect of augmentEffects(state, "teamStat")) applyStatPatch(stats, effect.stats);
+  for (const effect of augmentEffects(state, "goldHeldTeamStat")) {
+    const goldPerStack = Math.max(1, Number(effect.goldPerStack) || 10);
+    const maxStacks = Math.max(0, Number(effect.maxStacks) || 0);
+    const stacks = Math.min(maxStacks, Math.floor((Number(state.gold) || 0) / goldPerStack));
+    const perStack = effect.statsPerStack || {};
+    applyStatPatch(stats, {
+      hpMultiplyAdd: (Number(perStack.hpMultiplyAdd) || 0) * stacks,
+      atkMultiplyAdd: (Number(perStack.atkMultiplyAdd) || 0) * stacks,
+      skillAmpMultiplyAdd: (Number(perStack.skillAmpMultiplyAdd) || 0) * stacks,
+      defenseMultiplyAdd: (Number(perStack.defenseMultiplyAdd) || 0) * stacks,
+    });
   }
   for (const effect of augmentEffects(state, "threeStarCollector")) {
     const countBench = effect.countBench !== false;
@@ -167,9 +206,13 @@ export function applyAugmentStatsToUnit(state, unit, stats, context = {}) {
       applyStatPatch(stats, { atkMultiply: effect.atkMultiply, skillAmpMultiply: effect.skillAmpMultiply });
     }
   }
-  for (const effect of augmentEffects(state, "transcendThreeStar")) {
-    if ((unit.tier || 1) >= 3 && !state.augmentTranscendTargetId) state.augmentTranscendTargetId = unit.id;
-    if (unit.id === state.augmentTranscendTargetId) applyStatPatch(stats, effect.stats);
+  for (const augment of state.selectedAugments || []) {
+    const effect = augment?.effect;
+    if (effect?.type !== "transcendThreeStar") continue;
+    const targetId = augment.targetUnitId || state.augmentTranscendTargetId;
+    if (!targetId || unit.id !== targetId) continue;
+    const efficiency = augment.targetReduced ? Number(effect.absorbedEfficiency) || 0.5 : 1;
+    applyStatPatch(stats, scaledStatPatch(effect.stats, efficiency));
   }
   return stats;
 }

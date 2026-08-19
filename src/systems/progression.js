@@ -1,4 +1,4 @@
-import { augmentEffects, augmentInterestCap, augmentStreakCapAdd } from "./augmentEffects.js";
+import { augmentEffects, augmentInterestCap, augmentMaxLevelShopRerolls, augmentStreakCapAdd } from "./augmentEffects.js";
 
 export function createProgressionController({ state, balance, addLog, render, boardLimit }) {
   function xpToNextLevel() {
@@ -60,8 +60,11 @@ export function createProgressionController({ state, balance, addLog, render, bo
     const total = base + winGold + streakGold + interest;
     state.gold += total;
     state.lastIncome = total;
-    state.freeShopRerollsRemaining = augmentEffects(state, "freeRerollPerRound")
+    const baseFreeRerolls = augmentEffects(state, "freeRerollPerRound")
       .reduce((sum, effect) => sum + (Number(effect.count) || 0), 0);
+    const maxLevelOddsRerolls = augmentMaxLevelShopRerolls(state, state.level, balance.player.maxLevel);
+    state.shopOddsMaxLevelRerollsRemaining = maxLevelOddsRerolls;
+    state.freeShopRerollsRemaining = baseFreeRerolls + maxLevelOddsRerolls;
     const streakLabel = state.streakType === "win" ? "연승" : "연패";
     addLog(`수입 +${total}: 기본 ${base}, ${win ? `승리 ${winGold}, ` : ""}${streakLabel} ${state.streakCount} (${streakGold}), 이자 ${interest}.`);
     return total;

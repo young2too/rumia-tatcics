@@ -433,6 +433,14 @@
       "maxDamageNumbersPerBatch": 16,
       "maxMinorDamageNumbersPerBatch": 8,
       "minorDamageThreshold": 45,
+      "mobileLowSpec": {
+        "maxWidth": 760,
+        "maxConcurrentSkillEffects": 10,
+        "maxConcurrentProjectiles": 16,
+        "maxDamageNumbersPerBatch": 9,
+        "maxMinorDamageNumbersPerBatch": 3,
+        "minorDamageThreshold": 70
+      },
       "alwaysShowTypes": [
         "skill-name",
         "shoichi-ride"
