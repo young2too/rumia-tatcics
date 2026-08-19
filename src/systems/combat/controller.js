@@ -241,9 +241,15 @@ function makeBossUnit(stage) {
   const base = bossRoster[(stage - 1) % bossRoster.length];
   const bossIndex = Math.max(0, stage - 1);
   const bossCycle = Math.floor(bossIndex / bossRoster.length);
-  const hpScale = (1 + bossIndex * balance.battle.bossHpGrowth) * (1 + bossCycle * (balance.battle.bossCycleHpGrowth ?? 0));
-  const powerScale = (1 + bossIndex * balance.battle.bossPowerGrowth) * (1 + bossCycle * (balance.battle.bossCyclePowerGrowth ?? 0));
-  const defenseScale = (1 + bossIndex * balance.battle.bossDefenseGrowth) * (1 + bossCycle * (balance.battle.bossCycleDefenseGrowth ?? 0));
+  const hpScale = (balance.battle.bossBaseHpMultiplier ?? 1)
+    * (1 + bossIndex * balance.battle.bossHpGrowth)
+    * (1 + bossCycle * (balance.battle.bossCycleHpGrowth ?? 0));
+  const powerScale = (balance.battle.bossBasePowerMultiplier ?? 1)
+    * (1 + bossIndex * balance.battle.bossPowerGrowth)
+    * (1 + bossCycle * (balance.battle.bossCyclePowerGrowth ?? 0));
+  const defenseScale = (balance.battle.bossBaseDefenseMultiplier ?? 1)
+    * (1 + bossIndex * balance.battle.bossDefenseGrowth)
+    * (1 + bossCycle * (balance.battle.bossCycleDefenseGrowth ?? 0));
   return {
     ...base,
     id: combatId("boss"),
