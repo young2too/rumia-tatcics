@@ -94,6 +94,10 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   refs.augmentResumeCenter?.addEventListener("click", actions.reopenAugments);
   refs.activeAugments?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    if (target?.closest("[data-active-augments-toggle]")) {
+      actions.toggleActiveAugments?.();
+      return;
+    }
     if (target?.closest("[data-augment-reopen]")) {
       actions.reopenAugments();
       return;

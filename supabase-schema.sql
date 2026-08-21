@@ -45,7 +45,6 @@ create policy "rankings can be submitted by everyone"
     char_length(nickname) between 1 and 12
     and stage > 0
     and jsonb_typeof(board) = 'array'
-    and jsonb_array_length(board) <= 10
     and (
       ranking_version is null
       or char_length(ranking_version) between 1 and 40

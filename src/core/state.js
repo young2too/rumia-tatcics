@@ -30,6 +30,7 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
     augmentRerolledSlots: [],
     augmentSeenIds: [],
     selectedAugments: [],
+    activeAugmentsCollapsed: false,
     pendingAugmentTarget: null,
     freeShopRerollsRemaining: 0,
     shopOddsMaxLevelRerollsRemaining: 0,

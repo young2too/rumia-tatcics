@@ -130,6 +130,7 @@ function normalizeSaveData(data, balance) {
     augmentOfferRerollIndex: 0,
     augmentRerolledSlots: [],
     augmentSeenIds: [],
+    activeAugmentsCollapsed: Boolean(data.activeAugmentsCollapsed),
     dragging: null,
     selected: null,
     board: normalizeUnitArray(data.board, boardSize),

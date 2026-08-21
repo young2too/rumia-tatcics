@@ -356,7 +356,7 @@
     "interestStep": 10,
     "bossInterval": 15,
     "bossBaseHpMultiplier": 2.2,
-    "bossBasePowerMultiplier": 1.75,
+    "bossBasePowerMultiplier": 1.45,
     "bossBaseDefenseMultiplier": 1.2,
     "bossHpGrowth": 0.34,
     "bossPowerGrowth": 0.16,

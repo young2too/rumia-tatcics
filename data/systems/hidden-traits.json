@@ -4,12 +4,12 @@
       "케네스",
       "가넷"
     ],
-    "text": "가넷이 케네스를 흡수해 케네스의 시너지 적용 스탯을 1.5배로 얻고 두 스킬을 함께 사용합니다.",
+    "text": "가넷이 케네스를 흡수해 케네스의 시너지 적용 스탯을 그대로 얻고 두 스킬을 함께 사용합니다.",
     "effect": {
       "type": "absorb",
       "host": "가넷",
       "target": "케네스",
-      "statMultiplier": 1.5,
+      "statMultiplier": 1,
       "dualSkill": true
     }
   },

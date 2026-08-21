@@ -106,7 +106,7 @@
     "description": "전투가 길어질수록 아군의 공격력과 스킬 증폭이 증가합니다.",
     "effect": {
       "type": "combatTimeScalingStat",
-      "intervalSeconds": 3,
+      "intervalSeconds": 1.5,
       "maxStacks": 6,
       "atkMultiplyAdd": 0.025,
       "skillAmpMultiplyAdd": 0.025

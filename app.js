@@ -424,6 +424,11 @@ function setTraitModal(type, open, trait = "") {
   render();
 }
 
+function toggleActiveAugments() {
+  state.activeAugmentsCollapsed = !state.activeAugmentsCollapsed;
+  render();
+}
+
 bindUiEvents({
   $,
   refs,
@@ -440,6 +445,7 @@ bindUiEvents({
     debugJumpRound,
     openAugments: augments.openAugments,
     openAugmentDetail: augments.openAugmentDetail,
+    toggleActiveAugments,
     reopenAugments: augments.reopenAugments,
     closeAugments: augments.closeAugments,
     rerollAugments: augments.rerollAugments,

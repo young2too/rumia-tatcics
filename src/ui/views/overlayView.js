@@ -444,21 +444,26 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
       refs.activeAugments.innerHTML = "";
       return;
     }
+    refs.activeAugments.classList.toggle("collapsed", Boolean(state.activeAugmentsCollapsed));
     refs.activeAugments.innerHTML = `
       <div class="active-augments-title">
         <strong>선택 증강</strong>
+        <button type="button" data-active-augments-toggle aria-expanded="${state.activeAugmentsCollapsed ? "false" : "true"}">
+          ${state.activeAugmentsCollapsed ? "펼치기" : "접기"}
+        </button>
         <span>${augments.length}/3</span>
       </div>
-      ${hasPendingChoice ? `
+      <div class="active-augments-body">
+        ${hasPendingChoice ? `
         <button class="active-augment pending" type="button" data-augment-reopen>
           <span>${escapeHtml(state.augmentStage || 1)}단계</span>
           <strong>증강 선택</strong>
           <em>보드 확인 후 선택</em>
           <i>눌러서 다시 열 수 있습니다.</i>
         </button>
-      ` : ""}
-      <div class="active-augment-list">
-        ${augments.map((augment, index) => {
+        ` : ""}
+        <div class="active-augment-list">
+          ${augments.map((augment, index) => {
           const rarity = augment.rarity || "silver";
           return `
             <button class="active-augment ${escapeHtml(rarity)}" type="button" data-augment-detail-index="${index}" title="${escapeHtml(augmentTitleText(augment))}">
@@ -468,7 +473,8 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
               <i>${escapeHtml(augmentEffectLines(augment)[0] || augment.summary || "")}</i>
             </button>
           `;
-        }).join("")}
+          }).join("")}
+        </div>
       </div>
     `;
   }

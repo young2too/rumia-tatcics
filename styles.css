@@ -2803,6 +2803,33 @@ h2 {
   font-weight: 800;
 }
 
+.active-augments-title button {
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid rgba(185, 140, 255, 0.36);
+  border-radius: 999px;
+  background: rgba(185, 140, 255, 0.1);
+  color: #e6dcff;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.active-augments-title button:hover,
+.active-augments-title button:focus-visible {
+  border-color: rgba(185, 140, 255, 0.72);
+  background: rgba(185, 140, 255, 0.18);
+}
+
+.active-augments.collapsed .active-augments-body {
+  display: none;
+}
+
+.active-augments.collapsed {
+  width: auto;
+  min-width: 124px;
+}
+
 .active-augment-list {
   display: grid;
   gap: 6px;
