@@ -8,6 +8,12 @@ window.LUMIA_TACTICS_CONFIG = {
     table: "board_posts",
     commentsTable: "board_comments",
   },
+  presence: {
+    enabled: true,
+    table: "online_presence",
+    heartbeatSeconds: 120,
+    onlineWindowSeconds: 180,
+  },
   ranking: {
     majorVersion: "260819",
     versionColumn: "ranking_version",

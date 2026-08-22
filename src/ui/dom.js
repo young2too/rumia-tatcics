@@ -57,6 +57,7 @@ export function createRefs() {
     bgmToggle: $("bgmToggle"),
     patchNotesToggle: $("patchNotesToggle"),
     rankingToggle: $("rankingToggle"),
+    onlinePresence: $("onlinePresence"),
     communityBoardToggle: $("communityBoardToggle"),
     communityBoardClose: $("communityBoardClose"),
     communityBoardModal: $("communityBoardModal"),

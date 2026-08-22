@@ -686,6 +686,23 @@ h2 {
   text-decoration: none;
 }
 
+.online-presence {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(52, 197, 183, 0.42);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 15% 50%, rgba(52, 197, 183, 0.28), transparent 46%),
+    rgba(52, 197, 183, 0.08);
+  color: #d7fff9;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .brand-actions [hidden],
 .pvp-rooms-button[hidden] {
   display: none !important;

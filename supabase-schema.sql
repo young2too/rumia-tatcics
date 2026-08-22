@@ -52,3 +52,65 @@ create policy "rankings can be submitted by everyone"
   );
 
 drop policy if exists "rankings can be inserted by server only" on public.rankings;
+
+create table if not exists public.online_presence (
+  visitor_id text primary key,
+  page text not null default 'game',
+  version text,
+  last_seen timestamptz not null default now()
+);
+
+create index if not exists online_presence_last_seen_idx
+  on public.online_presence (last_seen desc);
+
+alter table public.online_presence enable row level security;
+
+drop policy if exists "online presence readable" on public.online_presence;
+create policy "online presence readable"
+  on public.online_presence for select
+  using (true);
+
+drop policy if exists "online presence insertable" on public.online_presence;
+create policy "online presence insertable"
+  on public.online_presence for insert
+  with check (
+    char_length(visitor_id) between 16 and 80
+    and char_length(page) between 1 and 40
+    and (
+      version is null
+      or char_length(version) between 1 and 40
+    )
+  );
+
+drop policy if exists "online presence updatable" on public.online_presence;
+create policy "online presence updatable"
+  on public.online_presence for update
+  using (
+    char_length(visitor_id) between 16 and 80
+  )
+  with check (
+    char_length(visitor_id) between 16 and 80
+    and char_length(page) between 1 and 40
+    and (
+      version is null
+      or char_length(version) between 1 and 40
+    )
+  );
+
+create extension if not exists pg_cron with schema extensions;
+
+do $$
+begin
+  perform cron.unschedule('cleanup-online-presence');
+exception
+  when others then null;
+end $$;
+
+select cron.schedule(
+  'cleanup-online-presence',
+  '*/30 * * * *',
+  $$
+    delete from public.online_presence
+    where last_seen < now() - interval '1 day';
+  $$
+);

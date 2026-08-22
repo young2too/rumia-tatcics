@@ -1,4 +1,4 @@
-import { augmentPools, augmentSettings, balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, gameSaveStorageKey, hiddenTraitRules, patchNotesConfig, patchNotesStorageKey, pvpRoomsConfig, pvpPendingSquadStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
+import { augmentPools, augmentSettings, balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, gameSaveStorageKey, hiddenTraitRules, patchNotesConfig, patchNotesStorageKey, presenceConfig, pvpRoomsConfig, pvpPendingSquadStorageKey, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
 import { createGameState } from "./src/core/state.js";
 import { createPvpSnapshotId, createStableHash } from "./src/core/rng.js";
 import { createSaveController } from "./src/core/save.js";
@@ -15,6 +15,7 @@ import { createCommunityBoardController } from "./src/ui/communityBoard.js";
 import { $, createRefs } from "./src/ui/dom.js";
 import { bindUiEvents } from "./src/ui/events.js";
 import { createPatchNotesController } from "./src/ui/patchNotes.js";
+import { createPresenceController } from "./src/ui/presence.js";
 import { createRankingController } from "./src/ui/ranking.js";
 import { createBattlefieldView } from "./src/ui/views/battlefieldView.js";
 import { createGameView } from "./src/ui/views/gameView.js";
@@ -200,6 +201,7 @@ saveController = createSaveController({
 const restoredGame = saveController.restoreSave();
 
 const audio = createAudioController({ state, refs, bgmConfig });
+const presence = createPresenceController({ refs, presenceConfig, rankingConfig });
 const ranking = createRankingController({ state, refs, rankingConfig, rankingStorageKey, renderRanking, render });
 const { captureDeathRecord, loadRankings, submitRanking } = ranking;
 const patchNotes = createPatchNotesController({ state, patchNotesConfig, patchNotesStorageKey, render });
@@ -488,6 +490,7 @@ bindUiEvents({
 communityBoard.bindCommunityBoardEvents();
 addLog("상점에서 캐릭터를 영입하고 보드로 드래그하세요.");
 loadRankings();
+presence.start();
 initPatchNotes();
 if (restoredGame) render();
 else rollShop();

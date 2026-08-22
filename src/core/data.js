@@ -70,6 +70,11 @@ export const communityBoardConfig = {
   anonKey: window.LUMIA_TACTICS_CONFIG?.supabase?.anonKey,
   ...(window.LUMIA_TACTICS_CONFIG?.communityBoard || {}),
 };
+export const presenceConfig = {
+  url: window.LUMIA_TACTICS_CONFIG?.supabase?.url,
+  anonKey: window.LUMIA_TACTICS_CONFIG?.supabase?.anonKey,
+  ...(window.LUMIA_TACTICS_CONFIG?.presence || {}),
+};
 export const bgmConfig = {
   ...uiSettings.bgm,
   ...(window.LUMIA_TACTICS_CONFIG?.bgm || {}),
