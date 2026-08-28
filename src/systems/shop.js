@@ -74,25 +74,35 @@ export function createShopController({
     return [...state.bench, ...state.board].filter((unit) => unit?.name === name && unit.tier === tier);
   }
 
+  function matchingUnitSlots(name, tier) {
+    const slots = [];
+    for (const source of ["board", "bench"]) {
+      const arr = state[source];
+      for (let index = 0; index < arr.length; index++) {
+        if (arr[index]?.name === name && arr[index]?.tier === tier) {
+          slots.push({ source, arr, index });
+        }
+      }
+    }
+    return slots;
+  }
+
+  function upgradeSlotFor(slots) {
+    return slots.find((slot) => slot.source === "board") || slots[0] || null;
+  }
+
   function canBuyIntoImmediateCombine(unit) {
     return unit?.tier === 1 && ownedCopies(unit.name, 1).length >= 2;
   }
 
   function forceCombinePurchasedUnit(unit) {
-    let removed = 0;
-    let firstRemoved = null;
-    for (const arr of [state.bench, state.board]) {
-      for (let i = 0; i < arr.length; i++) {
-        if (arr[i]?.name === unit.name && arr[i]?.tier === unit.tier && removed < 2) {
-          if (!firstRemoved) firstRemoved = { arr, index: i };
-          arr[i] = null;
-          removed++;
-        }
-      }
-    }
-
-    if (removed < 2 || !firstRemoved) return false;
-    firstRemoved.arr[firstRemoved.index] = makeUnit(roster.find((base) => base.name === unit.name), unit.tier + 1);
+    const slots = matchingUnitSlots(unit.name, unit.tier).slice(0, 2);
+    const targetSlot = upgradeSlotFor(slots);
+    if (slots.length < 2 || !targetSlot) return false;
+    slots.forEach((slot) => {
+      slot.arr[slot.index] = null;
+    });
+    targetSlot.arr[targetSlot.index] = makeUnit(roster.find((base) => base.name === unit.name), unit.tier + 1);
     addLog(`${unit.name} ${unit.tier + 1}성 합성!`);
     return true;
   }
@@ -104,30 +114,16 @@ export function createShopController({
       const sameTier = [2, 1].find((tier) => all.filter((unit) => unit.tier === tier).length >= 3);
       if (!sameTier) return changed;
 
-      let removed = 0;
-      let firstRemoved = null;
-      for (const arr of [state.bench, state.board]) {
-        for (let i = 0; i < arr.length; i++) {
-          if (arr[i]?.name === name && arr[i]?.tier === sameTier && removed < 3) {
-            if (!firstRemoved) firstRemoved = { arr, index: i };
-            arr[i] = null;
-            removed++;
-          }
-        }
-      }
+      const slots = matchingUnitSlots(name, sameTier).slice(0, 3);
+      const targetSlot = upgradeSlotFor(slots);
+      if (slots.length < 3 || !targetSlot) return changed;
+
+      slots.forEach((slot) => {
+        slot.arr[slot.index] = null;
+      });
 
       const upgraded = makeUnit(roster.find((unit) => unit.name === name), sameTier + 1);
-      if (firstRemoved) {
-        firstRemoved.arr[firstRemoved.index] = upgraded;
-      } else {
-        const benchSlot = state.bench.findIndex((unit) => !unit);
-        const boardSlot = state.board.findIndex((unit) => !unit);
-        if (benchSlot >= 0) {
-          state.bench[benchSlot] = upgraded;
-        } else if (boardSlot >= 0) {
-          state.board[boardSlot] = upgraded;
-        }
-      }
+      targetSlot.arr[targetSlot.index] = upgraded;
       changed = true;
       addLog(`${name} ${sameTier + 1}성 합성!`);
     }

@@ -16,6 +16,7 @@ export function createCombatController(context) {
     refs,
     sample,
     boardUnits,
+    boardLimit,
     addLog,
     activeTraits,
     applySynergy,
@@ -3893,6 +3894,12 @@ async function simulate() {
   const boardAllies = boardUnits();
   if (!boardAllies.length) {
     addLog("보드에 캐릭터를 배치해야 합니다.");
+    return;
+  }
+  const limit = boardLimit?.() ?? Infinity;
+  if (boardAllies.length > limit) {
+    addLog(`[배치] 현재 ${boardAllies.length}/${limit}명입니다. 배치 한도에 맞게 유닛을 내려주세요.`, { force: true });
+    render();
     return;
   }
   const allies = boardAllies.slice();

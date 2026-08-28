@@ -313,6 +313,7 @@ combat = createCombatController({
   refs,
   sample,
   boardUnits,
+  boardLimit,
   addLog,
   activeTraits,
   applySynergy,

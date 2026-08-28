@@ -813,6 +813,21 @@ h2 {
   background: rgba(239, 90, 86, 0.1);
 }
 
+.board-capacity.over-limit {
+  color: rgba(255, 91, 91, 0.74);
+  text-shadow:
+    0 0 14px rgba(255, 91, 91, 0.45),
+    0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+.board-capacity.over-limit span {
+  color: rgba(255, 218, 218, 0.9);
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 91, 91, 0.42);
+  border-radius: 999px;
+  background: rgba(255, 91, 91, 0.12);
+}
+
 .board-capacity[hidden] {
   display: none;
 }
