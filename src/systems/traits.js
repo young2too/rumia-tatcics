@@ -65,6 +65,14 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       supportAidHpRatio: unit.supportAidHpRatio ?? 0,
       supportAidDefense: unit.supportAidDefense ?? 0,
       supportAidDamageReduction: unit.supportAidDamageReduction ?? 0,
+      duelSameTargetDamageAdd: unit.duelSameTargetDamageAdd ?? 0,
+      duelSameTargetLifeStealAdd: unit.duelSameTargetLifeStealAdd ?? 0,
+      duelSameTargetMaxStacks: unit.duelSameTargetMaxStacks ?? 0,
+      huntMarkTargets: unit.huntMarkTargets ?? 0,
+      huntMarkedDamageAdd: unit.huntMarkedDamageAdd ?? 0,
+      huntFocusMarked: unit.huntFocusMarked ?? 0,
+      huntMarkedDefenseApplyRatio: unit.huntMarkedDefenseApplyRatio ?? 1,
+      huntTransferStunMs: unit.huntTransferStunMs ?? 0,
     };
     for (const trait of unitTraits(unit)) {
       const rule = traitRules[trait];

@@ -2,7 +2,11 @@ import { traitPills, unitTraitText } from "./traitHelpers.js";
 
 export function createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor = (unit) => unit.name, render, selectAugmentTarget }) {
   function unitRange(unit) {
-    const base = ["사격", "술법", "지원"].includes(unit.role) ? balance.battle.rangedRange : balance.battle.meleeRange;
+    const base = Number.isFinite(unit.attackRange)
+      ? unit.attackRange
+      : ["사격", "술법", "지원"].includes(unit.role)
+        ? balance.battle.rangedRange
+        : balance.battle.meleeRange;
     return Math.max(1, base + Math.round(unit.rangeBonus || 0));
   }
 
@@ -43,6 +47,11 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       healReductionOnHit: unit.healReductionOnHit ?? 0,
       openingMana: unit.openingMana ?? 0,
       manaOnHitBonus: unit.manaOnHitBonus ?? 0,
+      huntMarkTargets: unit.huntMarkTargets ?? 0,
+      huntMarkedDamageAdd: unit.huntMarkedDamageAdd ?? 0,
+      huntFocusMarked: unit.huntFocusMarked ?? 0,
+      huntMarkedDefenseApplyRatio: unit.huntMarkedDefenseApplyRatio ?? 1,
+      huntTransferStunMs: unit.huntTransferStunMs ?? 0,
     };
   }
 
@@ -73,6 +82,10 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       const durationMs = Math.max(unit.rootDurationMs || unit.rootRemainingMs, 1);
       effects.push({ tone: "rooted", label: "속박", ratio: unit.rootRemainingMs / durationMs });
     }
+    if (unit.semtexGrenade?.remainingMs > 0) {
+      const durationMs = Math.max(unit.semtexGrenade.durationMs || unit.semtexGrenade.remainingMs, 1);
+      effects.push({ tone: "semtex", label: "셈텍스", ratio: unit.semtexGrenade.remainingMs / durationMs });
+    }
     if (unit.peaceRemainingMs > 0) {
       const durationMs = Math.max(unit.peaceDurationMs || unit.peaceRemainingMs, 1);
       effects.push({ tone: "guard", label: "평화", ratio: unit.peaceRemainingMs / durationMs });
@@ -80,6 +93,10 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     if (unit.lifeShareRemainingMs > 0) {
       const durationMs = Math.max(unit.lifeShareDurationMs || unit.lifeShareRemainingMs, 1);
       effects.push({ tone: "guard", label: "공유", ratio: unit.lifeShareRemainingMs / durationMs });
+    }
+    if (unit.fenrirLastStandRemainingMs > 0) {
+      const durationMs = Math.max(unit.fenrirLastStandDurationMs || unit.fenrirLastStandRemainingMs, 1);
+      effects.push({ tone: "frenzy", label: "최후", ratio: unit.fenrirLastStandRemainingMs / durationMs });
     }
     if (unit.shawlCurtainRemainingMs > 0) {
       const durationMs = Math.max(unit.shawlCurtainDurationMs || unit.shawlCurtainRemainingMs, 1);
@@ -110,6 +127,9 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     if (unit.untargetableRemainingMs > 0) node.classList.add("untargetable");
     if (displayNameFor(unit) !== unit.name) node.classList.add("renamed-unit");
     if (unit.tacticalTarget) node.classList.add("tactical-target");
+    if (unit.huntMarked) node.classList.add("hunt-marked");
+    if (unit.fenrirLastStandRemainingMs > 0) node.classList.add("last-stand");
+    if (unit.semtexGrenade?.remainingMs > 0) node.classList.add("semtex-attached");
     if (unit.hp <= 0) node.classList.add("dead");
     node.style.setProperty("--accent", unit.color);
     node.style.setProperty("--hp", `${Math.max(0, Math.round((unit.hp / unit.maxHp) * 100))}%`);
@@ -131,6 +151,9 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
           ${[0, 1, 2].map((orb) => `<i class="${orb < stack ? "filled" : ""}"></i>`).join("")}
         </div>
       `);
+    }
+    if (unit.huntMarked) {
+      node.insertAdjacentHTML("beforeend", `<span class="hunt-mark" title="추적 표식" aria-label="추적 표식"></span>`);
     }
     node.title = `${displayNameFor(unit)} · ${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}${unit.skillTooltip ? ` - ${unit.skillTooltip}` : ""}`;
     node.addEventListener("dragstart", () => {
@@ -188,6 +211,11 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     if (effective.healReductionOnHit > 0) stats.push(["치유감소", `${Math.round(effective.healReductionOnHit * 100)}%`]);
     if (effective.openingMana > 0) stats.push(["시작마나", `+${Math.round(effective.openingMana)}`]);
     if (effective.manaOnHitBonus > 0) stats.push(["피격마나", `+${Math.round(effective.manaOnHitBonus * 100)}%`]);
+    if (effective.huntMarkTargets > 0) stats.push(["추적표식", `${Math.round(effective.huntMarkTargets)}명`]);
+    if (effective.huntMarkedDamageAdd > 0) stats.push(["표식피해", `+${Math.round(effective.huntMarkedDamageAdd * 100)}%`]);
+    if (effective.huntFocusMarked > 0) stats.push(["표식우선", "활성"]);
+    if (effective.huntMarkedDefenseApplyRatio < 1) stats.push(["표식관통", `${Math.round((1 - effective.huntMarkedDefenseApplyRatio) * 100)}%`]);
+    if (effective.huntTransferStunMs > 0) stats.push(["표식전이", `${(effective.huntTransferStunMs / 1000).toFixed(1)}초 기절`]);
     if (unit.role === "술법" && effective.skillTargets > 2) stats.push(["스킬타격", effective.skillTargets >= 99 ? "전체" : `${Math.round(effective.skillTargets)}명`]);
     if (unit.role === "지원" && effective.healTargets > 2) stats.push(["회복대상", effective.healTargets >= 99 ? "전체" : `${Math.round(effective.healTargets)}명`]);
     refs.detailTier.textContent = `${"★".repeat(unit.tier)} · ${unit.cost}코`;

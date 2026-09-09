@@ -206,7 +206,7 @@ export function createHiddenTraitController({ hiddenTraitRules, boardUnits }) {
       }
       results.push({ type: "tacticalGrowth", rule, unit, atk, skillAmp, maxHp });
     }
-    for (const unit of participants.filter((candidate) => candidate.hiddenKillGrowth)) {
+    for (const unit of [killer].filter((candidate) => candidate?.hp > 0 && candidate.hiddenKillGrowth)) {
       const rule = unit.hiddenKillGrowth;
       const atk = Number(rule.effect.atk) || 0;
       unit.atk += atk;

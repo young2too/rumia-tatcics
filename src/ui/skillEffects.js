@@ -15,6 +15,7 @@ export function createSkillEffectRenderer() {
   const pixiEffectTypes = new Set(Object.keys({
     "yuki-cast": true,
     "yuki-bloom": true,
+    "hisui-tsubame-gaeshi": true,
     "fate-absorb": true,
     "nadine-wolf": true,
     "cathy-needle": true,
@@ -31,6 +32,12 @@ export function createSkillEffectRenderer() {
     "theodore-energy-field": true,
     "emma-magic-hat": true,
     "haze-rocket-launcher": true,
+    "isol-semtex-throw": true,
+    "isol-semtex-explosion": true,
+    "martina-fast-forward": true,
+    "katja-sniping-aim": true,
+    "katja-sniping-shot": true,
+    "justyna-laser-barrage": true,
     "bernice-snare-trap": true,
     "rio-kaeyumi": true,
     "celine-plasma-arm": true,
@@ -39,6 +46,9 @@ export function createSkillEffectRenderer() {
     "xiukai-hot-taste": true,
     "xiukai-flame": true,
     "zahir-vayvayastra": true,
+    "abigail-horizon-cleave": true,
+    "darko-forced-capture": true,
+    "darko-forced-impact": true,
     "luke-obsession": true,
     "silvia-speed-gun": true,
     "bianca-reign": true,
@@ -154,6 +164,7 @@ export function createSkillEffectRenderer() {
     return {
       "yuki-bloom": 900,
       "yuki-cast": 760,
+      "hisui-tsubame-gaeshi": 980,
       "nadine-wolf": 680,
       "cathy-needle": 520,
       "rozzi-double-shot": 620,
@@ -169,6 +180,12 @@ export function createSkillEffectRenderer() {
       "theodore-energy-field": 760,
       "emma-magic-hat": 760,
       "haze-rocket-launcher": 780,
+      "isol-semtex-throw": 620,
+      "isol-semtex-explosion": 780,
+      "martina-fast-forward": 560,
+      "katja-sniping-aim": 1000,
+      "katja-sniping-shot": 680,
+      "justyna-laser-barrage": 820,
       "bernice-snare-trap": 760,
       "rio-kaeyumi": 660,
       "celine-plasma-arm": 560,
@@ -177,6 +194,9 @@ export function createSkillEffectRenderer() {
       "xiukai-hot-taste": 900,
       "xiukai-flame": 560,
       "zahir-vayvayastra": 1080,
+      "abigail-horizon-cleave": 980,
+      "darko-forced-capture": 560,
+      "darko-forced-impact": 620,
       "luke-obsession": 760,
       "silvia-speed-gun": 680,
       "bianca-reign": 1150,
@@ -508,6 +528,221 @@ export function createSkillEffectRenderer() {
     drawPixiRadial(graphics, origin, progress, { color: "#fff0f4", fill: "#ff7a95", radius: 28, alpha: 0.38, rings: 1 });
   }
 
+  function drawPixiHisuiTsubameGaeshi(animation, progress, graphics) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    if (!targets.length) return;
+    const origin = animation.origin;
+    const average = targets.reduce((sum, target) => ({ x: sum.x + target.x, y: sum.y + target.y }), { x: 0, y: 0 });
+    average.x /= targets.length;
+    average.y /= targets.length;
+    const angle = Math.atan2(average.y - origin.y, average.x - origin.x);
+    const forward = { x: Math.cos(angle), y: Math.sin(angle) };
+    const normal = { x: -forward.y, y: forward.x };
+    const center = {
+      x: origin.x + forward.x * 62,
+      y: origin.y + forward.y * 62 - 6,
+    };
+    const drawStroke = (local, shape, color, glow) => {
+      if (local <= 0 || local >= 1.04) return;
+      const reveal = Math.min(1, local * 1.65);
+      const fade = Math.max(0, 1 - Math.max(0, local - 0.62) / 0.38);
+      const alpha = Math.sin(Math.PI * Math.min(1, local)) * fade;
+      const toWorld = (point) => ({
+        x: center.x + normal.x * point.x + forward.x * point.y,
+        y: center.y + normal.y * point.x * 0.72 + forward.y * point.y,
+      });
+      const curvePoint = (from, control, to, ratio) => {
+        const inv = 1 - ratio;
+        return {
+          x: inv * inv * from.x + 2 * inv * ratio * control.x + ratio * ratio * to.x,
+          y: inv * inv * from.y + 2 * inv * ratio * control.y + ratio * ratio * to.y,
+        };
+      };
+      const drawBlade = (from, to, bend, width, strokeColor, strokeAlpha, edge = false) => {
+        const control = {
+          x: (from.x + to.x) / 2 + bend.x,
+          y: (from.y + to.y) / 2 + bend.y,
+        };
+        const tail = Math.max(0, reveal - 0.36);
+        const steps = 16;
+        let started = false;
+        for (let step = 0; step <= steps; step += 1) {
+          const ratio = tail + ((reveal - tail) * step) / steps;
+          const point = toWorld(curvePoint(from, control, to, ratio));
+          if (!started) {
+            graphics.moveTo(point.x, point.y);
+            started = true;
+          } else {
+            graphics.lineTo(point.x, point.y);
+          }
+        }
+        graphics.stroke({ color: hexColor(strokeColor), width, alpha: alpha * strokeAlpha, cap: "butt", join: "miter" });
+        if (!edge) return;
+        const head = toWorld(curvePoint(from, control, to, reveal));
+        const prev = toWorld(curvePoint(from, control, to, Math.max(0, reveal - 0.035)));
+        const angle = Math.atan2(head.y - prev.y, head.x - prev.x);
+        const size = 9;
+        const length = 18;
+        const tip = { x: head.x + Math.cos(angle) * length * 0.55, y: head.y + Math.sin(angle) * length * 0.55 };
+        const back = { x: head.x - Math.cos(angle) * length * 0.45, y: head.y - Math.sin(angle) * length * 0.45 };
+        const side = { x: Math.cos(angle + Math.PI / 2) * size, y: Math.sin(angle + Math.PI / 2) * size };
+        graphics.moveTo(tip.x, tip.y);
+        graphics.lineTo(back.x + side.x, back.y + side.y);
+        graphics.lineTo(back.x - side.x, back.y - side.y);
+        graphics.closePath();
+        pixiFill(graphics, "#ffffff", alpha * 0.86);
+      };
+      const segmentSets = {
+        horizontal: [[{ x: -86, y: 0 }, { x: 86, y: 0 }, { x: 0, y: -22 }]],
+        vertical: [[{ x: 0, y: -62 }, { x: 0, y: 72 }, { x: -24, y: 4 }]],
+        tee: [
+          [{ x: -76, y: -24 }, { x: 76, y: -24 }, { x: 0, y: -18 }],
+          [{ x: 0, y: -24 }, { x: 0, y: 76 }, { x: 26, y: 8 }],
+        ],
+      }[shape] || [];
+      for (const [from, to, bend] of segmentSets) {
+        drawBlade(from, to, bend, 46, glow, 0.12);
+        drawBlade(from, to, bend, 28, color, 0.34);
+        drawBlade(from, to, bend, 9, "#ffffff", 0.78, true);
+      }
+      if (shape === "tee" && reveal > 0.62) {
+        const cross = toWorld({ x: 0, y: -22 });
+        const size = 16 + (reveal - 0.62) * 18;
+        graphics.rect(cross.x - size / 2, cross.y - size / 2, size, size);
+        pixiFill(graphics, glow, alpha * 0.1);
+        graphics.rect(cross.x - size / 2, cross.y - size / 2, size, size);
+        graphics.stroke({ color: hexColor(color), width: 3, alpha: alpha * 0.48, cap: "butt", join: "miter" });
+      }
+    };
+
+    const strokes = [
+      { start: 0, shape: "horizontal", color: "#dff7ff", glow: "#72dfff" },
+      { start: 0.24, shape: "vertical", color: "#fff7d7", glow: "#ffc957" },
+      { start: 0.48, shape: "tee", color: "#f4e8ff", glow: "#b87dff" },
+    ];
+    for (const stroke of strokes) {
+      const local = (progress - stroke.start) / 0.4;
+      drawStroke(local, stroke.shape, stroke.color, stroke.glow);
+    }
+    for (const target of targets) {
+      for (const stroke of strokes) {
+        const local = (progress - stroke.start) / 0.4;
+        if (local > 0.55 && local < 1) {
+          drawPixiImpact(graphics, target, Math.min(1, (local - 0.55) / 0.45), stroke.glow, 16, 0.36);
+        }
+      }
+    }
+    drawPixiRadial(graphics, origin, progress, { color: "#d9fbff", fill: "#79e4ff", radius: 34, alpha: 0.4, rings: 1 });
+  }
+
+  function drawPixiAbigailHorizonCleave(animation, progress, graphics) {
+    const center = animation.origin;
+    const drawSweep = (local, direction, radius, color, glow, widthOffset = 0) => {
+      if (local <= 0 || local >= 1.06) return;
+      const reveal = Math.min(1, local * 1.35);
+      const fade = Math.max(0, 1 - Math.max(0, local - 0.64) / 0.36);
+      const alpha = Math.sin(Math.PI * Math.min(1, local)) * fade;
+      const start = direction - Math.PI * 0.82;
+      const end = direction + Math.PI * 0.82;
+      const steps = 36;
+      const visibleSteps = Math.max(2, Math.floor(steps * reveal));
+      const drawArc = (arcRadius, yScale, strokeColor, strokeWidth, strokeAlpha, lift = 0) => {
+        for (let step = 0; step <= visibleSteps; step += 1) {
+          const ratio = step / steps;
+          const theta = start + (end - start) * ratio;
+          const x = center.x + Math.cos(theta) * arcRadius;
+          const y = center.y + Math.sin(theta) * arcRadius * yScale - lift;
+          if (step === 0) graphics.moveTo(x, y);
+          else graphics.lineTo(x, y);
+        }
+        pixiStroke(graphics, strokeColor, strokeWidth, strokeAlpha);
+      };
+
+      drawArc(radius + widthOffset, 0.58, glow, 18, alpha * 0.18, 6);
+      drawArc(radius - 8 + widthOffset, 0.56, color, 8, alpha * 0.72, 6);
+      drawArc(radius - 18 + widthOffset, 0.54, "#fff8fb", 3, alpha * 0.98, 6);
+    };
+
+    const first = Math.min(1, progress / 0.58);
+    const second = Math.min(1, Math.max(0, progress - 0.28) / 0.58);
+    drawSweep(first, -Math.PI * 0.12, 158, "#ff7d9f", "#ff2e68", 0);
+    drawSweep(first, -Math.PI * 0.1, 118, "#ffd2df", "#ff5d86", -4);
+    drawSweep(second, Math.PI * 1.08, 166, "#a7e8ff", "#47cfff", 0);
+    drawSweep(second, Math.PI * 1.06, 126, "#ecfbff", "#7de6ff", -4);
+
+    const shock = Math.min(1, progress * 1.15);
+    drawPixiRadial(graphics, center, shock, { color: "#ffe9f1", fill: "#ff4779", radius: 118, alpha: 0.28, rings: 1 });
+    if (progress > 0.2) {
+      const impact = Math.min(1, (progress - 0.2) / 0.62);
+      for (const target of animation.targets) {
+        drawPixiImpact(graphics, target, impact, "#ffd7e3", 18, 0.46);
+        if (second > 0.18) drawPixiImpact(graphics, target, Math.min(1, (second - 0.18) / 0.7), "#b8f4ff", 15, 0.38);
+      }
+    }
+  }
+
+  function drawPixiDarkoForcedCapture(animation, progress, graphics) {
+    const target = animation.targets[0];
+    if (!target) return;
+    const origin = animation.origin;
+    const pull = Math.min(1, progress * 1.35);
+    const alpha = Math.sin(Math.PI * Math.min(1, progress)) * 0.9;
+    const mid = {
+      x: (origin.x + target.x) / 2,
+      y: Math.min(origin.y, target.y) - 76,
+    };
+    const lift = Math.sin(Math.PI * Math.min(1, progress / 0.86));
+    graphics.ellipse(target.x, target.y + 17, 24 + pull * 15, 8 + pull * 4);
+    pixiFill(graphics, "#000000", 0.24 * lift);
+    for (let chain = 0; chain < 2; chain += 1) {
+      const offset = chain ? 11 : -11;
+      const wrapY = target.y - 10 - lift * 36;
+      graphics.moveTo(origin.x, origin.y - 8 + offset * 0.2);
+      graphics.quadraticCurveTo(mid.x, mid.y + offset, target.x, wrapY - offset * 0.2);
+      pixiStroke(graphics, chain ? "#ffe0c8" : "#ff514a", chain ? 3 : 7, alpha * (chain ? 0.9 : 0.5));
+    }
+    for (let link = 0; link < 8; link += 1) {
+      const local = Math.max(0, Math.min(1, pull - link * 0.055));
+      const point = pointAt(origin, { x: target.x, y: target.y - 34 }, local, 56);
+      graphics.roundRect(point.x - 5, point.y - 4, 10, 8, 2);
+      pixiFill(graphics, link % 2 ? "#ffd7bd" : "#ff716b", alpha * 0.72);
+    }
+    const lifted = { x: target.x, y: target.y - 28 - lift * 28 };
+    graphics.moveTo(lifted.x - 24, lifted.y - 6);
+    graphics.lineTo(lifted.x + 24, lifted.y - 6);
+    graphics.moveTo(lifted.x - 19, lifted.y + 8);
+    graphics.lineTo(lifted.x + 19, lifted.y + 8);
+    pixiStroke(graphics, "#fff0d5", 4, alpha * 0.84);
+    drawPixiRadial(graphics, lifted, progress, { color: "#ffd0b5", fill: "#ff4f48", radius: 40, alpha: 0.55, rings: 2 });
+  }
+
+  function drawPixiDarkoForcedImpact(animation, progress, graphics) {
+    const center = animation.targets[0] || animation.origin;
+    const alpha = Math.max(0, 1 - progress) * 0.9;
+    const radius = 34 + progress * 86;
+    const drop = Math.max(0, 1 - progress * 1.4);
+    graphics.ellipse(center.x, center.y + 17, 18 + progress * 54, 5 + progress * 18);
+    pixiFill(graphics, "#000000", 0.26 * Math.max(0, 1 - progress));
+    if (drop > 0) {
+      graphics.moveTo(center.x - 18, center.y - 92 * drop);
+      graphics.lineTo(center.x, center.y - 34 * drop);
+      graphics.lineTo(center.x + 18, center.y - 92 * drop);
+      pixiStroke(graphics, "#ffe4ca", 5, drop * 0.74);
+    }
+    graphics.circle(center.x, center.y + 4, radius);
+    pixiFill(graphics, "#ff4f48", Math.sin(Math.PI * progress) * 0.12);
+    pixiStroke(graphics, "#ffcaa8", Math.max(2, 9 - progress * 5), alpha);
+    for (let spike = 0; spike < 10; spike += 1) {
+      const angle = (Math.PI * 2 * spike) / 10 + progress * 0.35;
+      const inner = 22 + progress * 18;
+      const outer = 58 + progress * 62;
+      graphics.moveTo(center.x + Math.cos(angle) * inner, center.y + Math.sin(angle) * inner * 0.58);
+      graphics.lineTo(center.x + Math.cos(angle) * outer, center.y + Math.sin(angle) * outer * 0.58);
+      pixiStroke(graphics, spike % 2 ? "#ff7b72" : "#ffe0c8", spike % 2 ? 3 : 2, alpha * 0.68);
+    }
+    for (const target of animation.targets) drawPixiImpact(graphics, target, progress, "#ffd0b5", 22, 0.72);
+  }
+
   function drawPixiFateAbsorb(animation, progress, graphics) {
     const source = animation.targets[0];
     const target = animation.origin;
@@ -794,6 +1029,174 @@ export function createSkillEffectRenderer() {
     }
   }
 
+  function drawPixiMartinaFastForward(animation, progress, graphics) {
+    const impact = animation.targets[0];
+    if (!impact) return;
+    const beamStart = { x: animation.origin.x, y: animation.origin.y - 8 };
+    const beamEnd = { x: impact.x, y: impact.y - 10 };
+    const beamAlpha = Math.max(0, 1 - progress / 0.34);
+    if (beamAlpha > 0) {
+      graphics.moveTo(beamStart.x, beamStart.y);
+      graphics.lineTo(beamEnd.x, beamEnd.y);
+      pixiStroke(graphics, "#ffb83d", 22, beamAlpha * 0.28);
+      graphics.moveTo(beamStart.x, beamStart.y);
+      graphics.lineTo(beamEnd.x, beamEnd.y);
+      pixiStroke(graphics, "#ffe05f", 13, beamAlpha * 0.72);
+      graphics.moveTo(beamStart.x, beamStart.y);
+      graphics.lineTo(beamEnd.x, beamEnd.y);
+      pixiStroke(graphics, "#ffffff", 5, beamAlpha);
+      graphics.circle(beamStart.x, beamStart.y, 12 + progress * 26);
+      pixiFill(graphics, "#fff5b8", beamAlpha * 0.32);
+      graphics.circle(beamEnd.x, beamEnd.y, 16 + progress * 38);
+      pixiFill(graphics, "#fff1a8", beamAlpha * 0.38);
+    }
+    const impactProgress = Math.max(0, Math.min(1, (progress - 0.56) / 0.44));
+    if (impactProgress <= 0) return;
+    for (const [index, target] of animation.targets.entries()) {
+      const chain = Math.max(0, Math.min(1, (impactProgress - index * 0.1) / 0.72));
+      if (chain <= 0) continue;
+      const alpha = index === 0 ? 0.82 : 0.52;
+      drawPixiImpact(graphics, target, chain, index === 0 ? "#fff7c7" : "#ffd15f", index === 0 ? 36 : 24, alpha);
+      graphics.ellipse(target.x, target.y + 8, 26 + chain * 22, 10 + chain * 7);
+      pixiFill(graphics, index === 0 ? "#fff0a8" : "#ffbe4d", Math.sin(Math.PI * chain) * alpha * 0.16);
+      pixiStroke(graphics, "#ffda66", index === 0 ? 5 : 3, Math.max(0, 1 - chain) * alpha);
+      if (index > 0) {
+        graphics.moveTo(impact.x, impact.y + 7);
+        graphics.lineTo(target.x, target.y + 7);
+        pixiStroke(graphics, "#ffef9a", 4, Math.max(0, 1 - chain) * 0.42);
+      }
+    }
+  }
+
+  function drawPixiMartinaRecording(animation, progress, graphics) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    const origin = animation.origin;
+    const aim = targets[0] || { x: origin.x, y: origin.y - 120 };
+    const angle = Math.atan2(aim.y - origin.y, aim.x - origin.x);
+    const forward = { x: Math.cos(angle), y: Math.sin(angle) };
+    const normal = { x: -forward.y, y: forward.x };
+    const toWorld = (point) => ({
+      x: origin.x + normal.x * point.x + forward.x * point.y,
+      y: origin.y + normal.y * point.x * 0.72 + forward.y * point.y,
+    });
+    const pulse = (progress * 3) % 1;
+    const reveal = Math.min(1, pulse * 1.35);
+    const alpha = (0.28 + Math.sin(Math.PI * pulse) * 0.52) * (1 - progress * 0.18);
+    const tip = toWorld({ x: 0, y: 178 * reveal });
+    const leftNear = toWorld({ x: -28, y: 22 });
+    const rightNear = toWorld({ x: 28, y: 22 });
+    const leftFar = toWorld({ x: -112 * reveal, y: 146 * reveal });
+    const rightFar = toWorld({ x: 112 * reveal, y: 146 * reveal });
+    graphics.moveTo(leftNear.x, leftNear.y);
+    graphics.quadraticCurveTo(leftFar.x, leftFar.y, tip.x, tip.y);
+    graphics.quadraticCurveTo(rightFar.x, rightFar.y, rightNear.x, rightNear.y);
+    graphics.quadraticCurveTo(origin.x + forward.x * 30, origin.y + forward.y * 30, leftNear.x, leftNear.y);
+    graphics.closePath();
+    pixiFill(graphics, "#ffef9a", alpha * 0.14);
+    graphics.moveTo(leftNear.x, leftNear.y);
+    graphics.quadraticCurveTo(leftFar.x, leftFar.y, tip.x, tip.y);
+    graphics.quadraticCurveTo(rightFar.x, rightFar.y, rightNear.x, rightNear.y);
+    pixiStroke(graphics, "#ffd15f", 4, alpha * 0.42);
+    for (let line = 1; line <= 2; line += 1) {
+      const width = 36 + line * 34;
+      const start = toWorld({ x: -width * reveal, y: 58 + line * 42 });
+      const end = toWorld({ x: width * reveal, y: 58 + line * 42 });
+      graphics.moveTo(start.x, start.y);
+      graphics.lineTo(end.x, end.y);
+      pixiStroke(graphics, "#fff6cf", 2, alpha * 0.5);
+    }
+    for (const target of targets) {
+      drawPixiRadial(graphics, target, pulse, { color: "#ffe28a", fill: "#ffd15f", radius: 20, squash: 0.36, alpha: 0.42, rings: 1 });
+    }
+  }
+
+  function drawPixiKatjaAim(animation, progress, graphics) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    if (!targets.length) return;
+    const pulse = Math.sin(progress * Math.PI * 5) * 0.5 + 0.5;
+    for (const target of targets) {
+      graphics.moveTo(animation.origin.x, animation.origin.y - 18);
+      graphics.lineTo(target.x, target.y - 10);
+      pixiStroke(graphics, "#ffdf7a", 1.5, 0.26 + pulse * 0.18);
+      graphics.circle(target.x, target.y - 10, 16 + pulse * 5);
+      pixiStroke(graphics, "#ffd66e", 3, 0.72);
+      graphics.circle(target.x, target.y - 10, 5);
+      pixiStroke(graphics, "#fff8d6", 2, 0.88);
+      graphics.moveTo(target.x - 26, target.y - 10);
+      graphics.lineTo(target.x - 8, target.y - 10);
+      graphics.moveTo(target.x + 8, target.y - 10);
+      graphics.lineTo(target.x + 26, target.y - 10);
+      graphics.moveTo(target.x, target.y - 36);
+      graphics.lineTo(target.x, target.y - 18);
+      graphics.moveTo(target.x, target.y - 2);
+      graphics.lineTo(target.x, target.y + 16);
+      pixiStroke(graphics, "#fff2bc", 2, 0.78);
+    }
+  }
+
+  function projectionProgress(start, end, point) {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSq = dx * dx + dy * dy;
+    if (lengthSq <= 0.0001 || !point) return 1;
+    return Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSq));
+  }
+
+  function drawPixiKatjaShot(animation, progress, graphics) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    targets.forEach((target, index) => {
+      const local = Math.max(0, Math.min(1, (progress - index * 0.08) / 0.5));
+      const flash = Math.sin(Math.PI * Math.min(1, local));
+      const impactTarget = animation.impactTargets?.[index] || target;
+      const shotStart = { x: animation.origin.x, y: animation.origin.y };
+      const shotEnd = { x: target.x, y: target.y };
+      const impactAt = projectionProgress(shotStart, shotEnd, impactTarget);
+      if (local <= impactAt) {
+        drawPixiLineProjectile(graphics, animation.origin, target, Math.min(local, impactAt), {
+          color: "#ffffff",
+          accent: "#ffbd45",
+          width: 15,
+          radius: 9,
+          lift: 2,
+          trail: 150,
+          offset: (index - (targets.length - 1) / 2) * 6,
+          alpha: Math.min(1, local * 10) * Math.max(0, 1.16 - local * 0.35),
+        });
+      }
+      if (local > 0.06 && local < 0.86) {
+        const beamStart = { x: animation.origin.x, y: animation.origin.y - 12 };
+        const beamEnd = { x: target.x, y: target.y - 8 };
+        graphics.moveTo(beamStart.x, beamStart.y);
+        graphics.lineTo(beamEnd.x, beamEnd.y);
+        pixiStroke(graphics, "#fff1a8", 5, flash * 0.38);
+      }
+      if (local >= impactAt) drawPixiImpact(graphics, impactTarget, Math.min(1, (local - impactAt) / Math.max(0.12, 1 - impactAt)), "#fff1a8", 34, 0.95);
+    });
+  }
+
+  function drawPixiJustynaLaserBarrage(animation, progress, graphics) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    if (!targets.length) return;
+    targets.forEach((target, index) => {
+      const local = Math.max(0, Math.min(1, (progress - index * 0.18) / 0.5));
+      if (local <= 0 || local >= 1) return;
+      const alpha = Math.sin(Math.PI * local);
+      const angle = Math.atan2(target.y - animation.origin.y, target.x - animation.origin.x);
+      const nx = -Math.sin(angle) * 3;
+      const ny = Math.cos(angle) * 3;
+      graphics.moveTo(animation.origin.x + nx, animation.origin.y - 12 + ny);
+      graphics.lineTo(target.x + nx, target.y - 8 + ny);
+      pixiStroke(graphics, "#ffef9a", 13, alpha * 0.16);
+      graphics.moveTo(animation.origin.x + nx, animation.origin.y - 12 + ny);
+      graphics.lineTo(target.x + nx, target.y - 8 + ny);
+      pixiStroke(graphics, "#ffe047", 5, alpha * 0.78);
+      graphics.moveTo(animation.origin.x - nx, animation.origin.y - 12 - ny);
+      graphics.lineTo(target.x - nx, target.y - 8 - ny);
+      pixiStroke(graphics, "#ffffff", 2, alpha);
+      drawPixiImpact(graphics, target, local, "#fff1a8", 18, 0.62);
+    });
+  }
+
   function drawPixiBomb(animation, progress, graphics, options = {}) {
     const center = animation.targets[0] || animation.origin;
     const { color = "#ff6e42", accent = "#ffd166", radius = 46 } = options;
@@ -808,6 +1211,72 @@ export function createSkillEffectRenderer() {
     for (const target of animation.targets) drawPixiImpact(graphics, target, local, accent, 18, 0.72);
   }
 
+  function drawPixiSemtexThrow(animation, progress, graphics) {
+    const target = animation.targets[0];
+    if (!target) return;
+    drawPixiLineProjectile(graphics, animation.origin, target, Math.min(1, progress / 0.72), {
+      color: "#f6ff9b",
+      accent: "#ff8d3d",
+      width: 5,
+      radius: 4,
+      lift: 22,
+      trail: 22,
+    });
+    const local = Math.max(0, (progress - 0.58) / 0.42);
+    if (local <= 0) return;
+    const pulse = Math.sin(Math.PI * local);
+    graphics.circle(target.x, target.y - 18, 9 + pulse * 5);
+    pixiFill(graphics, "#ff4d32", 0.24 + pulse * 0.26);
+    pixiStroke(graphics, "#fff1a6", 3, Math.max(0, 1 - local * 0.35));
+    graphics.moveTo(target.x - 13, target.y - 18);
+    graphics.lineTo(target.x + 13, target.y - 18);
+    graphics.moveTo(target.x, target.y - 31);
+    graphics.lineTo(target.x, target.y - 5);
+    pixiStroke(graphics, "#ff6b3d", 2, 0.86);
+  }
+
+  function drawPixiSemtexExplosion(animation, progress, graphics) {
+    const center = animation.targets[0] || animation.origin;
+    const shock = Math.min(1, progress / 0.72);
+    const flare = Math.sin(Math.PI * shock);
+    const x = center.x;
+    const y = center.y - 8;
+    const burstRadius = 26 + shock * 64;
+    const flamePoints = 14;
+    graphics.moveTo(x + burstRadius, y);
+    for (let point = 1; point <= flamePoints; point += 1) {
+      const angle = (Math.PI * 2 * point) / flamePoints;
+      const radius = burstRadius * (point % 2 ? 0.52 : 1);
+      graphics.lineTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius * 0.72);
+    }
+    graphics.closePath();
+    pixiFill(graphics, "#ff5a2f", flare * 0.38);
+    pixiStroke(graphics, "#fff0a8", Math.max(2, 7 - shock * 4), Math.max(0, 1 - shock) * 0.82);
+    graphics.circle(x, y, 8 + shock * 28);
+    pixiFill(graphics, "#fff4ba", flare * 0.72);
+    graphics.circle(x, y, 24 + shock * 82);
+    pixiStroke(graphics, "#ffb347", Math.max(2, 10 - shock * 6), Math.max(0, 1 - shock) * 0.72);
+    const smokeAlpha = Math.max(0, shock - 0.24) * 0.18;
+    for (let puff = 0; puff < 5; puff += 1) {
+      const angle = (Math.PI * 2 * puff) / 5 + 0.35;
+      const distance = 20 + shock * (28 + puff * 5);
+      graphics.circle(x + Math.cos(angle) * distance, y + Math.sin(angle) * distance * 0.55, 14 + shock * 10);
+      pixiFill(graphics, "#3a3230", smokeAlpha);
+    }
+    const shards = effectParticleCount(18);
+    for (let index = 0; index < shards; index += 1) {
+      const angle = (Math.PI * 2 * index) / shards + 0.24;
+      const inner = 18 + shock * 22;
+      const outer = 34 + shock * 86;
+      graphics.moveTo(x + Math.cos(angle) * inner, y + Math.sin(angle) * inner * 0.62);
+      graphics.lineTo(x + Math.cos(angle) * outer, y + Math.sin(angle) * outer * 0.62);
+    }
+    pixiStroke(graphics, "#ffd15f", 4, Math.max(0, 1 - shock) * 0.82);
+    for (const target of animation.targets.slice(1)) {
+      drawPixiRadial(graphics, target, shock, { color: "#ffd66b", fill: "#ff8a35", radius: 30, squash: 0.42, alpha: 0.58, rings: 1 });
+    }
+  }
+
   function drawPixiDefaultCast(animation, progress, graphics) {
     drawPixiPetalBurst(animation, progress, graphics, { color: "#8be7ff", accent: "#ffffff", radius: 62 });
   }
@@ -817,6 +1286,7 @@ export function createSkillEffectRenderer() {
     graphics.clear();
     if (animation.type === "yuki-cast") drawPixiYukiCrescent(animation, progress, graphics);
     else if (animation.type === "yuki-bloom") drawPixiPetalBurst(animation, progress, graphics, { color: "#ff416d", accent: "#fff0f5", radius: 120, targetImpact: true });
+    else if (animation.type === "hisui-tsubame-gaeshi") drawPixiHisuiTsubameGaeshi(animation, progress, graphics);
     else if (animation.type === "fate-absorb") drawPixiFateAbsorb(animation, progress, graphics);
     else if (animation.type === "nadine-wolf") drawPixiWolfRush(animation, progress, graphics);
     else if (animation.type === "cathy-needle") drawPixiRocket(animation, progress, graphics, { color: "#f8fbff", accent: "#8ee9ff", shots: 1, lift: 8 });
@@ -833,6 +1303,12 @@ export function createSkillEffectRenderer() {
     else if (animation.type === "theodore-energy-field") drawPixiTheodore(animation, progress, graphics);
     else if (animation.type === "emma-magic-hat") drawPixiEmmaHat(animation, progress, graphics);
     else if (animation.type === "haze-rocket-launcher") drawPixiRocket(animation, progress, graphics, { color: "#ffe29a", accent: "#ff6945", shots: 4, lift: 18 });
+    else if (animation.type === "isol-semtex-throw") drawPixiSemtexThrow(animation, progress, graphics);
+    else if (animation.type === "isol-semtex-explosion") drawPixiSemtexExplosion(animation, progress, graphics);
+    else if (animation.type === "martina-fast-forward") drawPixiMartinaFastForward(animation, progress, graphics);
+    else if (animation.type === "katja-sniping-aim") drawPixiKatjaAim(animation, progress, graphics);
+    else if (animation.type === "katja-sniping-shot") drawPixiKatjaShot(animation, progress, graphics);
+    else if (animation.type === "justyna-laser-barrage") drawPixiJustynaLaserBarrage(animation, progress, graphics);
     else if (animation.type === "bernice-snare-trap") drawPixiRocket(animation, progress, graphics, { color: "#ffd181", accent: "#ff8a33", shots: 1, lift: 12 });
     else if (animation.type === "rio-kaeyumi") drawPixiDoubleShot(animation, progress, graphics, { color: "#d9ffab", accent: "#7dff6c", width: 4, radius: 5, lift: 36, secondOffset: 5 });
     else if (animation.type === "celine-plasma-arm") drawPixiRocket(animation, progress, graphics, { color: "#ffc46b", accent: "#ff4b35", shots: 1, lift: 14 });
@@ -841,6 +1317,9 @@ export function createSkillEffectRenderer() {
     else if (animation.type === "xiukai-hot-taste") drawPixiRadial(graphics, animation.origin, progress, { color: "#ffd878", fill: "#ff6744", radius: 82, alpha: 0.72, rings: 3 });
     else if (animation.type === "xiukai-flame") drawPixiRocket(animation, progress, graphics, { color: "#ffbf50", accent: "#ff4f2e", shots: 1, lift: 8 });
     else if (animation.type === "zahir-vayvayastra") drawPixiZahir(animation, progress, graphics);
+    else if (animation.type === "abigail-horizon-cleave") drawPixiAbigailHorizonCleave(animation, progress, graphics);
+    else if (animation.type === "darko-forced-capture") drawPixiDarkoForcedCapture(animation, progress, graphics);
+    else if (animation.type === "darko-forced-impact") drawPixiDarkoForcedImpact(animation, progress, graphics);
     else if (animation.type === "luke-obsession") drawPixiRadial(graphics, animation.origin, progress, { color: "#effcff", fill: "#6edcff", radius: 76, alpha: 0.72, rings: 3 });
     else if (animation.type === "silvia-speed-gun") {
       drawPixiRocket(animation, progress, graphics, { color: "#fff5a8", accent: "#ffe14d", shots: 1, lift: 18 });
@@ -864,7 +1343,7 @@ export function createSkillEffectRenderer() {
     pixiFrame = pixiAnimations.length ? requestAnimationFrame(drawPixi) : 0;
   }
 
-  function playPixi(spec, layout, origin, targets, target) {
+  function playPixi(spec, layout, origin, targets, target, impactTargets = []) {
     const generation = pixiGeneration;
     ensurePixiLayer(layout)
       .then((app) => {
@@ -879,6 +1358,7 @@ export function createSkillEffectRenderer() {
           ...spec,
           origin,
           targets,
+          impactTargets,
           target,
           petals: seededPetals(origin, effectParticleCount(spec.type === "yuki-bloom" ? 34 : 24)),
           width: layout.width,
@@ -891,15 +1371,16 @@ export function createSkillEffectRenderer() {
         if (!pixiFrame) pixiFrame = requestAnimationFrame(drawPixi);
       })
       .catch(() => {
-        pushLegacyAnimation(spec, layout, origin, targets, target);
+        pushLegacyAnimation(spec, layout, origin, targets, target, impactTargets);
       });
   }
 
-  function pushLegacyAnimation(spec, layout, origin, targets, target) {
+  function pushLegacyAnimation(spec, layout, origin, targets, target, impactTargets = []) {
     animations.push({
       ...spec,
       origin,
       targets,
+      impactTargets,
       width: layout.width,
       height: layout.height,
       angle: Math.atan2(target.y - origin.y, target.x - origin.x),
@@ -914,15 +1395,16 @@ export function createSkillEffectRenderer() {
     const layout = pixiEffectTypes.has(spec.type) ? ensureLayout() : ensureCanvas();
     if (!layout) return;
     const targets = (spec.targetIds || []).map((id) => unitPoint(id, layout.rect)).filter(Boolean);
+    const impactTargets = (spec.impactTargetIds || []).map((id) => unitPoint(id, layout.rect)).filter(Boolean);
     const origin = unitPoint(spec.fromId, layout.rect) || targets[0];
     if (!origin) return;
     const fallbackTarget = { x: origin.x, y: origin.y - 80 };
     const target = targets[0] || fallbackTarget;
     if (pixiEffectTypes.has(spec.type)) {
-      playPixi(spec, layout, origin, targets, target);
+      playPixi(spec, layout, origin, targets, target, impactTargets);
       return;
     }
-    pushLegacyAnimation(spec, layout, origin, targets, target);
+    pushLegacyAnimation(spec, layout, origin, targets, target, impactTargets);
   }
 
   function drawPetal(ctx, x, y, size, rotation, alpha) {
@@ -960,6 +1442,127 @@ export function createSkillEffectRenderer() {
     for (const petal of petals) {
       const distance = petal.distance * Math.min(1, progress * 1.8);
       drawPetal(ctx, origin.x + Math.cos(petal.angle) * distance, origin.y + Math.sin(petal.angle) * distance * 0.65, petal.size, petal.angle + progress * petal.spin, Math.sin(Math.PI * progress));
+    }
+  }
+
+  function drawHisuiTsubameGaeshi(ctx, animation, progress) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    if (!targets.length) return;
+    const origin = animation.origin;
+    const average = targets.reduce((sum, target) => ({ x: sum.x + target.x, y: sum.y + target.y }), { x: 0, y: 0 });
+    average.x /= targets.length;
+    average.y /= targets.length;
+    const angle = Math.atan2(average.y - origin.y, average.x - origin.x);
+    const forward = { x: Math.cos(angle), y: Math.sin(angle) };
+    const normal = { x: -forward.y, y: forward.x };
+    const center = {
+      x: origin.x + forward.x * 62,
+      y: origin.y + forward.y * 62 - 6,
+    };
+    const drawStroke = (local, shape, color, glow) => {
+      if (local <= 0 || local >= 1.04) return;
+      const reveal = Math.min(1, local * 1.65);
+      const fade = Math.max(0, 1 - Math.max(0, local - 0.62) / 0.38);
+      const alpha = Math.sin(Math.PI * Math.min(1, local)) * fade;
+      const toWorld = (point) => ({
+        x: center.x + normal.x * point.x + forward.x * point.y,
+        y: center.y + normal.y * point.x * 0.72 + forward.y * point.y,
+      });
+      const curvePoint = (from, control, to, ratio) => {
+        const inv = 1 - ratio;
+        return {
+          x: inv * inv * from.x + 2 * inv * ratio * control.x + ratio * ratio * to.x,
+          y: inv * inv * from.y + 2 * inv * ratio * control.y + ratio * ratio * to.y,
+        };
+      };
+      const drawBlade = (from, to, bend, width, strokeColor, strokeAlpha, edge = false) => {
+        const control = {
+          x: (from.x + to.x) / 2 + bend.x,
+          y: (from.y + to.y) / 2 + bend.y,
+        };
+        const tail = Math.max(0, reveal - 0.36);
+        const steps = 16;
+        ctx.beginPath();
+        for (let step = 0; step <= steps; step += 1) {
+          const ratio = tail + ((reveal - tail) * step) / steps;
+          const point = toWorld(curvePoint(from, control, to, ratio));
+          if (step === 0) ctx.moveTo(point.x, point.y);
+          else ctx.lineTo(point.x, point.y);
+        }
+        ctx.globalAlpha = alpha * strokeAlpha;
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = width;
+        ctx.lineCap = "butt";
+        ctx.lineJoin = "miter";
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = width > 10 ? 22 : 12;
+        ctx.stroke();
+        if (!edge) return;
+        const head = toWorld(curvePoint(from, control, to, reveal));
+        const prev = toWorld(curvePoint(from, control, to, Math.max(0, reveal - 0.035)));
+        const angle = Math.atan2(head.y - prev.y, head.x - prev.x);
+        const size = 9;
+        const length = 18;
+        const tip = { x: head.x + Math.cos(angle) * length * 0.55, y: head.y + Math.sin(angle) * length * 0.55 };
+        const back = { x: head.x - Math.cos(angle) * length * 0.45, y: head.y - Math.sin(angle) * length * 0.45 };
+        const side = { x: Math.cos(angle + Math.PI / 2) * size, y: Math.sin(angle + Math.PI / 2) * size };
+        ctx.globalAlpha = alpha * 0.86;
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(tip.x, tip.y);
+        ctx.lineTo(back.x + side.x, back.y + side.y);
+        ctx.lineTo(back.x - side.x, back.y - side.y);
+        ctx.closePath();
+        ctx.fill();
+      };
+      const segmentSets = {
+        horizontal: [[{ x: -86, y: 0 }, { x: 86, y: 0 }, { x: 0, y: -22 }]],
+        vertical: [[{ x: 0, y: -62 }, { x: 0, y: 72 }, { x: -24, y: 4 }]],
+        tee: [
+          [{ x: -76, y: -24 }, { x: 76, y: -24 }, { x: 0, y: -18 }],
+          [{ x: 0, y: -24 }, { x: 0, y: 76 }, { x: 26, y: 8 }],
+        ],
+      }[shape] || [];
+      for (const [from, to, bend] of segmentSets) {
+        drawBlade(from, to, bend, 46, glow, 0.12);
+        drawBlade(from, to, bend, 28, color, 0.34);
+        drawBlade(from, to, bend, 9, "#ffffff", 0.78, true);
+      }
+      if (shape === "tee" && reveal > 0.62) {
+        const cross = toWorld({ x: 0, y: -22 });
+        const size = 16 + (reveal - 0.62) * 18;
+        ctx.globalAlpha = alpha * 0.54;
+        ctx.strokeStyle = color;
+        ctx.fillStyle = glow;
+        ctx.lineWidth = 3;
+        ctx.lineCap = "butt";
+        ctx.lineJoin = "miter";
+        ctx.beginPath();
+        ctx.rect(cross.x - size / 2, cross.y - size / 2, size, size);
+        ctx.fill();
+        ctx.stroke();
+      }
+    };
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const strokes = [
+      { start: 0, shape: "horizontal", color: "#dff7ff", glow: "#72dfff" },
+      { start: 0.24, shape: "vertical", color: "#fff7d7", glow: "#ffc957" },
+      { start: 0.48, shape: "tee", color: "#f4e8ff", glow: "#b87dff" },
+    ];
+    for (const stroke of strokes) {
+      const local = (progress - stroke.start) / 0.4;
+      drawStroke(local, stroke.shape, stroke.color, stroke.glow);
+    }
+    ctx.restore();
+    for (const target of targets) {
+      for (const stroke of strokes) {
+        const local = (progress - stroke.start) / 0.4;
+        if (local > 0.55 && local < 1) {
+          drawImpactRing(ctx, target, Math.min(1, (local - 0.55) / 0.45), stroke.glow, stroke.glow, 16);
+        }
+      }
     }
   }
 
@@ -1819,6 +2422,387 @@ export function createSkillEffectRenderer() {
     }
   }
 
+  function drawMartinaFastForward(ctx, animation, progress) {
+    const impact = animation.targets[0];
+    if (!impact) return;
+    const start = { x: animation.origin.x, y: animation.origin.y - 8 };
+    const end = { x: impact.x, y: impact.y - 10 };
+    const beamAlpha = Math.max(0, 1 - progress / 0.34);
+    if (beamAlpha > 0) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.lineCap = "round";
+      ctx.shadowColor = "#ffd15f";
+      ctx.shadowBlur = 26;
+      ctx.globalAlpha = beamAlpha * 0.28;
+      ctx.strokeStyle = "#ffb83d";
+      ctx.lineWidth = 22;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      ctx.globalAlpha = beamAlpha * 0.72;
+      ctx.strokeStyle = "#ffe05f";
+      ctx.lineWidth = 13;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      ctx.globalAlpha = beamAlpha;
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      ctx.globalAlpha = beamAlpha * 0.32;
+      ctx.fillStyle = "#fff5b8";
+      ctx.beginPath();
+      ctx.arc(start.x, start.y, 12 + progress * 26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = beamAlpha * 0.38;
+      ctx.fillStyle = "#fff1a8";
+      ctx.beginPath();
+      ctx.arc(end.x, end.y, 16 + progress * 38, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const impactProgress = Math.max(0, Math.min(1, (progress - 0.56) / 0.44));
+    if (impactProgress <= 0) return;
+    for (const [index, target] of animation.targets.entries()) {
+      const chain = Math.max(0, Math.min(1, (impactProgress - index * 0.1) / 0.72));
+      if (chain <= 0) continue;
+      const alpha = Math.sin(Math.PI * chain) * (index === 0 ? 0.9 : 0.62);
+      if (index > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = Math.max(0, 1 - chain) * 0.35;
+        ctx.strokeStyle = "#ffef9a";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(impact.x, impact.y + 7);
+        ctx.lineTo(target.x, target.y + 7);
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.translate(target.x, target.y + 9);
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = index === 0 ? "#fff7c7" : "#ffd15f";
+      ctx.fillStyle = index === 0 ? "rgba(255, 240, 168, 0.18)" : "rgba(255, 190, 77, 0.14)";
+      ctx.lineWidth = index === 0 ? 6 : 4;
+      ctx.shadowColor = "#ffd15f";
+      ctx.shadowBlur = index === 0 ? 22 : 12;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 26 + chain * 24, 10 + chain * 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, 12 + chain * (index === 0 ? 32 : 22), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawMartinaRecording(ctx, animation, progress) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    const origin = animation.origin;
+    const aim = targets[0] || { x: origin.x, y: origin.y - 120 };
+    const angle = Math.atan2(aim.y - origin.y, aim.x - origin.x);
+    const forward = { x: Math.cos(angle), y: Math.sin(angle) };
+    const normal = { x: -forward.y, y: forward.x };
+    const toWorld = (point) => ({
+      x: origin.x + normal.x * point.x + forward.x * point.y,
+      y: origin.y + normal.y * point.x * 0.72 + forward.y * point.y,
+    });
+    const pulse = (progress * 3) % 1;
+    const reveal = Math.min(1, pulse * 1.35);
+    const alpha = (0.28 + Math.sin(Math.PI * pulse) * 0.52) * (1 - progress * 0.18);
+    const tip = toWorld({ x: 0, y: 178 * reveal });
+    const leftNear = toWorld({ x: -28, y: 22 });
+    const rightNear = toWorld({ x: 28, y: 22 });
+    const leftFar = toWorld({ x: -112 * reveal, y: 146 * reveal });
+    const rightFar = toWorld({ x: 112 * reveal, y: 146 * reveal });
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = alpha * 0.14;
+    ctx.fillStyle = "#ffef9a";
+    ctx.shadowColor = "#ffd15f";
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.moveTo(leftNear.x, leftNear.y);
+    ctx.quadraticCurveTo(leftFar.x, leftFar.y, tip.x, tip.y);
+    ctx.quadraticCurveTo(rightFar.x, rightFar.y, rightNear.x, rightNear.y);
+    ctx.quadraticCurveTo(origin.x + forward.x * 30, origin.y + forward.y * 30, leftNear.x, leftNear.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = alpha * 0.42;
+    ctx.strokeStyle = "#ffd15f";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(leftNear.x, leftNear.y);
+    ctx.quadraticCurveTo(leftFar.x, leftFar.y, tip.x, tip.y);
+    ctx.quadraticCurveTo(rightFar.x, rightFar.y, rightNear.x, rightNear.y);
+    ctx.stroke();
+    for (let line = 1; line <= 2; line += 1) {
+      const width = 36 + line * 34;
+      const start = toWorld({ x: -width * reveal, y: 58 + line * 42 });
+      const end = toWorld({ x: width * reveal, y: 58 + line * 42 });
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.strokeStyle = "#fff6cf";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+    for (const target of targets) {
+      drawImpactRing(ctx, target, pulse, "#ffe28a", "#ffd15f", 20);
+    }
+  }
+
+  function drawIsolSemtexThrow(ctx, animation, progress) {
+    const target = animation.targets[0];
+    if (!target) return;
+    drawArcProjectile(ctx, animation.origin, target, Math.min(1, progress / 0.72), "#f6ff9b", "#ff8d3d", 5, 22);
+    const local = Math.max(0, (progress - 0.58) / 0.42);
+    if (local <= 0) return;
+    const pulse = Math.sin(Math.PI * local);
+    ctx.save();
+    ctx.translate(target.x, target.y - 18);
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.72 + pulse * 0.25;
+    ctx.fillStyle = "rgba(255, 77, 50, 0.35)";
+    ctx.strokeStyle = "#fff1a6";
+    ctx.lineWidth = 3;
+    ctx.shadowColor = "#ff6b3d";
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(0, 0, 9 + pulse * 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "#ff6b3d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-13, 0);
+    ctx.lineTo(13, 0);
+    ctx.moveTo(0, -13);
+    ctx.lineTo(0, 13);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawIsolSemtexExplosion(ctx, animation, progress) {
+    const center = animation.targets[0] || animation.origin;
+    const shock = Math.min(1, progress / 0.72);
+    const flare = Math.sin(Math.PI * shock);
+    const x = center.x;
+    const y = center.y - 8;
+    const burstRadius = 26 + shock * 64;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = flare;
+    ctx.fillStyle = "rgba(255, 90, 47, 0.38)";
+    ctx.strokeStyle = "#fff0a8";
+    ctx.lineWidth = Math.max(2, 7 - shock * 4);
+    ctx.shadowColor = "#ff6b35";
+    ctx.shadowBlur = 26;
+    ctx.beginPath();
+    for (let point = 0; point <= 14; point += 1) {
+      const angle = (Math.PI * 2 * point) / 14;
+      const radius = burstRadius * (point % 2 ? 0.52 : 1);
+      const px = Math.cos(angle) * radius;
+      const py = Math.sin(angle) * radius * 0.72;
+      if (point === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.globalAlpha = flare * 0.72;
+    ctx.fillStyle = "rgba(255, 244, 186, 0.78)";
+    ctx.beginPath();
+    ctx.arc(0, 0, 8 + shock * 28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = Math.max(0, 1 - shock) * 0.72;
+    ctx.strokeStyle = "#ffb347";
+    ctx.lineWidth = Math.max(2, 10 - shock * 6);
+    ctx.beginPath();
+    ctx.arc(0, 0, 24 + shock * 82, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = Math.max(0, shock - 0.24) * 0.18;
+    ctx.fillStyle = "#3a3230";
+    for (let puff = 0; puff < 5; puff += 1) {
+      const angle = (Math.PI * 2 * puff) / 5 + 0.35;
+      const distance = 20 + shock * (28 + puff * 5);
+      ctx.beginPath();
+      ctx.arc(Math.cos(angle) * distance, Math.sin(angle) * distance * 0.55, 14 + shock * 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = Math.max(0, 1 - shock) * 0.82;
+    ctx.strokeStyle = "#ffd15f";
+    ctx.lineWidth = 4;
+    const shards = effectParticleCount(18);
+    for (let index = 0; index < shards; index += 1) {
+      const angle = (Math.PI * 2 * index) / shards + 0.24;
+      const inner = 18 + shock * 22;
+      const outer = 34 + shock * 86;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner * 0.62);
+      ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer * 0.62);
+      ctx.stroke();
+    }
+    ctx.restore();
+    for (const target of animation.targets.slice(1)) {
+      drawImpactRing(ctx, target, shock, "#ffd66b", "#ff8a35", 30);
+    }
+  }
+
+  function drawKatjaSnipingAim(ctx, animation, progress) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    const pulse = Math.sin(progress * Math.PI * 5) * 0.5 + 0.5;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (const target of targets) {
+      ctx.globalAlpha = 0.24 + pulse * 0.18;
+      ctx.strokeStyle = "#ffdf7a";
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = "#ffbd45";
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(animation.origin.x, animation.origin.y - 18);
+      ctx.lineTo(target.x, target.y - 10);
+      ctx.stroke();
+      ctx.globalAlpha = 0.78;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(target.x, target.y - 10, 16 + pulse * 5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#fff2bc";
+      ctx.beginPath();
+      ctx.moveTo(target.x - 26, target.y - 10);
+      ctx.lineTo(target.x - 8, target.y - 10);
+      ctx.moveTo(target.x + 8, target.y - 10);
+      ctx.lineTo(target.x + 26, target.y - 10);
+      ctx.moveTo(target.x, target.y - 36);
+      ctx.lineTo(target.x, target.y - 18);
+      ctx.moveTo(target.x, target.y - 2);
+      ctx.lineTo(target.x, target.y + 16);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawKatjaSnipingShot(ctx, animation, progress) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    for (const [index, target] of targets.entries()) {
+      const local = Math.max(0, Math.min(1, (progress - index * 0.08) / 0.5));
+      if (local <= 0) continue;
+      const start = { x: animation.origin.x, y: animation.origin.y - 12 };
+      const end = { x: target.x, y: target.y - 8 };
+      const impactTarget = animation.impactTargets?.[index] || target;
+      const impact = { x: impactTarget.x, y: impactTarget.y - 8 };
+      const impactAt = projectionProgress(start, end, impact);
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      const side = (index - (targets.length - 1) / 2) * 6;
+      const sideX = Math.cos(angle + Math.PI / 2) * side;
+      const sideY = Math.sin(angle + Math.PI / 2) * side;
+      const alpha = Math.min(1, local * 10) * Math.max(0, 1.16 - local * 0.35);
+      if (local <= impactAt) {
+        const eased = Math.min(impactAt, 1 - Math.pow(1 - local, 3));
+        const head = {
+          x: start.x + (end.x - start.x) * eased + sideX,
+          y: start.y + (end.y - start.y) * eased + sideY - Math.sin(Math.PI * eased) * 2,
+        };
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        ctx.shadowColor = "#ffbd45";
+        ctx.shadowBlur = 24;
+        ctx.globalAlpha = alpha * 0.36;
+        ctx.strokeStyle = "#ffbd45";
+        ctx.lineWidth = 17;
+        ctx.beginPath();
+        ctx.moveTo(start.x + sideX, start.y + sideY);
+        ctx.lineTo(head.x, head.y);
+        ctx.stroke();
+        ctx.globalAlpha = alpha * 0.88;
+        ctx.strokeStyle = "#fff3b0";
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo((start.x + head.x) / 2, (start.y + head.y) / 2);
+        ctx.lineTo(head.x, head.y);
+        ctx.stroke();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.ellipse(head.x, head.y, 12, 5, angle, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      if (local > 0.06 && local < 0.86) {
+        const flash = Math.sin(Math.PI * local);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = flash * 0.38;
+        ctx.strokeStyle = "#fff1a8";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+      if (local >= impactAt) drawImpactRing(ctx, impactTarget, Math.min(1, (local - impactAt) / Math.max(0.12, 1 - impactAt)), "#fff1a8", "#ffbd45", 34);
+    }
+  }
+
+  function drawJustynaLaserBarrage(ctx, animation, progress) {
+    const targets = animation.targets.length ? animation.targets : [animation.target].filter(Boolean);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (const [index, target] of targets.entries()) {
+      const local = Math.max(0, Math.min(1, (progress - index * 0.18) / 0.5));
+      if (local <= 0 || local >= 1) continue;
+      const alpha = Math.sin(Math.PI * local);
+      const angle = Math.atan2(target.y - animation.origin.y, target.x - animation.origin.x);
+      const nx = -Math.sin(angle) * 3;
+      const ny = Math.cos(angle) * 3;
+      ctx.shadowColor = "#ffe047";
+      ctx.shadowBlur = 20;
+      ctx.globalAlpha = alpha * 0.16;
+      ctx.strokeStyle = "#ffef9a";
+      ctx.lineWidth = 13;
+      ctx.beginPath();
+      ctx.moveTo(animation.origin.x + nx, animation.origin.y - 12 + ny);
+      ctx.lineTo(target.x + nx, target.y - 8 + ny);
+      ctx.stroke();
+      ctx.globalAlpha = alpha * 0.78;
+      ctx.strokeStyle = "#ffe047";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(animation.origin.x + nx, animation.origin.y - 12 + ny);
+      ctx.lineTo(target.x + nx, target.y - 8 + ny);
+      ctx.stroke();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(animation.origin.x - nx, animation.origin.y - 12 - ny);
+      ctx.lineTo(target.x - nx, target.y - 8 - ny);
+      ctx.stroke();
+      drawImpactRing(ctx, target, local, "#fff1a8", "#ffe047", 18);
+    }
+    ctx.restore();
+  }
+
   function drawArcProjectile(ctx, start, target, progress, color, glow, width = 4, lift = 22) {
     const eased = 1 - Math.pow(1 - Math.min(1, progress), 3);
     const x = start.x + (target.x - start.x) * eased;
@@ -2213,6 +3197,165 @@ export function createSkillEffectRenderer() {
     for (const target of animation.targets) drawImpactRing(ctx, target, progress, "#effcff", "#6edcff", 20);
   }
 
+  function drawAbigailHorizonCleave(ctx, animation, progress) {
+    const center = animation.origin;
+    const drawSweep = (local, direction, radius, color, glow, widthOffset = 0) => {
+      if (local <= 0 || local >= 1.06) return;
+      const reveal = Math.min(1, local * 1.35);
+      const fade = Math.max(0, 1 - Math.max(0, local - 0.64) / 0.36);
+      const alpha = Math.sin(Math.PI * Math.min(1, local)) * fade;
+      const start = direction - Math.PI * 0.82;
+      const end = direction + Math.PI * 0.82;
+      const steps = 36;
+      const visibleSteps = Math.max(2, Math.floor(steps * reveal));
+      const drawArc = (arcRadius, yScale, strokeColor, strokeWidth, strokeAlpha, lift = 0) => {
+        ctx.beginPath();
+        for (let step = 0; step <= visibleSteps; step += 1) {
+          const ratio = step / steps;
+          const theta = start + (end - start) * ratio;
+          const x = center.x + Math.cos(theta) * arcRadius;
+          const y = center.y + Math.sin(theta) * arcRadius * yScale - lift;
+          if (step === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        ctx.globalAlpha = strokeAlpha;
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = 20;
+        ctx.stroke();
+      };
+
+      drawArc(radius + widthOffset, 0.58, glow, 18, alpha * 0.18, 6);
+      drawArc(radius - 8 + widthOffset, 0.56, color, 8, alpha * 0.72, 6);
+      drawArc(radius - 18 + widthOffset, 0.54, "#fff8fb", 3, alpha * 0.98, 6);
+    };
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const first = Math.min(1, progress / 0.58);
+    const second = Math.min(1, Math.max(0, progress - 0.28) / 0.58);
+    drawSweep(first, -Math.PI * 0.12, 158, "#ff7d9f", "#ff2e68", 0);
+    drawSweep(first, -Math.PI * 0.1, 118, "#ffd2df", "#ff5d86", -4);
+    drawSweep(second, Math.PI * 1.08, 166, "#a7e8ff", "#47cfff", 0);
+    drawSweep(second, Math.PI * 1.06, 126, "#ecfbff", "#7de6ff", -4);
+    ctx.restore();
+    drawImpactRing(ctx, center, Math.min(1, progress * 1.15), "#ffe9f1", "#ff4779", 44);
+    if (progress > 0.2) {
+      const impact = Math.min(1, (progress - 0.2) / 0.62);
+      for (const target of animation.targets) drawImpactRing(ctx, target, impact, "#ffd7e3", "#ff5d86", 18);
+    }
+  }
+
+  function drawDarkoForcedCapture(ctx, animation, progress) {
+    const target = animation.targets[0];
+    if (!target) return;
+    const origin = animation.origin;
+    const pull = Math.min(1, progress * 1.35);
+    const alpha = Math.sin(Math.PI * Math.min(1, progress)) * 0.9;
+    const lift = Math.sin(Math.PI * Math.min(1, progress / 0.86));
+    ctx.save();
+    ctx.globalAlpha = 0.24 * lift;
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.ellipse(target.x, target.y + 17, 24 + pull * 15, 8 + pull * 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineCap = "round";
+    ctx.shadowColor = "#ff534a";
+    ctx.shadowBlur = 24;
+    const mid = {
+      x: (origin.x + target.x) / 2,
+      y: Math.min(origin.y, target.y) - 76,
+    };
+    for (let chain = 0; chain < 2; chain += 1) {
+      const offset = chain ? 11 : -11;
+      const wrapY = target.y - 10 - lift * 36;
+      ctx.globalAlpha = alpha * (chain ? 0.9 : 0.5);
+      ctx.strokeStyle = chain ? "#ffe0c8" : "#ff514a";
+      ctx.lineWidth = chain ? 3 : 7;
+      ctx.beginPath();
+      ctx.moveTo(origin.x, origin.y - 8 + offset * 0.2);
+      ctx.quadraticCurveTo(mid.x, mid.y + offset, target.x, wrapY - offset * 0.2);
+      ctx.stroke();
+    }
+    for (let link = 0; link < 8; link += 1) {
+      const local = Math.max(0, Math.min(1, pull - link * 0.055));
+      const point = pointAt(origin, { x: target.x, y: target.y - 34 }, local, 56);
+      ctx.globalAlpha = alpha * 0.72;
+      ctx.fillStyle = link % 2 ? "#ffd7bd" : "#ff716b";
+      ctx.fillRect(point.x - 5, point.y - 4, 10, 8);
+    }
+    const lifted = { x: target.x, y: target.y - 28 - lift * 28 };
+    ctx.globalAlpha = alpha * 0.84;
+    ctx.strokeStyle = "#fff0d5";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(lifted.x - 24, lifted.y - 6);
+    ctx.lineTo(lifted.x + 24, lifted.y - 6);
+    ctx.moveTo(lifted.x - 19, lifted.y + 8);
+    ctx.lineTo(lifted.x + 19, lifted.y + 8);
+    ctx.stroke();
+    ctx.restore();
+    drawImpactRing(ctx, { x: target.x, y: target.y - 28 - lift * 28 }, progress, "#ffd0b5", "#ff4f48", 34);
+  }
+
+  function drawDarkoForcedImpact(ctx, animation, progress) {
+    const center = animation.targets[0] || animation.origin;
+    const alpha = Math.max(0, 1 - progress) * 0.9;
+    const drop = Math.max(0, 1 - progress * 1.4);
+    ctx.save();
+    ctx.globalAlpha = 0.26 * Math.max(0, 1 - progress);
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.ellipse(center.x, center.y + 17, 18 + progress * 54, 5 + progress * 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    if (drop > 0) {
+      ctx.globalAlpha = drop * 0.74;
+      ctx.strokeStyle = "#ffe4ca";
+      ctx.lineWidth = 5;
+      ctx.shadowColor = "#ff534a";
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.moveTo(center.x - 18, center.y - 92 * drop);
+      ctx.lineTo(center.x, center.y - 34 * drop);
+      ctx.lineTo(center.x + 18, center.y - 92 * drop);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = Math.sin(Math.PI * progress) * 0.16;
+    ctx.fillStyle = "#ff4f48";
+    ctx.beginPath();
+    ctx.arc(center.x, center.y + 4, 34 + progress * 86, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = "#ffcaa8";
+    ctx.lineWidth = Math.max(2, 9 - progress * 5);
+    ctx.shadowColor = "#ff534a";
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.arc(center.x, center.y + 4, 34 + progress * 86, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let spike = 0; spike < 10; spike += 1) {
+      const angle = (Math.PI * 2 * spike) / 10 + progress * 0.35;
+      const inner = 22 + progress * 18;
+      const outer = 58 + progress * 62;
+      ctx.globalAlpha = alpha * 0.68;
+      ctx.strokeStyle = spike % 2 ? "#ff7b72" : "#ffe0c8";
+      ctx.lineWidth = spike % 2 ? 3 : 2;
+      ctx.beginPath();
+      ctx.moveTo(center.x + Math.cos(angle) * inner, center.y + Math.sin(angle) * inner * 0.58);
+      ctx.lineTo(center.x + Math.cos(angle) * outer, center.y + Math.sin(angle) * outer * 0.58);
+      ctx.stroke();
+    }
+    ctx.restore();
+    for (const target of animation.targets) drawImpactRing(ctx, target, progress, "#ffd0b5", "#ff4f48", 20);
+  }
+
   function drawSilviaSpeedGun(ctx, animation, progress) {
     const target = animation.targets[0];
     if (!target) return;
@@ -2271,6 +3414,7 @@ export function createSkillEffectRenderer() {
       const animation = animations[index];
       const progress = Math.min(1, (now - animation.startedAt) / animation.duration);
       if (animation.type === "yuki-bloom") drawBloom(context, animation, progress);
+      else if (animation.type === "hisui-tsubame-gaeshi") drawHisuiTsubameGaeshi(context, animation, progress);
       else if (animation.type === "fate-absorb") drawFateAbsorb(context, animation, progress);
       else if (animation.type === "nadine-wolf") drawNadineWolf(context, animation, progress);
       else if (animation.type === "cathy-needle") drawCathyNeedle(context, animation, progress);
@@ -2286,6 +3430,12 @@ export function createSkillEffectRenderer() {
       else if (animation.type === "priya-earth-echo") drawPriyaEarthEcho(context, animation, progress);
       else if (animation.type === "emma-magic-hat") drawEmmaMagicHat(context, animation, progress);
       else if (animation.type === "haze-rocket-launcher") drawHazeRocketLauncher(context, animation, progress);
+      else if (animation.type === "isol-semtex-throw") drawIsolSemtexThrow(context, animation, progress);
+      else if (animation.type === "isol-semtex-explosion") drawIsolSemtexExplosion(context, animation, progress);
+      else if (animation.type === "martina-fast-forward") drawMartinaFastForward(context, animation, progress);
+      else if (animation.type === "katja-sniping-aim") drawKatjaSnipingAim(context, animation, progress);
+      else if (animation.type === "katja-sniping-shot") drawKatjaSnipingShot(context, animation, progress);
+      else if (animation.type === "justyna-laser-barrage") drawJustynaLaserBarrage(context, animation, progress);
       else if (animation.type === "bernice-snare-trap") drawBerniceSnareTrap(context, animation, progress);
       else if (animation.type === "rio-kaeyumi") drawRioKaeyumi(context, animation, progress);
       else if (animation.type === "celine-plasma-arm") drawCelinePlasmaArm(context, animation, progress);
@@ -2294,6 +3444,9 @@ export function createSkillEffectRenderer() {
       else if (animation.type === "xiukai-hot-taste") drawXiukaiHotTaste(context, animation, progress);
       else if (animation.type === "xiukai-flame") drawXiukaiFlame(context, animation, progress);
       else if (animation.type === "zahir-vayvayastra") drawZahirVayvayastra(context, animation, progress);
+      else if (animation.type === "abigail-horizon-cleave") drawAbigailHorizonCleave(context, animation, progress);
+      else if (animation.type === "darko-forced-capture") drawDarkoForcedCapture(context, animation, progress);
+      else if (animation.type === "darko-forced-impact") drawDarkoForcedImpact(context, animation, progress);
       else if (animation.type === "luke-obsession") drawLukeObsession(context, animation, progress);
       else if (animation.type === "silvia-speed-gun") drawSilviaSpeedGun(context, animation, progress);
       else if (animation.type === "bianca-reign") drawBiancaReign(context, animation, progress);

@@ -466,7 +466,11 @@ function survivorStarDamage(units) {
 }
 
 function unitAttackRange(unit) {
-  const baseRange = ["사격", "술법", "지원"].includes(unit.role) ? balance.battle.rangedRange : balance.battle.meleeRange;
+  const baseRange = Number.isFinite(unit.attackRange)
+    ? unit.attackRange
+    : ["사격", "술법", "지원"].includes(unit.role)
+      ? balance.battle.rangedRange
+      : balance.battle.meleeRange;
   return Math.max(1, baseRange + Math.round(unit.rangeBonus || 0));
 }
 
@@ -480,6 +484,7 @@ function gainMana(unit, amount) {
   if (unit.peaceRemainingMs > 0) return;
   if (unit.lifeShareRemainingMs > 0) return;
   if (unit.immuneRemainingMs > 0) return;
+  if (unit.manaLockRemainingMs > 0) return;
   unit.mana = Math.min(unitMaxMana(unit), (unit.mana || 0) + Math.round(amount * (unit.manaGain || 1)));
 }
 
@@ -547,6 +552,64 @@ function isBacklineUnit(unit) {
   return slot.y >= allyStartRow() + Math.max(0, allyRows() - 2);
 }
 
+function compareHuntMarkCandidates(a, b) {
+  const slotA = unitSlot(a);
+  const slotB = unitSlot(b);
+  const backlineDelta = Number(isBacklineUnit(b)) - Number(isBacklineUnit(a));
+  if (backlineDelta) return backlineDelta;
+  if (slotA && slotB) {
+    const rowDelta = a.side === "enemy" ? slotA.y - slotB.y : slotB.y - slotA.y;
+    if (rowDelta) return rowDelta;
+  }
+  const threatDelta = ((b.atk || 0) + (b.skillAmp || 0)) - ((a.atk || 0) + (a.skillAmp || 0));
+  if (threatDelta) return threatDelta;
+  return (a.hp / a.maxHp) - (b.hp / b.maxHp);
+}
+
+function activeHuntConfig(allies) {
+  const hunters = living(allies).filter((unit) => unit.huntMarkTargets > 0);
+  if (!hunters.length) return null;
+  return {
+    targets: Math.max(...hunters.map((unit) => unit.huntMarkTargets || 0)),
+    damageAdd: Math.max(...hunters.map((unit) => unit.huntMarkedDamageAdd || 0)),
+    defenseApplyRatio: Math.min(...hunters.map((unit) => unit.huntMarkedDefenseApplyRatio || 1)),
+    transferStunMs: Math.max(...hunters.map((unit) => unit.huntTransferStunMs || 0)),
+  };
+}
+
+function clearHuntMarks(enemies) {
+  for (const unit of enemies) {
+    if (!unit) continue;
+    unit.huntMarked = false;
+    unit.huntMarkRank = 0;
+    unit.huntMarkedDamageAdd = 0;
+    unit.huntMarkedDefenseApplyRatio = 1;
+  }
+}
+
+function assignHuntMarks(allies, enemies, { transfer = false } = {}) {
+  const config = activeHuntConfig(allies);
+  if (!config?.targets) return [];
+  clearHuntMarks(enemies);
+  const targets = living(enemies).sort(compareHuntMarkCandidates).slice(0, config.targets);
+  targets.forEach((unit, index) => {
+    unit.huntMarked = true;
+    unit.huntMarkRank = index + 1;
+    unit.huntMarkedDamageAdd = config.damageAdd;
+    unit.huntMarkedDefenseApplyRatio = config.defenseApplyRatio;
+    if (transfer && config.transferStunMs > 0) applyStunMs(unit, config.transferStunMs);
+  });
+  return targets;
+}
+
+function refreshHuntMarksAfterDeath(defeated) {
+  if (!defeated?.huntMarked || !state.combatGrid) return [];
+  const units = state.combatGrid.filter(Boolean);
+  const allies = units.filter((unit) => unit.side !== defeated.side && unit.hp > 0);
+  const enemies = units.filter((unit) => unit.side === defeated.side && unit !== defeated && unit.hp > 0);
+  return assignHuntMarks(allies, enemies, { transfer: true });
+}
+
 function nearestTarget(attacker, enemies) {
   const alive = living(enemies);
   if (!alive.length) return null;
@@ -563,7 +626,8 @@ function isFrontlineTarget(unit) {
 }
 
 function isBacklineDiver(unit) {
-  return unit.trait === "기습" || unit.role === "암살";
+  return (unit.trait === "기습" || unit.role === "암살" || unitTraits(unit).includes("기습"))
+    && unitAttackRange(unit) <= 1;
 }
 
 function backlineJumpRows(unit) {
@@ -717,6 +781,19 @@ function removeDeadUnits(units) {
     const index = state.combatGrid.indexOf(unit);
     if (index >= 0) state.combatGrid[index] = null;
   }
+}
+
+function triggerFenrirLastStand(unit) {
+  if (!unit || unit.skillId !== "fenrir_last_stand" || unit.fenrirLastStandUsed) return null;
+  unit.fenrirLastStandUsed = true;
+  unit.fenrirLastStandActive = true;
+  unit.fenrirLastStandRemainingMs = 3000;
+  unit.fenrirLastStandDurationMs = 3000;
+  unit.hp = unit.maxHp;
+  unit.speed *= 1.3;
+  unit.mana = 0;
+  unit.status = "last-stand";
+  return combatEffect(unit, unit, "heal", { amount: unit.maxHp });
 }
 
 function hexNeighborSteps(x, y) {
@@ -930,6 +1007,22 @@ function backlineTargets(caster, enemies, count = 3) {
     .slice(0, count);
 }
 
+function isFrontlineUnit(unit) {
+  const slot = unitSlot(unit);
+  if (!slot) return false;
+  if (unit.side === "enemy") return slot.y >= Math.max(0, enemyRows() - 2);
+  return slot.y < allyStartRow() + 2;
+}
+
+function frontlineTargets(caster, enemies, count = 1) {
+  const frontline = living(enemies).filter(isFrontlineUnit);
+  const candidates = frontline.length ? frontline : living(enemies);
+  return candidates
+    .slice()
+    .sort((a, b) => compareByDistanceThenHp(caster, a, b))
+    .slice(0, count);
+}
+
 function summonOmega(caster) {
   const hanaPattern = bossPatterns.hana;
   const casterSlot = unitSlot(caster);
@@ -988,6 +1081,8 @@ function clearControlStatuses(unit) {
   unit.stunDurationMs = 0;
   unit.actionLockRemainingMs = 0;
   unit.actionLockDurationMs = 0;
+  unit.manaLockRemainingMs = 0;
+  unit.manaLockDurationMs = 0;
   unit.rootRemainingMs = 0;
   unit.rootDurationMs = 0;
   unit.healReduction = 0;
@@ -1181,6 +1276,14 @@ function prepareCombatUnit(unit, side, counts = {}) {
     supportAidHpRatio: unit.supportAidHpRatio ?? 0,
     supportAidDefense: unit.supportAidDefense ?? 0,
     supportAidDamageReduction: unit.supportAidDamageReduction ?? 0,
+    duelSameTargetDamageAdd: unit.duelSameTargetDamageAdd ?? 0,
+    duelSameTargetLifeStealAdd: unit.duelSameTargetLifeStealAdd ?? 0,
+    duelSameTargetMaxStacks: unit.duelSameTargetMaxStacks ?? 0,
+    huntMarkTargets: unit.huntMarkTargets ?? 0,
+    huntMarkedDamageAdd: unit.huntMarkedDamageAdd ?? 0,
+    huntFocusMarked: unit.huntFocusMarked ?? 0,
+    huntMarkedDefenseApplyRatio: unit.huntMarkedDefenseApplyRatio ?? 1,
+    huntTransferStunMs: unit.huntTransferStunMs ?? 0,
   };
   if (side === "ally") {
     const boosts = state.temporaryBoosts || {};
@@ -1234,6 +1337,14 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.supportAidHpRatio = Math.max(0, stats.supportAidHpRatio ?? 0);
   unit.supportAidDefense = Math.max(0, Math.round(stats.supportAidDefense ?? 0));
   unit.supportAidDamageReduction = Math.max(0, Math.min(0.5, stats.supportAidDamageReduction ?? 0));
+  unit.duelSameTargetDamageAdd = Math.max(0, stats.duelSameTargetDamageAdd ?? 0);
+  unit.duelSameTargetLifeStealAdd = Math.max(0, stats.duelSameTargetLifeStealAdd ?? 0);
+  unit.duelSameTargetMaxStacks = Math.max(0, Math.round(stats.duelSameTargetMaxStacks ?? 0));
+  unit.huntMarkTargets = Math.max(0, Math.round(stats.huntMarkTargets ?? 0));
+  unit.huntMarkedDamageAdd = Math.max(0, stats.huntMarkedDamageAdd ?? 0);
+  unit.huntFocusMarked = Math.max(0, Math.round(stats.huntFocusMarked ?? 0));
+  unit.huntMarkedDefenseApplyRatio = Math.max(0, Math.min(1, stats.huntMarkedDefenseApplyRatio ?? 1));
+  unit.huntTransferStunMs = Math.max(0, Math.round(stats.huntTransferStunMs ?? 0));
   unit.supportAidBuff = null;
   unit.range = unitAttackRange(unit);
   unit.status = "";
@@ -1241,6 +1352,8 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.stunDurationMs = 0;
   unit.actionLockRemainingMs = 0;
   unit.actionLockDurationMs = 0;
+  unit.manaLockRemainingMs = 0;
+  unit.manaLockDurationMs = 0;
   unit.rootRemainingMs = 0;
   unit.rootDurationMs = 0;
   unit.peaceRemainingMs = 0;
@@ -1263,7 +1376,14 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.flameAttacks = 0;
   unit.mealTimeCasts = 0;
   unit.bihyungEnhancedAttacks = 0;
+  unit.duelSameTargetId = null;
+  unit.duelSameTargetStacks = 0;
+  unit.fenrirLastStandUsed = false;
+  unit.fenrirLastStandActive = false;
+  unit.fenrirLastStandRemainingMs = 0;
+  unit.fenrirLastStandDurationMs = 0;
   unit.garnetIronMaiden = null;
+  unit.semtexGrenade = null;
   unit.biancaReignUsed = false;
   unit.immuneRemainingMs = unit.immuneRemainingMs || 0;
   unit.immuneDurationMs = unit.immuneRemainingMs || 0;
@@ -1271,6 +1391,8 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.focusTargetId = null;
   unit.forcedFocusTargetId = null;
   unit.tacticalTarget = false;
+  unit.huntMarked = false;
+  unit.huntMarkRank = 0;
   unit.hasPickedOpeningTarget = false;
   unit.hasUsedOpeningCrit = false;
   unit.mana = Math.min(unitMaxMana(unit), unit.openingMana || 0);
@@ -1290,6 +1412,18 @@ function pickTarget(attacker, enemies) {
     }
     attacker.forcedFocusTargetId = null;
     attacker.focusTargetId = null;
+  }
+
+  if (attacker.huntFocusMarked) {
+    const marked = alive.filter((unit) => unit.huntMarked);
+    const reachableMarked = marked.filter((unit) => distanceBetween(attacker, unit) <= unitAttackRange(attacker));
+    const candidates = reachableMarked.length ? reachableMarked : marked;
+    if (candidates.length) {
+      const target = candidates.slice().sort((a, b) => compareByDistanceThenHp(attacker, a, b))[0];
+      attacker.focusTargetId = target.id;
+      attacker.hasPickedOpeningTarget = true;
+      return target;
+    }
   }
 
   if (isBacklineDiver(attacker)) {
@@ -1348,6 +1482,10 @@ function pickTarget(attacker, enemies) {
 }
 
 function dealDamage(source, target, amount, options = {}) {
+  if (target?.fenrirLastStandActive && target.fenrirLastStandRemainingMs > 0) {
+    target.status = "immune";
+    return 0;
+  }
   let adjustedAmount = amount;
   if (source?.side === "ally" && target) {
     for (const effect of selectedAugmentEffects("damageAgainstHighestDefense")) {
@@ -1365,14 +1503,18 @@ function dealDamage(source, target, amount, options = {}) {
     const daniel = unitAugmentEffect(source, "danielMoonlightExecution");
     if (daniel && isBacklineUnit(target)) adjustedAmount *= Number(daniel.backlineDamageMultiply) || 1;
   }
+  if (target?.huntMarked && source?.huntMarkedDamageAdd > 0 && source.side !== target.side) {
+    adjustedAmount *= 1 + source.huntMarkedDamageAdd;
+  }
   const damageFloor = Math.max(3, Math.round(adjustedAmount * 0.12));
   const shawlReduction = target.shawlCurtainRemainingMs > 0 && target.shield > 0 ? 0.25 : 0;
   const shieldDefenseReduction = target.shieldDefenseRemainingMs > 0 ? 0.6 : 0;
   const totalReduction = Math.max(0, Math.min(0.85, (target.damageReduction || 0) + shawlReduction + shieldDefenseReduction));
+  const effectiveDefense = target.defense * (target?.huntMarked && source?.huntMarkedDefenseApplyRatio < 1 && source.side !== target.side ? source.huntMarkedDefenseApplyRatio : 1);
   const reducedAmount = adjustedAmount * (1 - totalReduction);
   const damage = options.fixed
     ? Math.max(0, Math.round(adjustedAmount))
-    : Math.max(damageFloor, Math.round(reducedAmount - target.defense * 0.45));
+    : Math.max(damageFloor, Math.round(reducedAmount - effectiveDefense * 0.45));
   const wickelinePattern = bossPatterns.wickeline;
   if (target.pattern === "wickeline" && target.immuneRemainingMs > 0) {
     target.status = "immune";
@@ -1450,6 +1592,13 @@ function dealDamage(source, target, amount, options = {}) {
     state.pendingHiddenEffects.push(...lowHpEffects);
   }
   if (target.hp <= 0) {
+    const fenrirEffect = triggerFenrirLastStand(target);
+    if (fenrirEffect) {
+      state.pendingHiddenEffects ||= [];
+      state.pendingHiddenEffects.push(fenrirEffect);
+      addLog(`${target.name} 최후의 저항: 체력 100%로 부활하고 3초 동안 피해 면역 / 공격속도 +30%.`);
+      return damage;
+    }
     const reviveEffect = triggerThreeStarRevive(target);
     if (reviveEffect) {
       state.pendingHiddenEffects ||= [];
@@ -1458,6 +1607,12 @@ function dealDamage(source, target, amount, options = {}) {
   }
   if (target.hp <= 0) {
     const units = state.combatGrid?.filter(Boolean) || [];
+    const semtexResult = explodeSemtexGrenade(target, "death");
+    if (semtexResult.effects.length) {
+      addLog(semtexResult.message);
+      state.pendingHiddenEffects ||= [];
+      state.pendingHiddenEffects.push(...semtexResult.effects);
+    }
     const rallies = triggerDefeatEffects(target, units);
     if (rallies.length) {
       const names = rallies.map(({ unit }) => unit.name).join(", ");
@@ -1533,6 +1688,8 @@ function dealDamage(source, target, amount, options = {}) {
       for (const unit of nearby) applyStunMs(unit, target.augmentLenoxSuppressSeconds * 1000);
     }
     removeDeadUnits([target]);
+    const newHuntMarks = refreshHuntMarksAfterDeath(target);
+    if (newHuntMarks.length) addLog(`추적 표식 전이: ${newHuntMarks.map((unit) => unit.name).join(", ")}.`);
     if (source?.skillId === "jackie_assault" && source.hp > 0 && !options.skipKillFollowup) {
       const nextTarget = blinkNextToTarget(source, units.filter((unit) => unit.side !== source.side && unit.hp > 0));
       if (nextTarget) {
@@ -1650,9 +1807,10 @@ function finishCombatMetrics() {
   state.combatMetricsActive = false;
 }
 
-function applyLifeSteal(attacker, damage) {
-  if (!attacker.lifeSteal || damage <= 0 || attacker.hp <= 0) return 0;
-  const heal = Math.max(1, Math.round(damage * attacker.lifeSteal));
+function applyLifeSteal(attacker, damage, bonusLifeSteal = 0) {
+  const lifeSteal = (attacker.lifeSteal || 0) + bonusLifeSteal;
+  if (!lifeSteal || damage <= 0 || attacker.hp <= 0) return 0;
+  const heal = Math.max(1, Math.round(damage * lifeSteal));
   return applyHeal(attacker, heal);
 }
 
@@ -1850,7 +2008,7 @@ function triggerThreeStarRevive(target) {
   return combatEffect(target, target, "heal", { amount: target.hp });
 }
 
-function basicAttackDamage(attacker, baseAmount) {
+function basicAttackDamage(attacker, baseAmount, target = null) {
   if (!attacker.hasUsedOpeningCrit && attacker.openingCritMultiplier > 1) {
     attacker.hasUsedOpeningCrit = true;
     return { amount: baseAmount * attacker.openingCritMultiplier, critical: true, opening: true };
@@ -1859,6 +2017,34 @@ function basicAttackDamage(attacker, baseAmount) {
     return { amount: baseAmount * (attacker.critDamage || 1.5), critical: true, opening: false };
   }
   return { amount: baseAmount, critical: false, opening: false };
+}
+
+function applyTsubameBiyeon(attacker, target, effects) {
+  if (attacker.skillId !== "tsubame_biyeon" || !target || target.hp <= 0) return "";
+  attacker.tsubameBiyeonHits = (attacker.tsubameBiyeonHits || 0) + 1;
+  if (attacker.tsubameBiyeonHits % 4 !== 0) return "";
+  const ratio = target.boss ? 0.012 : 0.04;
+  const bonus = dealDamage(attacker, target, target.maxHp * ratio, { fixed: true });
+  if (bonus <= 0) return "";
+  effects.push(combatEffect(attacker, target, "skill", { amount: bonus, fixed: true, extra: true }));
+  return ` / 생사 각인 ${bonus} 고정 피해`;
+}
+
+function advanceDuelSameTargetStack(attacker, target) {
+  const maxStacks = attacker.duelSameTargetMaxStacks || 0;
+  if (!maxStacks || !target) return { stacks: 0, damageAdd: 0, lifeStealAdd: 0 };
+  if (attacker.duelSameTargetId !== target.id) {
+    attacker.duelSameTargetId = target.id;
+    attacker.duelSameTargetStacks = 0;
+  } else {
+    attacker.duelSameTargetStacks = Math.min(maxStacks, (attacker.duelSameTargetStacks || 0) + 1);
+  }
+  const stacks = attacker.duelSameTargetStacks || 0;
+  return {
+    stacks,
+    damageAdd: stacks * (attacker.duelSameTargetDamageAdd || 0),
+    lifeStealAdd: stacks * (attacker.duelSameTargetLifeStealAdd || 0),
+  };
 }
 
 function basicAttack(attacker, enemies) {
@@ -1878,25 +2064,27 @@ function basicAttack(attacker, enemies) {
       .sort((a, b) => distanceBetween(attacker, a) - distanceBetween(attacker, b))
       .slice(0, nadjaPattern.basicTargetCount);
     let total = 0;
-    const hit = basicAttackDamage(attacker, attacker.atk * variance * balance.battle.basicDamageMultiplier);
     const damages = targets.map((unit) => {
+      const hit = basicAttackDamage(attacker, attacker.atk * variance * balance.battle.basicDamageMultiplier, unit);
       const damage = dealDamage(attacker, unit, hit.amount);
       total += damage;
-      return { unit, damage };
+      return { unit, damage, critical: hit.critical };
     });
     gainMana(attacker, balance.battle.manaPerAttack);
     attacker.status = "attacking";
+    const anyCritical = damages.some((entry) => entry.critical);
     return {
-      message: `${attacker.name} basic cleave ${total}${hit.critical ? " 치명" : ""}`,
-      effects: damages.map(({ unit, damage }) => combatEffect(attacker, unit, "attack", { amount: damage, critical: hit.critical })),
+      message: `${attacker.name} basic cleave ${total}${anyCritical ? " 치명" : ""}`,
+      effects: damages.map(({ unit, damage, critical }) => combatEffect(attacker, unit, "attack", { amount: damage, critical })),
     };
   }
   const flameAttack = (attacker.flameAttacks || 0) > 0;
   const guardCounter = (attacker.nickyCounterReady || 0) > 0;
   const bihyungEnhanced = (attacker.bihyungEnhancedAttacks || 0) > 0;
   const bihyungSecondStrike = bihyungEnhanced && attacker.bihyungEnhancedAttacks === 1;
-  const hit = basicAttackDamage(attacker, attacker.atk * variance * balance.battle.basicDamageMultiplier);
-  let attackAmount = (guardCounter ? hit.amount * 1.18 : hit.amount) * (bihyungEnhanced ? 1.35 : 1);
+  const hit = basicAttackDamage(attacker, attacker.atk * variance * balance.battle.basicDamageMultiplier, target);
+  const duelBonus = advanceDuelSameTargetStack(attacker, target);
+  let attackAmount = (guardCounter ? hit.amount * 1.18 : hit.amount) * (bihyungEnhanced ? 1.35 : 1) * (1 + duelBonus.damageAdd);
   if (attacker.lukeCleaningBoost) {
     const effect = unitAugmentEffect(attacker, "lukeCleaningService");
     attackAmount += attacker.atk * (Number(effect?.nextAttackAtkRatioAdd) || 0);
@@ -1904,7 +2092,7 @@ function basicAttack(attacker, enemies) {
   }
   const damage = dealDamage(attacker, target, attackAmount);
   const paintMark = damage > 0 ? markPaintTarget(attacker, target) : null;
-  const lifeStealHeal = applyLifeSteal(attacker, damage);
+  const lifeStealHeal = applyLifeSteal(attacker, damage, duelBonus.lifeStealAdd);
   if (!flameAttack && !guardCounter && !bihyungEnhanced) gainMana(attacker, balance.battle.manaPerAttack);
   if (guardCounter) {
     attacker.nickyCounterReady = 0;
@@ -1996,18 +2184,21 @@ function basicAttack(attacker, enemies) {
   }
   if (pierceTargets.length) extraMessage += ` / 돌파 ${pierceTargets.length}명 ${pierceTotal} 피해`;
   attacker.basicAttackCount = (attacker.basicAttackCount || 0) + 1;
+  extraMessage += applyTsubameBiyeon(attacker, target, effects);
   if (attacker.extraAttackEvery > 0 && attacker.basicAttackCount % attacker.extraAttackEvery === 0 && target.hp > 0 && distanceBetween(attacker, target) <= unitAttackRange(attacker)) {
     const extraHit = basicAttackDamage(
       attacker,
       attacker.atk * variance * balance.battle.basicDamageMultiplier * attacker.extraAttackDamageRatio
     );
-    const extraDamage = dealDamage(attacker, target, extraHit.amount);
+    const extraDuelBonus = advanceDuelSameTargetStack(attacker, target);
+    const extraDamage = dealDamage(attacker, target, extraHit.amount * (1 + extraDuelBonus.damageAdd));
     const extraPaintMark = extraDamage > 0 ? markPaintTarget(attacker, target) : null;
-    const extraHeal = applyLifeSteal(attacker, extraDamage);
+    const extraHeal = applyLifeSteal(attacker, extraDamage, extraDuelBonus.lifeStealAdd);
     effects.push(combatEffect(attacker, target, "attack", { amount: extraDamage, critical: extraHit.critical, extra: true }));
     if (extraPaintMark) effects.push({ ...combatEffect(attacker, target, "paint-mark"), kind: "paint-mark" });
     if (extraHeal) effects.push(combatEffect(attacker, attacker, "heal", { amount: extraHeal }));
-    extraMessage = ` / 신속 추가타 ${extraDamage} 피해${extraHit.critical ? " (치명)" : ""}`;
+    extraMessage += applyTsubameBiyeon(attacker, target, effects);
+    extraMessage += ` / 신속 추가타 ${extraDamage} 피해${extraHit.critical ? " (치명)" : ""}`;
   }
   return {
     message: `${attacker.name} → ${target.name} ${damage} 피해${hit.critical ? " (치명)" : ""}${extraMessage}`,
@@ -2593,6 +2784,311 @@ function lineTargetsBetween(caster, target, enemies) {
   return targets.slice().sort((a, b) => distanceBetween(caster, a) - distanceBetween(caster, b));
 }
 
+function firstProjectileHit(caster, intendedTarget, enemies) {
+  const pathTargets = lineTargetsBetween(caster, intendedTarget, enemies)
+    .filter((unit) => unit.hp > 0)
+    .sort((a, b) => distanceBetween(caster, a) - distanceBetween(caster, b));
+  return pathTargets[0] || intendedTarget;
+}
+
+function projectileSlotPoint(slot) {
+  if (!slot) return null;
+  return {
+    x: slot.x,
+    y: slot.y + (slot.x % 2 ? 0.5 : 0),
+  };
+}
+
+function pointSegmentDistance(point, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSq = dx * dx + dy * dy;
+  if (lengthSq <= 0.0001) {
+    return { distance: Math.hypot(point.x - start.x, point.y - start.y), t: 0 };
+  }
+  const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSq));
+  const closest = {
+    x: start.x + dx * t,
+    y: start.y + dy * t,
+  };
+  return {
+    distance: Math.hypot(point.x - closest.x, point.y - closest.y),
+    t,
+  };
+}
+
+function firstNarrowProjectileHit(caster, intendedTarget, enemies, radius = 0.24) {
+  const startSlot = unitSlot(caster);
+  const targetSlot = unitSlot(intendedTarget);
+  const start = projectileSlotPoint(startSlot);
+  const end = projectileSlotPoint(targetSlot);
+  if (!start || !end) return intendedTarget;
+
+  const blockers = living(enemies)
+    .filter((unit) => unit !== intendedTarget)
+    .map((unit) => {
+      const point = projectileSlotPoint(unitSlot(unit));
+      if (!point) return null;
+      const hit = pointSegmentDistance(point, start, end);
+      if (hit.t <= 0.04 || hit.t >= 0.96 || hit.distance > radius) return null;
+      return { unit, ...hit };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.t - b.t || a.distance - b.distance);
+
+  return blockers[0]?.unit || intendedTarget;
+}
+
+function pickMarkedOrCurrentTarget(caster, enemies) {
+  const marked = living(enemies)
+    .filter((unit) => unit.huntMarked)
+    .sort((a, b) => compareByDistanceThenHp(caster, a, b))[0];
+  return marked || pickTarget(caster, enemies);
+}
+
+function castJustynaSkill(caster, enemies) {
+  const target = pickMarkedOrCurrentTarget(caster, enemies);
+  if (!target) return { message: "", effects: [] };
+  if (distanceBetween(caster, target) > unitAttackRange(caster)) {
+    const moved = moveToward(caster, target);
+    caster.mana = unitMaxMana(caster);
+    return { message: moved ? `${caster.name} 연속 포격 사거리 접근` : `${caster.name} 대기`, effects: [] };
+  }
+  const targets = lineTargetsBetween(caster, target, enemies);
+  const effects = [];
+  let total = 0;
+  for (let shot = 0; shot < 2; shot += 1) {
+    for (const victim of targets.filter((unit) => unit.hp > 0)) {
+      const damage = dealSkillDamage(caster, victim, caster.atk * 0.38 + caster.skillAmp * 0.7 + 5);
+      total += damage;
+      effects.push({ ...combatEffect(caster, victim, "skill", { amount: damage }), kind: "magic", delayMs: shot * 160 });
+    }
+  }
+  playSkillVisual?.({ type: "justyna-laser-barrage", fromId: caster.id, targetIds: [target.id, target.id] });
+  return {
+    message: `${caster.name} 연속 포격: ${target.huntMarked ? "표식" : "교전"} 대상 ${target.name} 경로 ${targets.length}명 ${total} 피해`,
+    effects,
+  };
+}
+
+function castKatjaSkill(caster, enemies) {
+  const targets = backlineTargets(caster, enemies, 3);
+  if (!targets.length) return { message: "", effects: [] };
+  caster.actionLockRemainingMs = 1000;
+  caster.actionLockDurationMs = 1000;
+  caster.status = "channeling";
+  skillTimeline.schedule(combatElapsedMs, 1000, {
+    type: "katja-sniping-start",
+    caster,
+    targetIds: targets.map((unit) => unit.id),
+    enemies: enemies.slice(),
+  });
+  playSkillVisual?.({ type: "katja-sniping-aim", fromId: caster.id, targetIds: targets.map((unit) => unit.id) });
+  return {
+    message: `${caster.name} 정밀 조준: 후열 ${targets.length}명 조준 / 1초 정신집중`,
+    effects: [{ from: caster.id, to: targets[0].id, type: "skill", kind: "bullet", value: { amount: 0 } }],
+  };
+}
+
+function emptyVirtualSlot(x, y, movingUnits = []) {
+  const index = slotIndexFor("ally", x, y, true);
+  if (index < 0) return null;
+  const occupant = state.combatGrid?.[index];
+  if (occupant && !movingUnits.includes(occupant)) return null;
+  return { x, y, index };
+}
+
+function escortSlots(caster, target, anchor) {
+  const casterFrom = unitSlot(caster);
+  const targetFrom = unitSlot(target);
+  const anchorSlot = unitSlot(anchor);
+  if (!state.combatGrid || !casterFrom || !targetFrom || !anchorSlot) return null;
+  const movingUnits = [caster, target];
+  const targetDestinations = hexNeighborSteps(anchorSlot.x, anchorSlot.y)
+    .map((step) => emptyVirtualSlot(anchorSlot.x + step.x, anchorSlot.y + step.y, movingUnits))
+    .filter(Boolean)
+    .sort((a, b) => hexDistanceSlots(targetFrom, a) - hexDistanceSlots(targetFrom, b) || b.y - a.y || a.index - b.index);
+  for (const targetDestination of targetDestinations) {
+    const casterDestination = hexNeighborSteps(targetDestination.x, targetDestination.y)
+      .map((step) => emptyVirtualSlot(targetDestination.x + step.x, targetDestination.y + step.y, movingUnits))
+      .filter((slot) => slot && slot.index !== targetDestination.index && slot.index !== anchorSlot.index)
+      .sort((a, b) => hexDistanceSlots(casterFrom, a) - hexDistanceSlots(casterFrom, b) || b.y - a.y || a.index - b.index)[0];
+    if (casterDestination) return { casterFrom, targetFrom, casterDestination, targetDestination };
+  }
+  return null;
+}
+
+function resolveDarkoSkill(caster, grabbedTarget, anchor, enemies, plannedSlots = null) {
+  if (!caster || caster.hp <= 0 || !grabbedTarget || grabbedTarget.hp <= 0 || !anchor || anchor.hp <= 0) {
+    return { message: "", effects: [] };
+  }
+  const plannedStillValid = plannedSlots
+    && state.combatGrid?.[plannedSlots.casterFrom.index] === caster
+    && state.combatGrid?.[plannedSlots.targetFrom.index] === grabbedTarget
+    && (!state.combatGrid[plannedSlots.casterDestination.index] || state.combatGrid[plannedSlots.casterDestination.index] === caster)
+    && (!state.combatGrid[plannedSlots.targetDestination.index] || state.combatGrid[plannedSlots.targetDestination.index] === grabbedTarget);
+  const slots = plannedStillValid ? plannedSlots : escortSlots(caster, grabbedTarget, anchor);
+  if (!slots) return { message: `${caster.name} 강제 집행: 이동 공간 없음`, effects: [] };
+  state.combatGrid[slots.casterFrom.index] = null;
+  state.combatGrid[slots.targetFrom.index] = null;
+  state.combatGrid[slots.targetDestination.index] = grabbedTarget;
+  state.combatGrid[slots.casterDestination.index] = caster;
+  caster.status = "moving";
+  grabbedTarget.status = "moving";
+  grabbedTarget.focusTargetId = caster.id;
+  grabbedTarget.hasPickedOpeningTarget = true;
+  renderCombatFrame();
+  const targets = living(enemies).filter((unit) => distanceBetween(grabbedTarget, unit) <= 1);
+  let total = 0;
+  const effects = [];
+  for (const target of targets) {
+    const damage = dealSkillDamage(caster, target, caster.atk * 0.7 + caster.skillAmp * 0.9 + 10);
+    total += damage;
+    effects.push({ ...combatEffect(caster, target, "skill", { amount: damage }), kind: "slash" });
+  }
+  playSkillVisual?.({ type: "darko-forced-impact", fromId: caster.id, targetIds: [grabbedTarget.id, ...targets.filter((unit) => unit !== grabbedTarget).map((unit) => unit.id)] });
+  return {
+    message: `${caster.name} 강제 집행: ${grabbedTarget.name}을 ${anchor.name} 옆으로 이동 / 주변 ${targets.length}명 ${total} 피해`,
+    effects,
+  };
+}
+
+function explodeSemtexGrenade(target, reason = "timer", grenadeId = null) {
+  const grenade = target?.semtexGrenade;
+  if (!grenade || grenade.exploded || !state.combatGrid) return { message: "", effects: [] };
+  if (grenadeId && grenade.id !== grenadeId) return { message: "", effects: [] };
+  grenade.exploded = true;
+  target.semtexGrenade = null;
+  const caster = grenade.caster;
+  const targets = living(state.combatGrid)
+    .filter((unit) => unit.side !== caster.side && distanceBetween(target, unit) <= 1);
+  const effects = [];
+  let total = 0;
+  for (const victim of targets) {
+    const damage = dealSkillDamage(caster, victim, caster.atk * 0.35 + caster.skillAmp * 0.85 + 8);
+    total += damage;
+    if (victim.hp > 0) applyRoot(victim, 1);
+    effects.push({ ...combatEffect(caster, victim, "skill", { amount: damage }), kind: "explosion" });
+  }
+  playSkillVisual?.({
+    type: "isol-semtex-explosion",
+    fromId: caster.id,
+    targetIds: [target.id, ...targets.filter((unit) => unit !== target).map((unit) => unit.id)],
+  });
+  return {
+    message: `${caster.name} 셈텍스 유탄 ${reason === "death" ? "사망 폭발" : "폭발"}: ${targets.length}명 ${total} 피해 / 속박`,
+    effects,
+  };
+}
+
+function castIsolSkill(caster, enemies) {
+  const target = pickTarget(caster, enemies);
+  if (!target) return { message: "", effects: [] };
+  if (distanceBetween(caster, target) > unitAttackRange(caster)) {
+    const moved = moveToward(caster, target);
+    caster.mana = unitMaxMana(caster);
+    return { message: moved ? `${caster.name} 셈텍스 유탄 사거리 접근` : `${caster.name} 대기`, effects: [] };
+  }
+  const grenadeId = combatId("semtex");
+  target.semtexGrenade = {
+    id: grenadeId,
+    caster,
+    attachedAt: combatElapsedMs,
+    remainingMs: 2000,
+    durationMs: 2000,
+    exploded: false,
+  };
+  playSkillVisual?.({ type: "isol-semtex-throw", fromId: caster.id, targetIds: [target.id] });
+  skillTimeline.schedule(combatElapsedMs, 2000, {
+    type: "isol-semtex-grenade",
+    caster,
+    target,
+    grenadeId,
+  });
+  return {
+    message: `${caster.name} 셈텍스 유탄: ${target.name}에게 부착 / 2초 뒤 폭발`,
+    effects: [],
+  };
+}
+
+function martinaFastForwardTargets(caster, enemies, impactTarget) {
+  const casterSlot = unitSlot(caster);
+  const impactSlot = unitSlot(impactTarget);
+  if (!casterSlot || !impactSlot) return impactTarget ? [impactTarget] : [];
+  const forward = { x: impactSlot.x - casterSlot.x, y: impactSlot.y - casterSlot.y };
+  const targets = living(enemies).filter((unit) => {
+    if (unit === impactTarget) return true;
+    const slot = unitSlot(unit);
+    if (!slot || hexDistanceSlots(impactSlot, slot) > 1) return false;
+    const away = { x: slot.x - impactSlot.x, y: slot.y - impactSlot.y };
+    return away.x * forward.x + away.y * forward.y >= 0;
+  });
+  return targets
+    .sort((a, b) => (a === impactTarget ? -1 : b === impactTarget ? 1 : distanceBetween(impactTarget, a) - distanceBetween(impactTarget, b)))
+    .slice(0, 4);
+}
+
+function castMartinaSkill(caster, enemies) {
+  const intendedTarget = pickTarget(caster, enemies);
+  if (!intendedTarget) return { message: "", effects: [] };
+  if (distanceBetween(caster, intendedTarget) > unitAttackRange(caster)) {
+    const moved = moveToward(caster, intendedTarget);
+    caster.mana = unitMaxMana(caster);
+    return { message: moved ? `${caster.name} 빨리감기 사거리 접근` : `${caster.name} 대기`, effects: [] };
+  }
+  const impactTarget = firstProjectileHit(caster, intendedTarget, enemies);
+  const targets = martinaFastForwardTargets(caster, enemies, impactTarget);
+  const effects = [];
+  let total = 0;
+  for (const target of targets) {
+    const damage = dealSkillDamage(caster, target, caster.atk * 0.55 + caster.skillAmp * 0.9 + 8);
+    total += damage;
+    effects.push({
+      ...combatEffect(caster, target, "skill", { amount: damage, noProjectile: true }),
+      kind: "impact",
+    });
+  }
+  playSkillVisual?.({ type: "martina-fast-forward", fromId: caster.id, targetIds: targets.map((unit) => unit.id) });
+  return {
+    message: `${caster.name} 빨리감기: ${impactTarget.name} 기준 후방 ${targets.length}명 ${total} 피해`,
+    effects,
+  };
+}
+
+function castDarkoSkill(caster, enemies) {
+  const grabbedTarget = frontlineTargets(caster, enemies, 1)[0];
+  const anchor = backlineTargets(caster, enemies, 1).find((unit) => unit !== grabbedTarget) || grabbedTarget;
+  if (!grabbedTarget || !anchor) return { message: "", effects: [] };
+  const slots = escortSlots(caster, grabbedTarget, anchor);
+  if (!slots) return { message: `${caster.name} 강제 집행: 이동 공간 없음`, effects: [] };
+  caster.actionLockRemainingMs = 500;
+  caster.actionLockDurationMs = 500;
+  caster.status = "channeling";
+  skillTimeline.schedule(combatElapsedMs, 500, {
+    type: "darko-forced-escort",
+    caster,
+    grabbedTarget,
+    anchor,
+    enemies: enemies.slice(),
+    slots,
+  });
+  playSkillVisual?.({ type: "darko-forced-capture", fromId: caster.id, targetIds: [grabbedTarget.id] });
+  return {
+    message: `${caster.name} 강제 집행: ${grabbedTarget.name} 포획 / 0.5초 후 ${anchor.name} 옆으로 이동`,
+    effects: [{
+      from: caster.id,
+      to: anchor.id,
+      type: "darko-escort",
+      value: {
+        grabbedId: grabbedTarget.id,
+        duration: 500,
+        casterDestinationIndex: slots.casterDestination.index,
+        targetDestinationIndex: slots.targetDestination.index,
+      },
+    }],
+  };
+}
+
 function castHazeSkill(caster, enemies) {
   const alive = living(enemies);
   if (!alive.length) return { message: "", effects: [] };
@@ -3034,7 +3530,7 @@ function castKarlaSkill(caster, enemies) {
 }
 
 function castAbigailSkill(caster, enemies) {
-  const targets = unitsInRange(caster, enemies, 1);
+  const targets = unitsInRange(caster, enemies, 3);
   const effects = [];
   let total = 0;
   for (let hit = 0; hit < 2; hit += 1) {
@@ -3045,7 +3541,7 @@ function castAbigailSkill(caster, enemies) {
     }
   }
   playSkillVisual?.({ type: "luke-obsession", fromId: caster.id, targetIds: targets.map((unit) => unit.id) });
-  return { message: `${caster.name} 호라이즌 클리브: ${targets.length}명 2회 ${total} 피해`, effects };
+  return { message: `${caster.name} 호라이즌 클리브: 주변 3칸 ${targets.length}명 2회 ${total} 피해`, effects };
 }
 
 function castKennethSkill(caster, enemies) {
@@ -3184,6 +3680,41 @@ function castAidenSkill(caster, enemies) {
   moveNextToUnit(caster, target);
   playSkillVisual?.({ type: "shoichi-dagger-ride", fromId: caster.id, targetIds: [target.id] });
   return { message: `${caster.name} 라이드더라이트닝!: 경로 ${targets.length}명 ${total} 피해`, effects };
+}
+
+function castHisuiSkill(caster, enemies) {
+  const target = pickTarget(caster, enemies);
+  if (!target) return { message: "", effects: [] };
+  if (distanceBetween(caster, target) > 2) {
+    const moved = moveToward(caster, target);
+    caster.mana = unitMaxMana(caster);
+    return { message: moved ? `${caster.name} 츠바메가에시 사거리 접근` : `${caster.name} 대기`, effects: [] };
+  }
+  const targets = unitsInFront(caster, enemies, 2);
+  if (!targets.includes(target) && distanceBetween(caster, target) <= 2) targets.push(target);
+  const effects = [];
+  let total = 0;
+  let executed = 0;
+  for (let hit = 0; hit < 3; hit += 1) {
+    for (const victim of targets.filter((unit) => unit.hp > 0)) {
+      const damage = dealSkillDamage(caster, victim, caster.atk * 0.36 + caster.skillAmp * 0.48 + 5);
+      total += damage;
+      effects.push({ ...combatEffect(caster, victim, "skill", { amount: damage }), kind: "slash", delayMs: hit * 110 });
+    }
+  }
+  for (const victim of targets.filter((unit) => unit.hp > 0 && unit.hp / unit.maxHp <= 0.08)) {
+    const executeDamage = dealDamage(caster, victim, victim.hp, { fixed: true });
+    if (executeDamage > 0) {
+      total += executeDamage;
+      executed += 1;
+      effects.push(combatEffect(caster, victim, "skill", { amount: executeDamage, fixed: true, extra: true }));
+    }
+  }
+  playSkillVisual?.({ type: "hisui-tsubame-gaeshi", fromId: caster.id, targetIds: targets.map((unit) => unit.id) });
+  return {
+    message: `${caster.name} 츠바메가에시: 전방 ${targets.length}명 ${total} 피해${executed ? ` / ${executed}명 처형` : ""}`,
+    effects,
+  };
 }
 
 function castFelixSkill(caster, enemies) {
@@ -3389,6 +3920,53 @@ function resolveSkillTimelineEvents(elapsedMs) {
       effects.push(...result.effects);
       continue;
     }
+    if (event.type === "katja-sniping-start") {
+      if (!event.caster || event.caster.hp <= 0) {
+        messages.push("카티야 정밀 조준: 시전자 없음");
+        continue;
+      }
+      const currentEnemies = state.combatGrid
+        ? state.combatGrid.filter((unit) => unit?.side && unit.side !== event.caster.side)
+        : Array.isArray(event.enemies) ? event.enemies : [];
+      const targetIds = Array.isArray(event.targetIds) ? event.targetIds : [];
+      const intendedTargets = targetIds
+        .map((id) => currentEnemies.find((unit) => unit.id === id) || event.enemies?.find?.((unit) => unit.id === id))
+        .filter((unit) => unit?.hp > 0);
+      const visualTargets = [];
+      const hitTargets = [];
+      let total = 0;
+      for (const intendedTarget of intendedTargets) {
+        const target = firstNarrowProjectileHit(event.caster, intendedTarget, currentEnemies);
+        if (!target || target.hp <= 0) continue;
+        const damage = dealSkillDamage(event.caster, target, event.caster.atk * 0.55 + event.caster.skillAmp * 0.95 + 8);
+        total += damage;
+        visualTargets.push(intendedTarget);
+        hitTargets.push(target);
+        effects.push({ ...combatEffect(event.caster, target, "skill", { amount: damage, noProjectile: true }), kind: "bullet" });
+      }
+      if (visualTargets.length) {
+        playSkillVisual?.({
+          type: "katja-sniping-shot",
+          fromId: event.caster.id,
+          targetIds: visualTargets.map((unit) => unit.id),
+          impactTargetIds: hitTargets.map((unit) => unit.id),
+        });
+      }
+      messages.push(`${event.caster.name} 정밀 조준: 탄환 ${visualTargets.length}발 ${total} 피해`);
+      continue;
+    }
+    if (event.type === "darko-forced-escort") {
+      const result = resolveDarkoSkill(event.caster, event.grabbedTarget, event.anchor, event.enemies, event.slots);
+      if (result.message) messages.push(result.message);
+      effects.push(...result.effects);
+      continue;
+    }
+    if (event.type === "isol-semtex-grenade") {
+      const result = explodeSemtexGrenade(event.target, "timer", event.grenadeId);
+      if (result.message) messages.push(result.message);
+      effects.push(...result.effects);
+      continue;
+    }
     if (event.type === "priya-earth-echo") {
       const targets = unitsInRange(event.caster, event.enemies, 3);
       const augment = unitAugmentEffect(event.caster, "priyaGrandFinale");
@@ -3455,7 +4033,7 @@ function resolveSkillTimelineEvents(elapsedMs) {
     } catch (error) {
       console.error("[rumia-skill-timeline-event]", event?.type, error);
       addLog(`예약 스킬 처리 오류: ${event?.type || "unknown"} 이벤트를 건너뜁니다.`, { force: true });
-      messages.push("예약 스킬 처리 오류: 해당 이벤트를 건너뜁니다.");
+      messages.push(`예약 스킬 처리 오류: ${error?.message || error}`);
     }
   }
   return { effects, messages };
@@ -3606,6 +4184,7 @@ function castSkill(caster, allies, enemies) {
   if (caster.skillId === "bihyung_ttukttak") return withSkillName(caster, castBihyungSkill(caster, allies));
   if (caster.skillId === "garnet_iron_maiden") return withSkillName(caster, castGarnetSkill(caster, enemies));
   if (caster.skillId === "aiden_ride_lightning") return withSkillName(caster, castAidenSkill(caster, enemies));
+  if (caster.skillId === "hisui_tsubame_gaeshi") return withSkillName(caster, castHisuiSkill(caster, enemies));
   if (caster.skillId === "felix_spear_combo") return withSkillName(caster, castFelixSkill(caster, enemies));
   if (caster.skillId === "piolo_nunchaku_flurry") return withSkillName(caster, castPioloSkill(caster, enemies));
   if (caster.skillId === "debi_marlene_twins_rush") return withSkillName(caster, castDebiMarleneSkill(caster, enemies));
@@ -3617,6 +4196,11 @@ function castSkill(caster, allies, enemies) {
   if (caster.skillId === "irem_cat_punch") return withSkillName(caster, castIremSkill(caster, enemies));
   if (caster.skillId === "jan_quadragon") return withSkillName(caster, castJanSkill(caster, enemies));
   if (caster.skillId === "coraline_mirror_image") return withSkillName(caster, castCoralineSkill(caster, enemies));
+  if (caster.skillId === "isol_semtex_grenade") return withSkillName(caster, castIsolSkill(caster, enemies));
+  if (caster.skillId === "justyna_barrage") return withSkillName(caster, castJustynaSkill(caster, enemies));
+  if (caster.skillId === "martina_recording") return withSkillName(caster, castMartinaSkill(caster, enemies));
+  if (caster.skillId === "katja_sniping_start") return withSkillName(caster, castKatjaSkill(caster, enemies));
+  if (caster.skillId === "darko_forced_escort") return withSkillName(caster, castDarkoSkill(caster, enemies));
 
   const paint = detonatePaint(caster, enemies);
   const primary = castRoleSkill(caster, caster.role, allies, enemies);
@@ -3663,6 +4247,7 @@ function importantEffect(effect) {
 }
 
 function shouldRenderProjectile(effect, projectedCount) {
+  if (effect.value?.noProjectile) return false;
   if (importantEffect(effect)) return true;
   const budget = effectBudget();
   const max = budget.maxConcurrentProjectiles ?? 24;
@@ -3703,6 +4288,18 @@ function playCombatEffects(effects) {
     }
     return unitRectCache.get(id);
   };
+  const getGridCellRect = (index) => {
+    if (!Number.isInteger(index)) return null;
+    const enemySlots = balance.battle.enemySlots || 0;
+    const cell = index < enemySlots
+      ? refs.enemyBoard?.children[index]
+      : refs.board?.children[index - enemySlots];
+    return cell?.getBoundingClientRect?.() || null;
+  };
+  const cellAnchor = (rect) => rect ? {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height * 0.66,
+  } : null;
   let projectedProjectiles = currentProjectileCount();
   let renderedNumberCount = 0;
   let renderedMinorCount = 0;
@@ -3769,6 +4366,49 @@ function playCombatEffects(effects) {
       rideAnimation.oncancel = cleanupRide;
       continue;
     }
+    if (effect.type === "darko-escort") {
+      const to = getUnitElement(effect.to);
+      const grabbed = getUnitElement(effect.value?.grabbedId);
+      const toRect = getUnitRect(effect.to);
+      const grabbedRect = getUnitRect(effect.value?.grabbedId);
+      if (!to || !toRect || !grabbed || !grabbedRect) continue;
+      const duration = effect.value?.duration || 500;
+      const fromCell = from.closest(".cell");
+      const grabbedCell = grabbed.closest(".cell");
+      const previousFromZIndex = fromCell?.style.zIndex || "";
+      const previousGrabbedZIndex = grabbedCell?.style.zIndex || "";
+      if (fromCell) fromCell.style.zIndex = "1850";
+      if (grabbedCell) grabbedCell.style.zIndex = "1840";
+
+      const fallbackAnchor = cellAnchor(toRect);
+      const casterAnchor = cellAnchor(getGridCellRect(effect.value?.casterDestinationIndex)) || fallbackAnchor;
+      const grabbedAnchor = cellAnchor(getGridCellRect(effect.value?.targetDestinationIndex)) || fallbackAnchor;
+      if (!casterAnchor || !grabbedAnchor) continue;
+      const fromDx = casterAnchor.x - (fromRect.left + fromRect.width / 2);
+      const fromDy = casterAnchor.y - (fromRect.top + fromRect.height * 0.66);
+      const grabbedDx = grabbedAnchor.x - (grabbedRect.left + grabbedRect.width / 2);
+      const grabbedDy = grabbedAnchor.y - (grabbedRect.top + grabbedRect.height * 0.66);
+      const animateDraggedUnit = (node, dx, dy, scale = 1, lift = 34, rotate = 0) => {
+        node.classList.add("skill-traveling");
+        const animation = node.animate([
+          { transform: "translate(0, 0) scale(1)", filter: "brightness(1)", offset: 0 },
+          { transform: `translate(${dx * 0.14}px, ${dy * 0.14 - lift * 0.8}px) scale(${scale}) rotate(${rotate * -0.6}deg)`, filter: "brightness(1.55)", offset: 0.18 },
+          { transform: `translate(${dx * 0.56}px, ${dy * 0.56 - lift}px) scale(${scale}) rotate(${rotate}deg)`, filter: "brightness(1.25)", offset: 0.58 },
+          { transform: `translate(${dx * 0.88}px, ${dy * 0.88 - lift * 0.32}px) scale(${scale}) rotate(${rotate * 0.35}deg)`, filter: "brightness(1.35)", offset: 0.82 },
+          { transform: `translate(${dx}px, ${dy}px) scale(${scale}) rotate(0deg)`, filter: "brightness(1.45)", offset: 1 },
+        ], { duration, easing: "cubic-bezier(0.2, 0.82, 0.18, 1)", fill: "forwards" });
+        animation.onfinish = () => node.classList.remove("skill-traveling");
+        animation.oncancel = () => node.classList.remove("skill-traveling");
+        return animation;
+      };
+      animateDraggedUnit(from, fromDx, fromDy, 1.05, 28, 3);
+      animateDraggedUnit(grabbed, grabbedDx, grabbedDy, 0.9, 62, -8);
+      window.setTimeout(() => {
+        if (fromCell) fromCell.style.zIndex = previousFromZIndex;
+        if (grabbedCell) grabbedCell.style.zIndex = previousGrabbedZIndex;
+      }, duration + 80);
+      continue;
+    }
     const to = getUnitElement(effect.to);
     if (!to) continue;
     const toRect = getUnitRect(effect.to);
@@ -3826,6 +4466,7 @@ function advanceTimedStatuses(units, stepMs) {
     if (unit.immuneRemainingMs > 0) unit.immuneRemainingMs = Math.max(0, unit.immuneRemainingMs - stepMs);
     if (unit.stunRemainingMs > 0) unit.stunRemainingMs = Math.max(0, unit.stunRemainingMs - stepMs);
     if (unit.actionLockRemainingMs > 0) unit.actionLockRemainingMs = Math.max(0, unit.actionLockRemainingMs - stepMs);
+    if (unit.manaLockRemainingMs > 0) unit.manaLockRemainingMs = Math.max(0, unit.manaLockRemainingMs - stepMs);
     if (unit.rootRemainingMs > 0) unit.rootRemainingMs = Math.max(0, unit.rootRemainingMs - stepMs);
     if (unit.healReductionRemainingMs > 0) unit.healReductionRemainingMs = Math.max(0, unit.healReductionRemainingMs - stepMs);
     if (unit.augmentAmpRelayRemainingMs > 0) {
@@ -3839,9 +4480,16 @@ function advanceTimedStatuses(units, stepMs) {
     if (unit.lifeShareRemainingMs > 0) unit.lifeShareRemainingMs = Math.max(0, unit.lifeShareRemainingMs - stepMs);
     if (unit.shawlCurtainRemainingMs > 0) unit.shawlCurtainRemainingMs = Math.max(0, unit.shawlCurtainRemainingMs - stepMs);
     if (unit.shieldDefenseRemainingMs > 0) unit.shieldDefenseRemainingMs = Math.max(0, unit.shieldDefenseRemainingMs - stepMs);
+    if (unit.fenrirLastStandRemainingMs > 0) {
+      unit.fenrirLastStandRemainingMs = Math.max(0, unit.fenrirLastStandRemainingMs - stepMs);
+      if (unit.fenrirLastStandRemainingMs <= 0 && unit.fenrirLastStandActive) unit.status = "last-stand";
+    }
     if (unit.garnetIronMaiden?.remainingMs > 0) {
       unit.garnetIronMaiden.remainingMs = Math.max(0, unit.garnetIronMaiden.remainingMs - stepMs);
       if (unit.garnetIronMaiden.remainingMs <= 0) unit.garnetIronMaiden = null;
+    }
+    if (unit.semtexGrenade?.remainingMs > 0) {
+      unit.semtexGrenade.remainingMs = Math.max(0, unit.semtexGrenade.remainingMs - stepMs);
     }
     if (unit.healReductionRemainingMs <= 0) {
       unit.healReduction = 0;
@@ -3850,14 +4498,18 @@ function advanceTimedStatuses(units, stepMs) {
     if (unit.immuneRemainingMs <= 0) unit.immuneDurationMs = 0;
     if (unit.stunRemainingMs <= 0) unit.stunDurationMs = 0;
     if (unit.actionLockRemainingMs <= 0) unit.actionLockDurationMs = 0;
+    if (unit.manaLockRemainingMs <= 0) unit.manaLockDurationMs = 0;
     if (unit.rootRemainingMs <= 0) unit.rootDurationMs = 0;
     if (unit.peaceRemainingMs <= 0) unit.peaceDurationMs = 0;
     if (unit.lifeShareRemainingMs <= 0) unit.lifeShareDurationMs = 0;
     if (unit.shawlCurtainRemainingMs <= 0) unit.shawlCurtainDurationMs = 0;
     if (unit.shieldDefenseRemainingMs <= 0) unit.shieldDefenseDurationMs = 0;
+    if (unit.fenrirLastStandRemainingMs <= 0) unit.fenrirLastStandDurationMs = 0;
     const actionFrozen = unit.stunRemainingMs > 0 || unit.actionLockRemainingMs > 0;
     if (!actionFrozen) unit.actionCooldownMs = (unit.actionCooldownMs || 0) - stepMs;
-    if (unit.immuneRemainingMs > 0) unit.status = "immune";
+    if (unit.hp <= 0) unit.status = "dead";
+    else if (unit.fenrirLastStandRemainingMs > 0) unit.status = "last-stand";
+    else if (unit.immuneRemainingMs > 0) unit.status = "immune";
     else if (unit.stunRemainingMs > 0) unit.status = "stunned";
     else if (unit.actionLockRemainingMs > 0) unit.status = "channeling";
     else if (unit.rootRemainingMs > 0) unit.status = "rooted";
@@ -3869,6 +4521,13 @@ function advanceTimedStatuses(units, stepMs) {
 function cooldownForAction(unit, action) {
   const movement = !action.effects?.length && /(이동|사거리 접근|대기)$/.test(action.message || "");
   return movement ? (balance.battle.moveIntervalMs ?? 250) : attackIntervalMs(unit);
+}
+
+function passiveOnlySkill(unit) {
+  return new Set([
+    "fenrir_last_stand",
+    "tsubame_biyeon",
+  ]).has(unit?.skillId);
 }
 
 function unlockCombatUi(message = "전투 상태를 복구했습니다. 다시 전투를 시작할 수 있습니다.") {
@@ -3956,6 +4615,14 @@ async function simulate() {
       supportAidHpRatio: unit.supportAidHpRatio ?? 0,
       supportAidDefense: unit.supportAidDefense ?? 0,
       supportAidDamageReduction: unit.supportAidDamageReduction ?? 0,
+      duelSameTargetDamageAdd: unit.duelSameTargetDamageAdd ?? 0,
+      duelSameTargetLifeStealAdd: unit.duelSameTargetLifeStealAdd ?? 0,
+      duelSameTargetMaxStacks: unit.duelSameTargetMaxStacks ?? 0,
+      huntMarkTargets: unit.huntMarkTargets ?? 0,
+      huntMarkedDamageAdd: unit.huntMarkedDamageAdd ?? 0,
+      huntFocusMarked: unit.huntFocusMarked ?? 0,
+      huntMarkedDefenseApplyRatio: unit.huntMarkedDefenseApplyRatio ?? 1,
+      huntTransferStunMs: unit.huntTransferStunMs ?? 0,
     };
     unit.critChance = critBase.critChance;
     unit.critDamage = critBase.critDamage;
@@ -4008,6 +4675,7 @@ async function simulate() {
     renderCombatFrame();
     await sleep(380);
   }
+  const huntMarkedUnits = assignHuntMarks(allies, state.enemies);
   const diverCount = placeBacklineDivers([...allies, ...state.enemies.filter(Boolean)]);
   const boss = living(state.enemies).find((unit) => unit.boss);
   addLog(boss ? `보스전 시작: ${boss.name} 출현!` : `전투 시작: 아군 ${allies.length}명 vs 야생 실험체 ${living(state.enemies).length}명`);
@@ -4016,6 +4684,7 @@ async function simulate() {
   if (openingUtilities.pulledUnits) {
     addLog(`전술 발동: 적 후열 ${openingUtilities.pulledUnits}명 아군 진영으로 배달 / ${openingUtilities.focusTarget.name} 집중 공격.`);
   }
+  if (huntMarkedUnits.length) addLog(`추적 발동: ${huntMarkedUnits.map((unit) => unit.name).join(", ")} 표식.`);
   if (diverCount) addLog(`기습 전개: 기습형 ${diverCount}명이 후열로 진입.`);
   render();
   if (openingAugmentEffects.length) playCombatEffects(openingAugmentEffects);
@@ -4042,6 +4711,12 @@ async function simulate() {
     const tickLogs = [];
     const effects = [];
     let actedThisStep = false;
+    const expiredLastStands = combatants.filter((unit) => unit.fenrirLastStandExpired && unit.hp <= 0);
+    if (expiredLastStands.length) {
+      tickLogs.push(...expiredLastStands.map((unit) => `${unit.name} 최후의 저항 종료.`));
+      for (const unit of expiredLastStands) unit.fenrirLastStandExpired = false;
+      removeDeadUnits(expiredLastStands);
+    }
 
     for (const actor of actors) {
       if (actor.hp <= 0) continue;
@@ -4052,7 +4727,7 @@ async function simulate() {
       if (!living(foes).length) break;
       let action;
       try {
-        action = actor.mana >= unitMaxMana(actor) ? castSkill(actor, friends, foes) : basicAttack(actor, foes);
+        action = actor.mana >= unitMaxMana(actor) && !passiveOnlySkill(actor) ? castSkill(actor, friends, foes) : basicAttack(actor, foes);
       } catch (error) {
         console.error("[rumia-combat-action]", actor?.name, error);
         addLog(`전투 행동 오류: ${actor.name} 행동을 건너뜁니다.`, { force: true });
@@ -4153,10 +4828,27 @@ async function simulate() {
       unit.supportAidHpRatio = unit.combatBase.supportAidHpRatio;
       unit.supportAidDefense = unit.combatBase.supportAidDefense;
       unit.supportAidDamageReduction = unit.combatBase.supportAidDamageReduction;
+      unit.duelSameTargetDamageAdd = unit.combatBase.duelSameTargetDamageAdd;
+      unit.duelSameTargetLifeStealAdd = unit.combatBase.duelSameTargetLifeStealAdd;
+      unit.duelSameTargetMaxStacks = unit.combatBase.duelSameTargetMaxStacks;
+      unit.huntMarkTargets = unit.combatBase.huntMarkTargets;
+      unit.huntMarkedDamageAdd = unit.combatBase.huntMarkedDamageAdd;
+      unit.huntFocusMarked = unit.combatBase.huntFocusMarked;
+      unit.huntMarkedDefenseApplyRatio = unit.combatBase.huntMarkedDefenseApplyRatio;
+      unit.huntTransferStunMs = unit.combatBase.huntTransferStunMs;
+      unit.huntMarked = false;
+      unit.huntMarkRank = 0;
       delete unit.combatBase;
     }
     delete unit._skillCriticalQueue;
     delete unit.supportAidBuff;
+    unit.duelSameTargetId = null;
+    unit.duelSameTargetStacks = 0;
+    unit.fenrirLastStandUsed = false;
+    unit.fenrirLastStandActive = false;
+    unit.fenrirLastStandExpired = false;
+    unit.fenrirLastStandRemainingMs = 0;
+    unit.fenrirLastStandDurationMs = 0;
     unit.hp = unit.maxHp;
     unit.mana = 0;
     unit.status = "";
@@ -4164,6 +4856,8 @@ async function simulate() {
     unit.stunDurationMs = 0;
     unit.actionLockRemainingMs = 0;
     unit.actionLockDurationMs = 0;
+    unit.manaLockRemainingMs = 0;
+    unit.manaLockDurationMs = 0;
     unit.rootRemainingMs = 0;
     unit.rootDurationMs = 0;
     unit.peaceRemainingMs = 0;
@@ -4321,13 +5015,34 @@ async function simulate() {
         unit.supportAidHpRatio = unit.combatBase.supportAidHpRatio;
         unit.supportAidDefense = unit.combatBase.supportAidDefense;
         unit.supportAidDamageReduction = unit.combatBase.supportAidDamageReduction;
+        unit.duelSameTargetDamageAdd = unit.combatBase.duelSameTargetDamageAdd;
+        unit.duelSameTargetLifeStealAdd = unit.combatBase.duelSameTargetLifeStealAdd;
+        unit.duelSameTargetMaxStacks = unit.combatBase.duelSameTargetMaxStacks;
+        unit.huntMarkTargets = unit.combatBase.huntMarkTargets;
+        unit.huntMarkedDamageAdd = unit.combatBase.huntMarkedDamageAdd;
+        unit.huntFocusMarked = unit.combatBase.huntFocusMarked;
+        unit.huntMarkedDefenseApplyRatio = unit.combatBase.huntMarkedDefenseApplyRatio;
+        unit.huntTransferStunMs = unit.combatBase.huntTransferStunMs;
+        unit.huntMarked = false;
+        unit.huntMarkRank = 0;
         delete unit.combatBase;
       }
       delete unit.supportAidBuff;
+      unit.duelSameTargetId = null;
+      unit.duelSameTargetStacks = 0;
+      unit.fenrirLastStandUsed = false;
+      unit.fenrirLastStandActive = false;
+      unit.fenrirLastStandExpired = false;
+      unit.fenrirLastStandRemainingMs = 0;
+      unit.fenrirLastStandDurationMs = 0;
       unit.hp = unit.maxHp;
       unit.mana = 0;
       unit.status = "";
       unit.actionCooldownMs = 0;
+      unit.actionLockRemainingMs = 0;
+      unit.actionLockDurationMs = 0;
+      unit.manaLockRemainingMs = 0;
+      unit.manaLockDurationMs = 0;
       unit.hiddenAbsorbed = false;
     }
     refs.phase.textContent = "전투 처리 오류가 발생해 상태를 복구했습니다. 다시 전투를 시작할 수 있습니다.";

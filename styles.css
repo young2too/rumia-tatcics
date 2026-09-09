@@ -1949,6 +1949,14 @@ h2 {
   background: linear-gradient(90deg, rgba(196, 224, 232, 0.94), rgba(89, 146, 174, 0.88));
 }
 
+.status-badges b.semtex::before {
+  background: linear-gradient(90deg, rgba(255, 222, 88, 0.98), rgba(255, 76, 42, 0.9));
+}
+
+.status-badges b.frenzy::before {
+  background: linear-gradient(90deg, rgba(255, 233, 145, 0.98), rgba(255, 75, 82, 0.9));
+}
+
 .status-badges b.vulnerable::before {
   background: linear-gradient(90deg, rgba(255, 92, 159, 0.96), rgba(185, 84, 255, 0.88));
 }
@@ -1957,9 +1965,19 @@ h2 {
   filter: drop-shadow(0 0 7px rgba(157, 222, 239, 0.84));
 }
 
+.unit.semtex-attached .portrait {
+  filter: drop-shadow(0 0 8px rgba(255, 100, 48, 0.82));
+  animation: semtex-pulse 360ms ease-in-out infinite alternate;
+}
+
 .unit.suppressed .portrait {
   filter: saturate(0.45) brightness(0.72) drop-shadow(0 0 8px rgba(239, 54, 91, 0.85));
   animation: suppression-pulse 420ms ease-in-out infinite alternate;
+}
+
+.unit.last-stand .portrait {
+  filter: saturate(1.35) contrast(1.08) drop-shadow(0 0 10px rgba(255, 78, 74, 0.9));
+  animation: last-stand-pulse 360ms ease-in-out infinite alternate;
 }
 
 .unit.skill-traveling {
@@ -1967,6 +1985,12 @@ h2 {
   z-index: 1801;
   pointer-events: none;
   will-change: transform, opacity, filter;
+  animation: none !important;
+  transition: none !important;
+}
+
+.cell .unit.skill-traveling .portrait img {
+  animation: none !important;
 }
 
 .cell .unit.untargetable {
@@ -2079,6 +2103,15 @@ h2 {
   to { transform: scale(0.88); }
 }
 
+@keyframes semtex-pulse {
+  from {
+    transform: translateY(0) scale(1);
+  }
+  to {
+    transform: translateY(-1px) scale(1.06);
+  }
+}
+
 .damage-number.fixed {
   color: #fff8e2;
   font-size: 18px;
@@ -2133,6 +2166,58 @@ h2 {
   width: var(--hp, 100%);
   height: 100%;
   background: var(--green);
+}
+
+.hunt-mark {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  z-index: 9;
+  width: 28px;
+  height: 28px;
+  translate: -50% -50%;
+  border: 2px solid #ffd45f;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 8px rgba(255, 204, 82, 0.9));
+  pointer-events: none;
+  animation: hunt-mark-pulse 980ms ease-in-out infinite;
+}
+
+.hunt-mark::before,
+.hunt-mark::after {
+  position: absolute;
+  content: "";
+  background: #ffd45f;
+  box-shadow: 0 0 8px rgba(255, 204, 82, 0.75);
+}
+
+.hunt-mark::before {
+  left: 50%;
+  top: -6px;
+  width: 2px;
+  height: 36px;
+  translate: -50% 0;
+}
+
+.hunt-mark::after {
+  left: -6px;
+  top: 50%;
+  width: 36px;
+  height: 2px;
+  translate: 0 -50%;
+}
+
+@keyframes hunt-mark-pulse {
+  0%,
+  100% {
+    scale: 0.92;
+    opacity: 0.82;
+  }
+
+  50% {
+    scale: 1.08;
+    opacity: 1;
+  }
 }
 
 .manabar {
@@ -2511,6 +2596,15 @@ h2 {
   }
   75% {
     transform: translate(-1.5%, -8%) rotate(4deg);
+  }
+}
+
+@keyframes last-stand-pulse {
+  0% {
+    transform: translate(-2.5%, -4%) scale(1);
+  }
+  100% {
+    transform: translate(-2.5%, -7%) scale(1.08);
   }
 }
 
