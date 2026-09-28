@@ -47,6 +47,7 @@ export function createSkillEffectRenderer() {
     "xiukai-flame": true,
     "zahir-vayvayastra": true,
     "abigail-horizon-cleave": true,
+    "abigail-warp-slash": true,
     "darko-forced-capture": true,
     "darko-forced-impact": true,
     "luke-obsession": true,
@@ -160,7 +161,8 @@ export function createSkillEffectRenderer() {
     });
   }
 
-  function effectDuration(type) {
+  function effectDuration(type, overrideMs = 0) {
+    if (Number(overrideMs) > 0) return Number(overrideMs);
     return {
       "yuki-bloom": 900,
       "yuki-cast": 760,
@@ -195,6 +197,7 @@ export function createSkillEffectRenderer() {
       "xiukai-flame": 560,
       "zahir-vayvayastra": 1080,
       "abigail-horizon-cleave": 980,
+      "abigail-warp-slash": 1760,
       "darko-forced-capture": 560,
       "darko-forced-impact": 620,
       "luke-obsession": 760,
@@ -1009,6 +1012,55 @@ export function createSkillEffectRenderer() {
     for (const hit of animation.targets) drawPixiImpact(graphics, hit, total, "#f4e9ff", 20, 0.7);
   }
 
+  function drawPixiAbigailWarpSlash(animation, progress, graphics) {
+    const total = Math.max(0, Math.min(1, progress));
+    const flashIn = Math.max(0, 1 - total * 14);
+    const flashOut = Math.max(0, (total - 0.9) / 0.1);
+    graphics.rect(0, 0, animation.width, animation.height);
+    pixiFill(graphics, "#05030b", Math.min(0.76, Math.sin(Math.PI * total) * 1.35));
+    if (flashIn > 0 || flashOut > 0) {
+      graphics.rect(0, 0, animation.width, animation.height);
+      pixiFill(graphics, "#fff7ff", Math.max(flashIn, flashOut) * 0.72);
+    }
+
+    const chain = [animation.origin, ...animation.targets, animation.origin];
+    const travel = Math.max(0, Math.min(1, (total - 0.08) / 0.82));
+    const raw = travel * Math.max(1, chain.length - 1);
+    const segment = Math.min(chain.length - 2, Math.floor(raw));
+    const local = raw - segment;
+    for (let index = 0; index <= segment; index += 1) {
+      const start = chain[index];
+      const end = chain[index + 1];
+      if (!start || !end) continue;
+      const ratio = index === segment ? local : 1;
+      const x = start.x + (end.x - start.x) * ratio;
+      const y = start.y + (end.y - start.y) * ratio;
+      const age = segment - index;
+      graphics.moveTo(start.x, start.y);
+      graphics.lineTo(x, y);
+      pixiStroke(graphics, "#ffedf9", 3, Math.max(0.08, 0.38 - age * 0.07));
+      graphics.moveTo(start.x, start.y);
+      graphics.lineTo(x, y);
+      pixiStroke(graphics, "#ff328d", 1.5, Math.max(0.08, 0.46 - age * 0.07));
+    }
+
+    for (let index = 0; index < animation.targets.length; index += 1) {
+      const hitAt = (index + 1) / Math.max(1, chain.length - 1);
+      const age = travel - hitAt;
+      if (age < 0 || age > 0.24) continue;
+      const target = animation.targets[index];
+      const alpha = Math.max(0, 1 - age / 0.24);
+      const size = 24 + age * 55;
+      graphics.moveTo(target.x - size, target.y - size * 0.55);
+      graphics.lineTo(target.x + size, target.y + size * 0.55);
+      graphics.moveTo(target.x + size * 0.78, target.y - size * 0.68);
+      graphics.lineTo(target.x - size * 0.78, target.y + size * 0.68);
+      pixiStroke(graphics, "#fff4ff", 4, alpha);
+      graphics.circle(target.x, target.y, 13 + age * 46);
+      pixiStroke(graphics, "#ff3a91", 2, alpha * 0.72);
+    }
+  }
+
   function drawPixiRocket(animation, progress, graphics, options = {}) {
     const target = animation.targets[0];
     if (!target) return;
@@ -1318,6 +1370,7 @@ export function createSkillEffectRenderer() {
     else if (animation.type === "xiukai-flame") drawPixiRocket(animation, progress, graphics, { color: "#ffbf50", accent: "#ff4f2e", shots: 1, lift: 8 });
     else if (animation.type === "zahir-vayvayastra") drawPixiZahir(animation, progress, graphics);
     else if (animation.type === "abigail-horizon-cleave") drawPixiAbigailHorizonCleave(animation, progress, graphics);
+    else if (animation.type === "abigail-warp-slash") drawPixiAbigailWarpSlash(animation, progress, graphics);
     else if (animation.type === "darko-forced-capture") drawPixiDarkoForcedCapture(animation, progress, graphics);
     else if (animation.type === "darko-forced-impact") drawPixiDarkoForcedImpact(animation, progress, graphics);
     else if (animation.type === "luke-obsession") drawPixiRadial(graphics, animation.origin, progress, { color: "#effcff", fill: "#6edcff", radius: 76, alpha: 0.72, rings: 3 });
@@ -1350,7 +1403,7 @@ export function createSkillEffectRenderer() {
         if (generation !== pixiGeneration) return;
         if (!app || pixiHost !== layout.battlefield) return;
         const container = new Container();
-        container.blendMode = "add";
+        container.blendMode = spec.type === "abigail-warp-slash" ? "normal" : "add";
         const graphics = new Graphics();
         container.addChild(graphics);
         app.stage.addChild(container);
@@ -1364,7 +1417,7 @@ export function createSkillEffectRenderer() {
           width: layout.width,
           height: layout.height,
           startedAt: performance.now(),
-          duration: effectDuration(spec.type),
+          duration: effectDuration(spec.type, spec.durationMs),
           container,
           graphics,
         });
@@ -1386,7 +1439,7 @@ export function createSkillEffectRenderer() {
       angle: Math.atan2(target.y - origin.y, target.x - origin.x),
       petals: seededPetals(origin, effectParticleCount(spec.type === "yuki-bloom" ? 34 : 24)),
       startedAt: performance.now(),
-      duration: effectDuration(spec.type),
+      duration: effectDuration(spec.type, spec.durationMs),
     });
     if (!frame) frame = requestAnimationFrame(draw);
   }
@@ -2049,6 +2102,38 @@ export function createSkillEffectRenderer() {
     for (const hit of animation.targets) {
       drawDaggerMarker(ctx, hit, -total * 3, Math.sin(Math.PI * total) * 0.38, pulse);
     }
+  }
+
+  function drawAbigailWarpSlash(ctx, animation, progress) {
+    const total = Math.max(0, Math.min(1, progress));
+    ctx.save();
+    ctx.fillStyle = `rgba(5, 3, 11, ${Math.min(0.76, Math.sin(Math.PI * total) * 1.35)})`;
+    ctx.fillRect(0, 0, animation.width, animation.height);
+    const flash = Math.max(Math.max(0, 1 - total * 14), Math.max(0, (total - 0.9) / 0.1));
+    if (flash > 0) {
+      ctx.fillStyle = `rgba(255, 247, 255, ${flash * 0.72})`;
+      ctx.fillRect(0, 0, animation.width, animation.height);
+    }
+    const chain = [animation.origin, ...animation.targets, animation.origin];
+    const travel = Math.max(0, Math.min(1, (total - 0.08) / 0.82));
+    const raw = travel * Math.max(1, chain.length - 1);
+    const segment = Math.min(chain.length - 2, Math.floor(raw));
+    const local = raw - segment;
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineCap = "round";
+    for (let index = 0; index <= segment; index += 1) {
+      const start = chain[index];
+      const end = chain[index + 1];
+      if (!start || !end) continue;
+      const ratio = index === segment ? local : 1;
+      ctx.strokeStyle = `rgba(255, 50, 141, ${Math.max(0.18, 0.9 - (segment - index) * 0.12)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(start.x + (end.x - start.x) * ratio, start.y + (end.y - start.y) * ratio);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawLeniCarrotBazooka(ctx, animation, progress) {
@@ -3445,6 +3530,7 @@ export function createSkillEffectRenderer() {
       else if (animation.type === "xiukai-flame") drawXiukaiFlame(context, animation, progress);
       else if (animation.type === "zahir-vayvayastra") drawZahirVayvayastra(context, animation, progress);
       else if (animation.type === "abigail-horizon-cleave") drawAbigailHorizonCleave(context, animation, progress);
+      else if (animation.type === "abigail-warp-slash") drawAbigailWarpSlash(context, animation, progress);
       else if (animation.type === "darko-forced-capture") drawDarkoForcedCapture(context, animation, progress);
       else if (animation.type === "darko-forced-impact") drawDarkoForcedImpact(context, animation, progress);
       else if (animation.type === "luke-obsession") drawLukeObsession(context, animation, progress);

@@ -1,6 +1,25 @@
 import { traitPills, unitTraitText } from "./traitHelpers.js";
 
 export function createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor = (unit) => unit.name, render, selectAugmentTarget }) {
+  function displayedSkillFor(unit) {
+    const sevenElixir = unit?.name === "쇼이치"
+      && (state.selectedAugments || []).some((augment) => augment.effect?.type === "shoichiSevenElixir");
+    if (sevenElixir) {
+      return {
+        name: "7단비약",
+        tooltip: "시간을 멈추고 전장을 일곱 번 가릅니다. 1~6타는 생존한 모든 적에게 공격력의 45% + 스킬 증폭의 60% 피해를 주고, 마지막 타격은 공격력의 140% + 스킬 증폭의 180% 피해를 줍니다. 모든 타격은 개별적으로 치명타가 발생할 수 있습니다.",
+      };
+    }
+    const warpSlash = unit?.name === "아비게일"
+      && (state.selectedAugments || []).some((augment) => augment.effect?.type === "abigailWarpSlash");
+    return warpSlash
+      ? {
+          name: "워프 슬래시",
+          tooltip: "시간을 멈추고 모든 적에게 한 번씩 순간이동해 공격력의 125% + 스킬 증폭의 160% + 16 피해를 줍니다. 보스에게는 피해가 1.75배로 증가합니다. 각 타격은 개별적으로 치명타가 발생할 수 있으며, 연출 중에는 무적입니다.",
+        }
+      : { name: unit?.skill || "스킬", tooltip: unit?.skillTooltip || "" };
+  }
+
   function unitRange(unit) {
     const base = Number.isFinite(unit.attackRange)
       ? unit.attackRange
@@ -52,6 +71,13 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       huntFocusMarked: unit.huntFocusMarked ?? 0,
       huntMarkedDefenseApplyRatio: unit.huntMarkedDefenseApplyRatio ?? 1,
       huntTransferStunMs: unit.huntTransferStunMs ?? 0,
+      precisionCritRequired: unit.precisionCritRequired ?? 0,
+      precisionStunMs: unit.precisionStunMs ?? 0,
+      spellCastShieldRatio: unit.spellCastShieldRatio ?? 0,
+      guardianStrikeEvery: unit.guardianStrikeEvery ?? 0,
+      guardianStrikeHpRatio: unit.guardianStrikeHpRatio ?? 0,
+      assassinRearmCritMultiplier: unit.assassinRearmCritMultiplier ?? 0,
+      assassinRearmCooldownMs: unit.assassinRearmCooldownMs ?? 0,
     };
   }
 
@@ -74,7 +100,10 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     }
     if (unit.tacticalTarget) effects.push({ tone: "tactical", label: "전술 표적", ratio: 1 });
     if (unit.status === "suppressed") effects.push({ tone: "suppressed", label: "제압", ratio: 1 });
-    if (unit.actionLockRemainingMs > 0) {
+    if (unit.timeStopRemainingMs > 0) {
+      const durationMs = Math.max(unit.timeStopDurationMs || unit.timeStopRemainingMs, 1);
+      effects.push({ tone: "suppressed", label: "시간 정지", ratio: unit.timeStopRemainingMs / durationMs });
+    } else if (unit.actionLockRemainingMs > 0) {
       const durationMs = Math.max(unit.actionLockDurationMs || unit.actionLockRemainingMs, 1);
       effects.push({ tone: "yuki", label: "납도", ratio: unit.actionLockRemainingMs / durationMs });
     }
@@ -125,6 +154,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     }
     if (unit.status) node.classList.add(unit.status);
     if (unit.untargetableRemainingMs > 0) node.classList.add("untargetable");
+    if (unit.warpVisualRemainingMs > 0) node.classList.add("warp-hidden");
     if (displayNameFor(unit) !== unit.name) node.classList.add("renamed-unit");
     if (unit.tacticalTarget) node.classList.add("tactical-target");
     if (unit.huntMarked) node.classList.add("hunt-marked");
@@ -155,7 +185,8 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     if (unit.huntMarked) {
       node.insertAdjacentHTML("beforeend", `<span class="hunt-mark" title="추적 표식" aria-label="추적 표식"></span>`);
     }
-    node.title = `${displayNameFor(unit)} · ${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${unit.skill}${unit.skillTooltip ? ` - ${unit.skillTooltip}` : ""}`;
+    const displayedSkill = displayedSkillFor(unit);
+    node.title = `${displayNameFor(unit)} · ${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${displayedSkill.name}${displayedSkill.tooltip ? ` - ${displayedSkill.tooltip}` : ""}`;
     node.addEventListener("dragstart", () => {
       state.dragging = { source, index };
       document.body.classList.add("dragging-unit");
@@ -216,18 +247,23 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     if (effective.huntFocusMarked > 0) stats.push(["표식우선", "활성"]);
     if (effective.huntMarkedDefenseApplyRatio < 1) stats.push(["표식관통", `${Math.round((1 - effective.huntMarkedDefenseApplyRatio) * 100)}%`]);
     if (effective.huntTransferStunMs > 0) stats.push(["표식전이", `${(effective.huntTransferStunMs / 1000).toFixed(1)}초 기절`]);
+    if (effective.precisionCritRequired > 0) stats.push(["집중사격", `${effective.precisionCritRequired}치명 / ${(effective.precisionStunMs / 1000).toFixed(2)}초`]);
+    if (effective.spellCastShieldRatio > 0) stats.push(["시전보호막", `${Math.round(effective.spellCastShieldRatio * 100)}%`]);
+    if (effective.guardianStrikeEvery > 0) stats.push(["수호압박", `${effective.guardianStrikeEvery}타 / 체력 ${effective.guardianStrikeHpRatio * 100}%`]);
+    if (effective.assassinRearmCritMultiplier > 1) stats.push(["재장전", `${Math.round(effective.assassinRearmCritMultiplier * 100)}% / ${(effective.assassinRearmCooldownMs / 1000).toFixed(1)}초`]);
     if (unit.role === "술법" && effective.skillTargets > 2) stats.push(["스킬타격", effective.skillTargets >= 99 ? "전체" : `${Math.round(effective.skillTargets)}명`]);
     if (unit.role === "지원" && effective.healTargets > 2) stats.push(["회복대상", effective.healTargets >= 99 ? "전체" : `${Math.round(effective.healTargets)}명`]);
     refs.detailTier.textContent = `${"★".repeat(unit.tier)} · ${unit.cost}코`;
     refs.sellUnit.disabled = state.busy;
     refs.sellUnit.textContent = `${sellValue(unit)}크레딧에 판매`;
+    const displayedSkill = displayedSkillFor(unit);
     refs.unitDetail.innerHTML = `
       <div class="detail-head" style="--accent: ${unit.color}">
         <span class="portrait">${unit.art ? `<img src="${unit.art}" alt="">` : unit.name.slice(0, 1)}</span>
         <div><strong>${displayNameFor(unit)}</strong><small>${unit.role} / ${unitTraitText(unit)} / ${unit.weapon}</small></div>
       </div>
       <div class="detail-stats">${stats.map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("")}</div>
-      <div class="detail-skill"><span>스킬</span><strong>${unit.skill}</strong>${unit.skillTooltip ? `<p>${unit.skillTooltip}</p>` : ""}</div>
+      <div class="detail-skill"><span>스킬</span><strong>${displayedSkill.name}</strong>${displayedSkill.tooltip ? `<p>${displayedSkill.tooltip}</p>` : ""}</div>
     `;
   }
 

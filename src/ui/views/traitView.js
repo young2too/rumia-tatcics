@@ -1,4 +1,4 @@
-import { traitCountsFor, traitPills, traitSummary, unitTraits } from "./traitHelpers.js";
+import { traitCountsFor, traitPills, traitSummary, traitTierMarkup, unitTraits } from "./traitHelpers.js";
 
 export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRules, ownedUnits, activeTraits, activeHiddenTraits, activeTraitTier, nextTraitNeed, displayNameFor = (unit) => unit.name }) {
   const unitsFor = (trait) => roster
@@ -53,9 +53,15 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
       const row = document.createElement("div");
       row.className = `trait ${activeTier ? "active" : ""}`;
       row.dataset.trait = trait;
+      const precisionRequired = trait === "정밀"
+        ? Number(activeTier?.effects?.find((effect) => effect.stat === "precisionCritRequired")?.set) || 0
+        : 0;
+      const precisionProgress = precisionRequired && state.busy
+        ? `<small class="trait-combat-progress" data-required="${precisionRequired}">집중 사격 ${Math.min(state.precisionCritCounters?.ally || 0, precisionRequired)}/${precisionRequired}</small>`
+        : "";
       row.innerHTML = `
         <strong><span>${trait}</span><span>${Math.min(activeCount, nextNeed)}/${nextNeed}<b>보유 ${count}</b><i>상세</i></span></strong>
-        <p>${activeTier ? activeTier.text : `다음 단계: ${rule.tiers[0].text}`}</p>
+        <p class="trait-effect">${traitTierMarkup(trait, activeTier || rule.tiers[0], !activeTier)}${precisionProgress}</p>
         <div class="trait-roster" aria-label="${trait} 유닛 보유 현황">
           ${unitsFor(trait).map((unit) => {
             const ownership = ownershipState(unit, boardNames, benchNames);
@@ -66,6 +72,13 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
       `;
       refs.traits.append(row);
     }
+  }
+
+  function renderCombatProgress() {
+    const progress = refs.traits.querySelector('[data-trait="정밀"] .trait-combat-progress');
+    if (!progress) return;
+    const required = Number(progress.dataset.required) || 0;
+    progress.textContent = `집중 사격 ${Math.min(state.precisionCritCounters?.ally || 0, required)}/${required}`;
   }
 
   function renderTraitTableModal() {
@@ -120,5 +133,5 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
     }).join("") : `<div class="trait-roster-empty">표시할 유닛이 없습니다.</div>`);
   }
 
-  return { renderTraitRosterModal, renderTraits, renderTraitTableModal };
+  return { renderTraitRosterModal, renderTraits, renderTraitTableModal, renderCombatProgress };
 }

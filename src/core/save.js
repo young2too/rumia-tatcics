@@ -88,7 +88,6 @@ const UNIT_RUNTIME_FIELDS = new Set([
   "dualContractSurvivorReduction",
   "dualContractSurvivorRemainingMs",
   "lukeCleaningBoost",
-  "sevenElixirUsed",
   "theodoreAssistReadyAt",
   "trainingDummy",
 ]);

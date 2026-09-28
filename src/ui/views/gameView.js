@@ -1,6 +1,7 @@
 export function createGameView({ state, refs, balance, audio, combat, boardUnits, boardLimit, levelXpLabel, xpToNextLevel, syncLocalTestGold, views, renderCommunityBoard }) {
   function renderCombatFrame() {
     views.battlefield.renderBoard();
+    views.traits.renderCombatProgress();
   }
 
   function render() {
