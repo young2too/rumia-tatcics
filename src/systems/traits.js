@@ -73,6 +73,17 @@ export function createTraitController({ state, traitRules, boardUnits }) {
       huntFocusMarked: unit.huntFocusMarked ?? 0,
       huntMarkedDefenseApplyRatio: unit.huntMarkedDefenseApplyRatio ?? 1,
       huntTransferStunMs: unit.huntTransferStunMs ?? 0,
+      precisionCritRequired: unit.precisionCritRequired ?? 0,
+      precisionStunMs: unit.precisionStunMs ?? 0,
+      precisionStunCooldownMs: unit.precisionStunCooldownMs ?? 0,
+      spellCastShieldRatio: unit.spellCastShieldRatio ?? 0,
+      spellCastShieldDurationMs: unit.spellCastShieldDurationMs ?? 0,
+      guardianStrikeEvery: unit.guardianStrikeEvery ?? 0,
+      guardianStrikeHpRatio: unit.guardianStrikeHpRatio ?? 0,
+      assassinOpeningDamageReduction: unit.assassinOpeningDamageReduction ?? 0,
+      assassinOpeningProtectionMs: unit.assassinOpeningProtectionMs ?? 0,
+      assassinRearmCritMultiplier: unit.assassinRearmCritMultiplier ?? 0,
+      assassinRearmCooldownMs: unit.assassinRearmCooldownMs ?? 0,
     };
     for (const trait of unitTraits(unit)) {
       const rule = traitRules[trait];

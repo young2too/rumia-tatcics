@@ -46,7 +46,9 @@ export function createCombatController(context) {
   } = context;
 
 const skillTimeline = createSkillTimeline();
+const cinematicTimeline = createSkillTimeline();
 let combatElapsedMs = 0;
+let cinematicElapsedMs = 0;
 let combatRng = createSeededRng("combat-bootstrap");
 
 function random() {
@@ -689,6 +691,11 @@ function placeBacklineDivers(units) {
     state.combatGrid[from.index] = null;
     state.combatGrid[to.index] = unit;
     unit.status = "moving";
+    if (to.target?.id) {
+      unit.openingDiverTargetId = to.target.id;
+      unit.focusTargetId = to.target.id;
+      unit.hasPickedOpeningTarget = true;
+    }
     moved += 1;
   }
   return moved;
@@ -787,13 +794,13 @@ function triggerFenrirLastStand(unit) {
   if (!unit || unit.skillId !== "fenrir_last_stand" || unit.fenrirLastStandUsed) return null;
   unit.fenrirLastStandUsed = true;
   unit.fenrirLastStandActive = true;
-  unit.fenrirLastStandRemainingMs = 3000;
-  unit.fenrirLastStandDurationMs = 3000;
-  unit.hp = unit.maxHp;
+  unit.fenrirLastStandRemainingMs = 1500;
+  unit.fenrirLastStandDurationMs = 1500;
+  unit.hp = Math.max(1, Math.round(unit.maxHp * 0.55));
   unit.speed *= 1.3;
   unit.mana = 0;
   unit.status = "last-stand";
-  return combatEffect(unit, unit, "heal", { amount: unit.maxHp });
+  return combatEffect(unit, unit, "heal", { amount: unit.hp });
 }
 
 function hexNeighborSteps(x, y) {
@@ -1175,11 +1182,15 @@ function applyOpeningShield(units, targetsKey, ratioKey, preferBackline) {
 function pullBacklineEnemies(allies, enemies) {
   const targetCount = Math.max(...allies.map((unit) => unit.pullBacklineTargets || 0), 0);
   if (!targetCount || !state.combatGrid) return { units: [] };
-  const targets = living(enemies)
+  const diverTargetIds = new Set(living(allies).map((unit) => unit.openingDiverTargetId).filter(Boolean));
+  const candidates = living(enemies)
     .map((unit) => ({ unit, slot: unitSlot(unit) }))
     .filter(({ slot }) => slot && slot.y <= 1)
-    .sort((a, b) => a.slot.y - b.slot.y || a.unit.hp - b.unit.hp)
-    .slice(0, targetCount);
+    .sort((a, b) => a.slot.y - b.slot.y || a.unit.hp - b.unit.hp);
+  const targets = [
+    ...candidates.filter(({ unit }) => !diverTargetIds.has(unit.id)),
+    ...candidates.filter(({ unit }) => diverTargetIds.has(unit.id)),
+  ].slice(0, targetCount);
   const movedUnits = [];
   for (const { unit } of targets) {
     const from = unitSlot(unit);
@@ -1226,6 +1237,7 @@ function applyOpeningTeamUtilities(allies, enemies) {
   const focusTarget = pullResult.units[0] || null;
   if (focusTarget) {
     for (const ally of living(allies)) {
+      if (ally.openingDiverTargetId) continue;
       ally.forcedFocusTargetId = focusTarget.id;
       ally.focusTargetId = focusTarget.id;
       ally.hasPickedOpeningTarget = true;
@@ -1284,6 +1296,17 @@ function prepareCombatUnit(unit, side, counts = {}) {
     huntFocusMarked: unit.huntFocusMarked ?? 0,
     huntMarkedDefenseApplyRatio: unit.huntMarkedDefenseApplyRatio ?? 1,
     huntTransferStunMs: unit.huntTransferStunMs ?? 0,
+    precisionCritRequired: unit.precisionCritRequired ?? 0,
+    precisionStunMs: unit.precisionStunMs ?? 0,
+    precisionStunCooldownMs: unit.precisionStunCooldownMs ?? 0,
+    spellCastShieldRatio: unit.spellCastShieldRatio ?? 0,
+    spellCastShieldDurationMs: unit.spellCastShieldDurationMs ?? 0,
+    guardianStrikeEvery: unit.guardianStrikeEvery ?? 0,
+    guardianStrikeHpRatio: unit.guardianStrikeHpRatio ?? 0,
+    assassinOpeningDamageReduction: unit.assassinOpeningDamageReduction ?? 0,
+    assassinOpeningProtectionMs: unit.assassinOpeningProtectionMs ?? 0,
+    assassinRearmCritMultiplier: unit.assassinRearmCritMultiplier ?? 0,
+    assassinRearmCooldownMs: unit.assassinRearmCooldownMs ?? 0,
   };
   if (side === "ally") {
     const boosts = state.temporaryBoosts || {};
@@ -1345,6 +1368,17 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.huntFocusMarked = Math.max(0, Math.round(stats.huntFocusMarked ?? 0));
   unit.huntMarkedDefenseApplyRatio = Math.max(0, Math.min(1, stats.huntMarkedDefenseApplyRatio ?? 1));
   unit.huntTransferStunMs = Math.max(0, Math.round(stats.huntTransferStunMs ?? 0));
+  unit.precisionCritRequired = Math.max(0, Math.round(stats.precisionCritRequired ?? 0));
+  unit.precisionStunMs = Math.max(0, Math.round(stats.precisionStunMs ?? 0));
+  unit.precisionStunCooldownMs = Math.max(0, Math.round(stats.precisionStunCooldownMs ?? 0));
+  unit.spellCastShieldRatio = Math.max(0, stats.spellCastShieldRatio ?? 0);
+  unit.spellCastShieldDurationMs = Math.max(0, Math.round(stats.spellCastShieldDurationMs ?? 0));
+  unit.guardianStrikeEvery = Math.max(0, Math.round(stats.guardianStrikeEvery ?? 0));
+  unit.guardianStrikeHpRatio = Math.max(0, stats.guardianStrikeHpRatio ?? 0);
+  unit.assassinOpeningDamageReduction = Math.max(0, Math.min(0.8, stats.assassinOpeningDamageReduction ?? 0));
+  unit.assassinOpeningProtectionMs = Math.max(0, Math.round(stats.assassinOpeningProtectionMs ?? 0));
+  unit.assassinRearmCritMultiplier = Math.max(0, stats.assassinRearmCritMultiplier ?? 0);
+  unit.assassinRearmCooldownMs = Math.max(0, Math.round(stats.assassinRearmCooldownMs ?? 0));
   unit.supportAidBuff = null;
   unit.range = unitAttackRange(unit);
   unit.status = "";
@@ -1368,6 +1402,9 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.shieldDefenseDurationMs = 0;
   unit.shield = 0;
   unit.leniShield = 0;
+  unit.witchShield = 0;
+  unit.witchShieldRemainingMs = 0;
+  unit.witchShieldDurationMs = 0;
   unit.healReduction = 0;
   unit.healReductionRemainingMs = 0;
   unit.healReductionDurationMs = 0;
@@ -1395,6 +1432,11 @@ function prepareCombatUnit(unit, side, counts = {}) {
   unit.huntMarkRank = 0;
   unit.hasPickedOpeningTarget = false;
   unit.hasUsedOpeningCrit = false;
+  unit.assassinRearmReady = false;
+  unit.assassinRearmReadyAt = 0;
+  unit.assassinOpeningProtectionRemainingMs = unit.assassinOpeningProtectionMs;
+  unit.precisionStunReadyAt = 0;
+  unit.openingDiverTargetId = null;
   unit.mana = Math.min(unitMaxMana(unit), unit.openingMana || 0);
   return unit;
 }
@@ -1507,9 +1549,12 @@ function dealDamage(source, target, amount, options = {}) {
     adjustedAmount *= 1 + source.huntMarkedDamageAdd;
   }
   const damageFloor = Math.max(3, Math.round(adjustedAmount * 0.12));
-  const shawlReduction = target.shawlCurtainRemainingMs > 0 && target.shield > 0 ? 0.25 : 0;
+  const shawlReduction = target.shawlCurtainRemainingMs > 0 && target.shield > 0 ? 0.18 : 0;
   const shieldDefenseReduction = target.shieldDefenseRemainingMs > 0 ? 0.6 : 0;
-  const totalReduction = Math.max(0, Math.min(0.85, (target.damageReduction || 0) + shawlReduction + shieldDefenseReduction));
+  const assassinOpeningReduction = target.assassinOpeningProtectionRemainingMs > 0
+    ? target.assassinOpeningDamageReduction || 0
+    : 0;
+  const totalReduction = Math.max(0, Math.min(0.85, (target.damageReduction || 0) + shawlReduction + shieldDefenseReduction + assassinOpeningReduction));
   const effectiveDefense = target.defense * (target?.huntMarked && source?.huntMarkedDefenseApplyRatio < 1 && source.side !== target.side ? source.huntMarkedDefenseApplyRatio : 1);
   const reducedAmount = adjustedAmount * (1 - totalReduction);
   const damage = options.fixed
@@ -1530,7 +1575,11 @@ function dealDamage(source, target, amount, options = {}) {
   const absorbed = Math.min(target.shield || 0, damage);
   if (absorbed > 0) {
     target.shield = Math.max(0, (target.shield || 0) - absorbed);
-    target.leniShield = Math.max(0, (target.leniShield || 0) - absorbed);
+    let trackedAbsorbed = absorbed;
+    const witchAbsorbed = Math.min(target.witchShield || 0, trackedAbsorbed);
+    target.witchShield = Math.max(0, (target.witchShield || 0) - witchAbsorbed);
+    trackedAbsorbed -= witchAbsorbed;
+    target.leniShield = Math.max(0, (target.leniShield || 0) - trackedAbsorbed);
   }
   const hpDamage = Math.max(0, damage - absorbed);
   target.hp = Math.max(0, target.hp - hpDamage);
@@ -1596,7 +1645,7 @@ function dealDamage(source, target, amount, options = {}) {
     if (fenrirEffect) {
       state.pendingHiddenEffects ||= [];
       state.pendingHiddenEffects.push(fenrirEffect);
-      addLog(`${target.name} 최후의 저항: 체력 100%로 부활하고 3초 동안 피해 면역 / 공격속도 +30%.`);
+      addLog(`${target.name} 최후의 저항: 체력 55%로 부활하고 1.5초 동안 피해 면역 / 공격속도 +30%.`);
       return damage;
     }
     const reviveEffect = triggerThreeStarRevive(target);
@@ -1644,6 +1693,7 @@ function dealDamage(source, target, amount, options = {}) {
     const contributors = [...(target.killContributors || [])]
       .map((id) => units.find((unit) => unit.id === id))
       .filter(Boolean);
+    rearmAssassinsOnTakedown(source, contributors);
     const killUtilities = triggerKillUtilities(source, target, contributors);
     if (source?.side === "ally" && source.hp > 0) {
       for (const effect of selectedAugmentEffects("teamKillCombatStack")) {
@@ -2011,12 +2061,63 @@ function triggerThreeStarRevive(target) {
 function basicAttackDamage(attacker, baseAmount, target = null) {
   if (!attacker.hasUsedOpeningCrit && attacker.openingCritMultiplier > 1) {
     attacker.hasUsedOpeningCrit = true;
+    attacker.assassinRearmReadyAt = combatElapsedMs + (attacker.assassinRearmCooldownMs || 0);
     return { amount: baseAmount * attacker.openingCritMultiplier, critical: true, opening: true };
+  }
+  if (!attacker.assassinRearmReady
+    && attacker.assassinRearmCooldownMs > 0
+    && attacker.assassinRearmReadyAt > 0
+    && combatElapsedMs >= attacker.assassinRearmReadyAt) {
+    attacker.assassinRearmReady = true;
+  }
+  if (attacker.assassinRearmReady && attacker.assassinRearmCritMultiplier > 1) {
+    attacker.assassinRearmReady = false;
+    attacker.assassinRearmReadyAt = combatElapsedMs + (attacker.assassinRearmCooldownMs || 0);
+    return { amount: baseAmount * attacker.assassinRearmCritMultiplier, critical: true, opening: true, rearmed: true };
   }
   if (random() < (attacker.critChance || 0)) {
     return { amount: baseAmount * (attacker.critDamage || 1.5), critical: true, opening: false };
   }
   return { amount: baseAmount, critical: false, opening: false };
+}
+
+function triggerPrecisionCritical(attacker, target) {
+  const required = attacker.precisionCritRequired || 0;
+  if (!required || !target || target.hp <= 0) return "";
+  state.precisionCritCounters ||= {};
+  const side = attacker.side || "ally";
+  const next = Math.min(required, (state.precisionCritCounters[side] || 0) + 1);
+  state.precisionCritCounters[side] = next;
+  if (next < required || (target.precisionStunReadyAt || 0) > combatElapsedMs) return ` / 집중 사격 ${next}/${required}`;
+  applyStunMs(target, attacker.precisionStunMs || 0);
+  target.precisionStunReadyAt = combatElapsedMs + (attacker.precisionStunCooldownMs || 0);
+  state.precisionCritCounters[side] = 0;
+  return ` / 집중 사격: ${target.name} ${(attacker.precisionStunMs / 1000).toFixed(2)}초 기절`;
+}
+
+function applySpellCastShield(caster) {
+  const ratio = caster.spellCastShieldRatio || 0;
+  const duration = caster.spellCastShieldDurationMs || 0;
+  if (!ratio || !duration || caster.hp <= 0) return null;
+  const shield = Math.max(1, Math.round(caster.maxHp * ratio));
+  caster.shield = Math.max(0, (caster.shield || 0) - (caster.witchShield || 0)) + shield;
+  caster.witchShield = shield;
+  caster.witchShieldRemainingMs = duration;
+  caster.witchShieldDurationMs = duration;
+  caster.status = "shielded";
+  return combatEffect(caster, caster, "shield", { amount: shield });
+}
+
+function rearmAssassinsOnTakedown(source, contributors) {
+  const participants = new Map([source, ...(contributors || [])].filter(Boolean).map((unit) => [unit.id, unit]));
+  for (const unit of participants.values()) {
+    if (unit.hp <= 0 || unit.assassinRearmCritMultiplier <= 1) continue;
+    unit.assassinRearmReady = true;
+    unit.focusTargetId = null;
+    unit.forcedFocusTargetId = null;
+    unit.openingDiverTargetId = null;
+    unit.hasPickedOpeningTarget = false;
+  }
 }
 
 function applyTsubameBiyeon(attacker, target, effects) {
@@ -2101,6 +2202,8 @@ function basicAttack(attacker, enemies) {
   if (bihyungEnhanced) attacker.bihyungEnhancedAttacks = Math.max(0, attacker.bihyungEnhancedAttacks - 1);
   attacker.status = "attacking";
   const effects = [combatEffect(attacker, target, "attack", { amount: damage, critical: hit.critical })];
+  let precisionMessage = hit.critical && damage > 0 ? triggerPrecisionCritical(attacker, target) : "";
+  if (hit.rearmed) precisionMessage += " / 기습 재장전";
   const theodore = living(state.combatGrid || [])
     .find((unit) => unit.side === attacker.side && unit !== attacker && unitAugmentEffect(unit, "theodoreSniperProtocol"));
   if (theodore && (!theodore.theodoreAssistReadyAt || theodore.theodoreAssistReadyAt <= combatElapsedMs) && target.hp > 0) {
@@ -2136,6 +2239,14 @@ function basicAttack(attacker, enemies) {
         const ratio = target.boss ? Number(effect.bossRatio) || 0 : Number(effect.targetMaxHpRatio) || 0;
         const bonus = dealDamage(attacker, target, target.maxHp * ratio, { fixed: true });
         if (bonus > 0) effects.push(combatEffect(attacker, target, "skill", { amount: bonus, fixed: true, extra: true }));
+      }
+    }
+    const guardianEvery = attacker.guardianStrikeEvery || 0;
+    if (guardianEvery > 0 && ((attacker.basicAttackCount || 0) + 1) % guardianEvery === 0 && target.hp > 0) {
+      const bonus = dealDamage(attacker, target, attacker.maxHp * (attacker.guardianStrikeHpRatio || 0), { fixed: true });
+      if (bonus > 0) {
+        effects.push(combatEffect(attacker, target, "skill", { amount: bonus, fixed: true, extra: true }));
+        precisionMessage += ` / 수호 압박 ${bonus} 고정 피해`;
       }
     }
   }
@@ -2197,11 +2308,12 @@ function basicAttack(attacker, enemies) {
     effects.push(combatEffect(attacker, target, "attack", { amount: extraDamage, critical: extraHit.critical, extra: true }));
     if (extraPaintMark) effects.push({ ...combatEffect(attacker, target, "paint-mark"), kind: "paint-mark" });
     if (extraHeal) effects.push(combatEffect(attacker, attacker, "heal", { amount: extraHeal }));
+    if (extraHit.critical && extraDamage > 0) precisionMessage += triggerPrecisionCritical(attacker, target);
     extraMessage += applyTsubameBiyeon(attacker, target, effects);
-    extraMessage += ` / 신속 추가타 ${extraDamage} 피해${extraHit.critical ? " (치명)" : ""}`;
+    extraMessage += ` / 신속 추가타 ${extraDamage} 피해${extraHit.critical ? " (치명)" : ""}${extraHit.rearmed ? " / 기습 재장전" : ""}`;
   }
   return {
-    message: `${attacker.name} → ${target.name} ${damage} 피해${hit.critical ? " (치명)" : ""}${extraMessage}`,
+    message: `${attacker.name} → ${target.name} ${damage} 피해${hit.critical ? " (치명)" : ""}${precisionMessage}${extraMessage}`,
     effects,
   };
 }
@@ -2489,9 +2601,55 @@ function shoichiPathTargets(caster, enemies, farthest) {
   return { targets, destination };
 }
 
+function castShoichiSevenElixir(caster, enemies, augment) {
+  const targets = living(enemies);
+  if (!targets.length) return { message: "", effects: [] };
+  const dashCount = Math.max(1, Number(augment.dashCount) || 7);
+  const startDelayMs = Math.max(0, Number(augment.startDelayMs) || 180);
+  const hitIntervalMs = Math.max(100, Number(augment.hitIntervalMs) || 150);
+  const finishDelayMs = Math.max(120, Number(augment.finishDelayMs) || 260);
+  const durationMs = startDelayMs + Math.max(0, dashCount - 1) * hitIntervalMs + finishDelayMs;
+
+  for (const unit of living(state.combatGrid || [])) {
+    unit.timeStopRemainingMs = Math.max(unit.timeStopRemainingMs || 0, durationMs);
+    unit.timeStopDurationMs = Math.max(unit.timeStopDurationMs || 0, durationMs);
+  }
+  caster.warpVisualRemainingMs = Math.max(caster.warpVisualRemainingMs || 0, durationMs);
+
+  for (let hitIndex = 0; hitIndex < dashCount; hitIndex += 1) {
+    cinematicTimeline.schedule(cinematicElapsedMs, startDelayMs + hitIndex * hitIntervalMs, {
+      type: "shoichi-seven-elixir-hit",
+      caster,
+      targets: targets.slice(),
+      augment,
+      hitIndex,
+      hitCount: dashCount,
+    });
+  }
+  playSkillVisual?.({
+    type: "shoichi-seven-elixir",
+    fromId: caster.id,
+    targetIds: targets.map((unit) => unit.id),
+    durationMs,
+  });
+  return {
+    skillName: "7단비약",
+    message: `${caster.name} 7단비약: 시간 정지 / 전장 전체 ${dashCount}회 타격`,
+    effects: [{
+      from: caster.id,
+      to: targets[0].id,
+      type: "shoichi-seven-ride",
+      kind: "shoichi-seven-ride",
+      value: { duration: durationMs },
+    }],
+  };
+}
+
 function castShoichiSkill(caster, enemies) {
   const alive = living(enemies);
   if (!alive.length) return { message: "", effects: [] };
+  const augment = unitAugmentEffect(caster, "shoichiSevenElixir");
+  if (augment) return castShoichiSevenElixir(caster, enemies, augment);
   const farthest = alive.slice().sort((a, b) => distanceBetween(caster, b) - distanceBetween(caster, a) || a.hp - b.hp)[0];
   const casterNode = document.querySelector(`[data-unit-id="${caster.id}"]`);
   const targetNode = document.querySelector(`[data-unit-id="${farthest.id}"]`);
@@ -2516,24 +2674,6 @@ function castShoichiSkill(caster, enemies) {
     returnTotal += damage;
     effects.push({ ...combatEffect(caster, target, "skill", { amount: damage, timeline: "shoichi-return" }), kind: "slash", delayMs: 650 });
   }
-  const augment = unitAugmentEffect(caster, "shoichiSevenElixir");
-  let elixirTotal = 0;
-  if (augment && !caster.sevenElixirUsed) {
-    caster.sevenElixirUsed = true;
-    const dashCount = Math.max(1, Number(augment.dashCount) || 7);
-    const elixirTargets = living(enemies);
-    for (let dash = 0; dash < dashCount && elixirTargets.length; dash += 1) {
-      const target = elixirTargets[dash % elixirTargets.length];
-      if (!target || target.hp <= 0) continue;
-      const isFinal = dash === dashCount - 1;
-      const base = caster.atk * (isFinal ? Number(augment.finalDamageAtkRatio) || 0 : Number(augment.pathDamageAtkRatio) || 0)
-        + caster.skillAmp * (isFinal ? Number(augment.finalDamageSkillAmpRatio) || 0 : Number(augment.pathDamageSkillAmpRatio) || 0);
-      const amount = target.boss ? base * (Number(augment.bossDamageMultiplier) || 1) : base;
-      const damage = dealSkillDamage(caster, target, amount);
-      elixirTotal += damage;
-      effects.push({ ...combatEffect(caster, target, "skill", { amount: damage, extra: true }), kind: "slash", delayMs: 820 + dash * 85 });
-    }
-  }
   playSkillVisual?.({ type: "shoichi-dagger-ride", fromId: caster.id, targetIds: [farthest.id] });
   effects.unshift({
     from: caster.id,
@@ -2543,7 +2683,8 @@ function castShoichiSkill(caster, enemies) {
     value: { duration: 800, extension: 1.16, dx: rideOffset.x, dy: rideOffset.y },
   });
   return {
-    message: `${caster.name} 단검 타기: 경로 ${targets.length}명 / 전진 ${outboundTotal} + 복귀 ${returnTotal}${elixirTotal ? ` / 7단비약 ${elixirTotal}` : ""} 피해`,
+    skillName: "무자비",
+    message: `${caster.name} 단검 타기: 경로 ${targets.length}명 / 전진 ${outboundTotal} + 복귀 ${returnTotal} 피해`,
     effects,
   };
 }
@@ -2715,7 +2856,7 @@ function castLenoxSkill(caster, enemies) {
 }
 
 function castMaiSkill(caster) {
-  const shield = Math.round(skillOutput(caster, caster.skillAmp * 1.25 + caster.defense * 1.6 + 18));
+  const shield = Math.round(skillOutput(caster, caster.skillAmp * 1.1 + caster.defense * 1.35 + 15));
   caster.shield = (caster.shield || 0) + shield;
   caster.shawlCurtainRemainingMs = Math.max(caster.shawlCurtainRemainingMs || 0, 1800);
   caster.shawlCurtainDurationMs = Math.max(caster.shawlCurtainDurationMs || 0, 1800);
@@ -3530,6 +3671,55 @@ function castKarlaSkill(caster, enemies) {
 }
 
 function castAbigailSkill(caster, enemies) {
+  const augment = unitAugmentEffect(caster, "abigailWarpSlash");
+  if (augment) {
+    const targets = living(enemies)
+      .slice()
+      .sort((a, b) => {
+        const aSlot = unitSlot(a);
+        const bSlot = unitSlot(b);
+        return (aSlot?.row || 0) - (bSlot?.row || 0) || (aSlot?.col || 0) - (bSlot?.col || 0);
+      });
+    if (!targets.length) return { message: "", effects: [] };
+    const startDelayMs = Math.max(0, Number(augment.startDelayMs) || 180);
+    const hitIntervalMs = Math.max(100, Number(augment.hitIntervalMs) || 160);
+    const finishDelayMs = Math.max(120, Number(augment.finishDelayMs) || 260);
+    const durationMs = startDelayMs + Math.max(0, targets.length - 1) * hitIntervalMs + finishDelayMs;
+
+    for (const unit of living(state.combatGrid || [])) {
+      unit.timeStopRemainingMs = Math.max(unit.timeStopRemainingMs || 0, durationMs);
+      unit.timeStopDurationMs = Math.max(unit.timeStopDurationMs || 0, durationMs);
+    }
+    caster.warpVisualRemainingMs = Math.max(caster.warpVisualRemainingMs || 0, durationMs);
+
+    targets.forEach((target, index) => {
+      cinematicTimeline.schedule(cinematicElapsedMs, startDelayMs + index * hitIntervalMs, {
+        type: "abigail-warp-slash-hit",
+        caster,
+        target,
+        augment,
+        hitIndex: index,
+        hitCount: targets.length,
+      });
+    });
+    playSkillVisual?.({
+      type: "abigail-warp-slash",
+      fromId: caster.id,
+      targetIds: targets.map((unit) => unit.id),
+      durationMs,
+    });
+    return {
+      skillName: "워프 슬래시",
+      message: `${caster.name} 워프 슬래시: 시간 정지 / ${targets.length}명 추적`,
+      effects: [{
+        from: caster.id,
+        to: targets[0].id,
+        type: "abigail-warp",
+        kind: "abigail-warp",
+        value: { duration: durationMs, targetIds: targets.map((unit) => unit.id) },
+      }],
+    };
+  }
   const targets = unitsInRange(caster, enemies, 3);
   const effects = [];
   let total = 0;
@@ -3886,10 +4076,10 @@ function castCoralineSkill(caster, enemies) {
   return { message: `${caster.name} 흑백의거울상: ${targets.length}명 ${total} 피해 / 보호막 ${shield}`, effects };
 }
 
-function resolveSkillTimelineEvents(elapsedMs) {
+function resolveSkillTimelineEvents(elapsedMs, timeline = skillTimeline) {
   const effects = [];
   const messages = [];
-  for (const event of skillTimeline.takeDue(elapsedMs)) {
+  for (const event of timeline.takeDue(elapsedMs)) {
     try {
     if (event.type === "yuki-final-bloom") {
       const targets = event.targets.filter((unit) => unit.hp > 0);
@@ -3901,6 +4091,58 @@ function resolveSkillTimelineEvents(elapsedMs) {
       }
       playSkillVisual?.({ type: "yuki-bloom", fromId: event.caster.id, targetIds: targets.map((unit) => unit.id) });
       messages.push(`${event.caster.name} 화무십일홍 개화: ${targets.length}명 ${total} 고정 피해`);
+      continue;
+    }
+    if (event.type === "abigail-warp-slash-hit") {
+      if (!event.caster || event.caster.hp <= 0 || !event.target || event.target.hp <= 0) continue;
+      const baseDamage = event.caster.atk * (Number(event.augment?.atkRatio) || 0)
+        + event.caster.skillAmp * (Number(event.augment?.skillAmpRatio) || 0)
+        + (Number(event.augment?.flatDamage) || 0);
+      const critical = event.augment?.canCrit !== false && random() < Math.max(0, event.caster.critChance || 0);
+      const bossMultiplier = event.target.boss
+        ? Number(event.augment?.bossDamageMultiplier) || 1
+        : 1;
+      const damage = dealDamage(
+        event.caster,
+        event.target,
+        skillOutput(event.caster, baseDamage) * bossMultiplier * (critical ? (event.caster.critDamage || 1.5) : 1)
+      );
+      effects.push({
+        ...combatEffect(event.caster, event.target, "skill", { amount: damage, critical, noProjectile: true }),
+        kind: "slash",
+      });
+      messages.push(`${event.caster.name} 워프 슬래시 ${event.hitIndex + 1}/${event.hitCount}: ${event.target.name} ${damage}${critical ? " 치명타" : ""}`);
+      continue;
+    }
+    if (event.type === "shoichi-seven-elixir-hit") {
+      if (!event.caster || event.caster.hp <= 0) continue;
+      const targets = event.targets.filter((unit) => unit.hp > 0);
+      const finalHit = event.hitIndex === event.hitCount - 1;
+      let total = 0;
+      for (const target of targets) {
+        const baseDamage = event.caster.atk * (finalHit
+          ? Number(event.augment?.finalDamageAtkRatio) || 0
+          : Number(event.augment?.pathDamageAtkRatio) || 0)
+          + event.caster.skillAmp * (finalHit
+            ? Number(event.augment?.finalDamageSkillAmpRatio) || 0
+            : Number(event.augment?.pathDamageSkillAmpRatio) || 0);
+        const amount = target.boss
+          ? baseDamage * (Number(event.augment?.bossDamageMultiplier) || 1)
+          : baseDamage;
+        const critical = event.augment?.canCrit !== false
+          && random() < Math.max(0, event.caster.critChance || 0);
+        const damage = dealDamage(
+          event.caster,
+          target,
+          skillOutput(event.caster, amount) * (critical ? (event.caster.critDamage || 1.5) : 1)
+        );
+        total += damage;
+        effects.push({
+          ...combatEffect(event.caster, target, "skill", { amount: damage, critical, extra: true, noProjectile: true }),
+          kind: "slash",
+        });
+      }
+      messages.push(`${event.caster.name} 7단비약 ${event.hitIndex + 1}/${event.hitCount}: ${targets.length}명 ${total} 피해`);
       continue;
     }
     if (event.type === "hart-peacemaker-heal") {
@@ -4066,7 +4308,7 @@ function withSkillName(caster, action) {
   return {
     ...action,
     effects: [
-      { from: caster.id, to: caster.id, type: "skill-name", kind: "skill-name", value: { label: caster.skill || "스킬" } },
+      { from: caster.id, to: caster.id, type: "skill-name", kind: "skill-name", value: { label: action.skillName || caster.skill || "스킬" } },
       ...action.effects,
     ],
   };
@@ -4366,6 +4608,121 @@ function playCombatEffects(effects) {
       rideAnimation.oncancel = cleanupRide;
       continue;
     }
+    if (effect.type === "shoichi-seven-ride") {
+      const origin = cellAnchor(fromRect);
+      const cellAnchors = [
+        ...Array.from(refs.enemyBoard?.children || []),
+        ...Array.from(refs.board?.children || []),
+      ].map((cell) => cellAnchor(cell.getBoundingClientRect())).filter(Boolean);
+      if (!origin || !cellAnchors.length) continue;
+      const area = {
+        left: Math.min(...cellAnchors.map((point) => point.x)),
+        right: Math.max(...cellAnchors.map((point) => point.x)),
+        top: Math.min(...cellAnchors.map((point) => point.y)),
+        bottom: Math.max(...cellAnchors.map((point) => point.y)),
+      };
+      const snap = ([xRatio, yRatio]) => {
+        const point = {
+          x: area.left + xRatio * (area.right - area.left),
+          y: area.top + yRatio * (area.bottom - area.top),
+        };
+        return cellAnchors.reduce((best, cell) => {
+          const bestDistance = (best.x - point.x) ** 2 + (best.y - point.y) ** 2;
+          const cellDistance = (cell.x - point.x) ** 2 + (cell.y - point.y) ** 2;
+          return cellDistance < bestDistance ? cell : best;
+        }, cellAnchors[0]);
+      };
+      const route = [
+        [0.88, 0.10],
+        [0.42, 0.53],
+        [0.89, 0.87],
+        [0.43, 0.35],
+        [0.12, 0.90],
+        [0.59, 0.35],
+        [0.15, 0.14],
+        [0.61, 0.53],
+      ].map(snap);
+      const runner = from.cloneNode(true);
+      runner.removeAttribute("data-unit-id");
+      runner.removeAttribute("draggable");
+      runner.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+      runner.className = "unit shoichi-runner shoichi-seven-runner";
+      runner.style.left = `${fromRect.left - fieldRect.left}px`;
+      runner.style.top = `${fromRect.top - fieldRect.top}px`;
+      runner.style.width = `${fromRect.width}px`;
+      runner.style.height = `${fromRect.height}px`;
+      field.append(runner);
+      const stops = [origin, ...route, origin];
+      const keyframes = stops.flatMap((point, index) => {
+        const offset = index / Math.max(1, stops.length - 1);
+        const dx = point.x - origin.x;
+        const dy = point.y - origin.y;
+        const arrival = {
+          transform: `translate(${dx}px, ${dy}px) scale(1.04)`,
+          opacity: 1,
+          offset,
+        };
+        if (index === 0) return [arrival];
+        return [{
+          transform: `translate(${dx}px, ${dy}px) scale(0.82)`,
+          opacity: 0.22,
+          offset: Math.max(0, offset - 0.02),
+        }, arrival];
+      });
+      const animation = runner.animate(keyframes, {
+        duration: Math.max(900, Number(effect.value?.duration) || 1340),
+        easing: "linear",
+      });
+      const cleanupSevenElixir = () => runner.remove();
+      animation.onfinish = cleanupSevenElixir;
+      animation.oncancel = cleanupSevenElixir;
+      continue;
+    }
+    if (effect.type === "abigail-warp") {
+      const targetIds = Array.isArray(effect.value?.targetIds) ? effect.value.targetIds : [];
+      const targetAnchors = targetIds
+        .map((id) => cellAnchor(getUnitRect(id)))
+        .filter(Boolean);
+      if (!targetAnchors.length) continue;
+      const origin = cellAnchor(fromRect);
+      if (!origin) continue;
+      const duration = Math.max(500, Number(effect.value?.duration) || 1200);
+      const runner = from.cloneNode(true);
+      runner.removeAttribute("data-unit-id");
+      runner.removeAttribute("draggable");
+      runner.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+      runner.className = "unit shoichi-runner abigail-warp-runner";
+      runner.style.left = `${fromRect.left - fieldRect.left}px`;
+      runner.style.top = `${fromRect.top - fieldRect.top}px`;
+      runner.style.width = `${fromRect.width}px`;
+      runner.style.height = `${fromRect.height}px`;
+      field.append(runner);
+      const stops = [origin, ...targetAnchors, origin];
+      const keyframes = [];
+      stops.forEach((point, index) => {
+        const offset = index / Math.max(1, stops.length - 1);
+        const dx = point.x - origin.x;
+        const dy = point.y - origin.y;
+        if (index > 0) {
+          keyframes.push({ transform: `translate(${dx}px, ${dy}px) scale(0.82)`, opacity: 0.18, offset: Math.max(0, offset - 0.025) });
+        }
+        keyframes.push({
+          transform: `translate(${dx}px, ${dy}px) scale(1.06)`,
+          opacity: 1,
+          offset,
+        });
+      });
+      const animation = runner.animate(keyframes, {
+        duration,
+        easing: "linear",
+      });
+      const cleanupWarp = () => {
+        runner.remove();
+      };
+      animation.onfinish = cleanupWarp;
+      animation.oncancel = cleanupWarp;
+      continue;
+    }
     if (effect.type === "darko-escort") {
       const to = getUnitElement(effect.to);
       const grabbed = getUnitElement(effect.value?.grabbedId);
@@ -4466,6 +4823,8 @@ function advanceTimedStatuses(units, stepMs) {
     if (unit.immuneRemainingMs > 0) unit.immuneRemainingMs = Math.max(0, unit.immuneRemainingMs - stepMs);
     if (unit.stunRemainingMs > 0) unit.stunRemainingMs = Math.max(0, unit.stunRemainingMs - stepMs);
     if (unit.actionLockRemainingMs > 0) unit.actionLockRemainingMs = Math.max(0, unit.actionLockRemainingMs - stepMs);
+    if (unit.timeStopRemainingMs > 0) unit.timeStopRemainingMs = Math.max(0, unit.timeStopRemainingMs - stepMs);
+    if (unit.warpVisualRemainingMs > 0) unit.warpVisualRemainingMs = Math.max(0, unit.warpVisualRemainingMs - stepMs);
     if (unit.manaLockRemainingMs > 0) unit.manaLockRemainingMs = Math.max(0, unit.manaLockRemainingMs - stepMs);
     if (unit.rootRemainingMs > 0) unit.rootRemainingMs = Math.max(0, unit.rootRemainingMs - stepMs);
     if (unit.healReductionRemainingMs > 0) unit.healReductionRemainingMs = Math.max(0, unit.healReductionRemainingMs - stepMs);
@@ -4480,6 +4839,16 @@ function advanceTimedStatuses(units, stepMs) {
     if (unit.lifeShareRemainingMs > 0) unit.lifeShareRemainingMs = Math.max(0, unit.lifeShareRemainingMs - stepMs);
     if (unit.shawlCurtainRemainingMs > 0) unit.shawlCurtainRemainingMs = Math.max(0, unit.shawlCurtainRemainingMs - stepMs);
     if (unit.shieldDefenseRemainingMs > 0) unit.shieldDefenseRemainingMs = Math.max(0, unit.shieldDefenseRemainingMs - stepMs);
+    if (unit.witchShieldRemainingMs > 0) {
+      unit.witchShieldRemainingMs = Math.max(0, unit.witchShieldRemainingMs - stepMs);
+      if (unit.witchShieldRemainingMs <= 0 && unit.witchShield > 0) {
+        unit.shield = Math.max(0, (unit.shield || 0) - unit.witchShield);
+        unit.witchShield = 0;
+      }
+    }
+    if (unit.assassinOpeningProtectionRemainingMs > 0) {
+      unit.assassinOpeningProtectionRemainingMs = Math.max(0, unit.assassinOpeningProtectionRemainingMs - stepMs);
+    }
     if (unit.fenrirLastStandRemainingMs > 0) {
       unit.fenrirLastStandRemainingMs = Math.max(0, unit.fenrirLastStandRemainingMs - stepMs);
       if (unit.fenrirLastStandRemainingMs <= 0 && unit.fenrirLastStandActive) unit.status = "last-stand";
@@ -4498,12 +4867,14 @@ function advanceTimedStatuses(units, stepMs) {
     if (unit.immuneRemainingMs <= 0) unit.immuneDurationMs = 0;
     if (unit.stunRemainingMs <= 0) unit.stunDurationMs = 0;
     if (unit.actionLockRemainingMs <= 0) unit.actionLockDurationMs = 0;
+    if (unit.timeStopRemainingMs <= 0) unit.timeStopDurationMs = 0;
     if (unit.manaLockRemainingMs <= 0) unit.manaLockDurationMs = 0;
     if (unit.rootRemainingMs <= 0) unit.rootDurationMs = 0;
     if (unit.peaceRemainingMs <= 0) unit.peaceDurationMs = 0;
     if (unit.lifeShareRemainingMs <= 0) unit.lifeShareDurationMs = 0;
     if (unit.shawlCurtainRemainingMs <= 0) unit.shawlCurtainDurationMs = 0;
     if (unit.shieldDefenseRemainingMs <= 0) unit.shieldDefenseDurationMs = 0;
+    if (unit.witchShieldRemainingMs <= 0) unit.witchShieldDurationMs = 0;
     if (unit.fenrirLastStandRemainingMs <= 0) unit.fenrirLastStandDurationMs = 0;
     const actionFrozen = unit.stunRemainingMs > 0 || unit.actionLockRemainingMs > 0;
     if (!actionFrozen) unit.actionCooldownMs = (unit.actionCooldownMs || 0) - stepMs;
@@ -4515,6 +4886,19 @@ function advanceTimedStatuses(units, stepMs) {
     else if (unit.rootRemainingMs > 0) unit.status = "rooted";
     else if (unit.shieldDefenseRemainingMs > 0) unit.status = "shielded";
     else if (unit.peaceRemainingMs > 0 || unit.lifeShareRemainingMs > 0) unit.status = "immune";
+  }
+}
+
+function advanceTimeStopTimers(units, stepMs) {
+  for (const unit of units) {
+    if (!unit) continue;
+    if (unit.timeStopRemainingMs > 0) {
+      unit.timeStopRemainingMs = Math.max(0, unit.timeStopRemainingMs - stepMs);
+      if (unit.timeStopRemainingMs <= 0) unit.timeStopDurationMs = 0;
+    }
+    if (unit.warpVisualRemainingMs > 0) {
+      unit.warpVisualRemainingMs = Math.max(0, unit.warpVisualRemainingMs - stepMs);
+    }
   }
 }
 
@@ -4569,6 +4953,7 @@ async function simulate() {
   refs.phase.textContent = "전투 중: 양 팀이 자동으로 교전합니다.";
   document.body.classList.add("fighting");
   skillTimeline.clear();
+  cinematicTimeline.clear();
   clearSkillVisuals?.();
   try {
   const combatSeed = state.nextCombatSeed || createCombatSeed(battleRound, state.debugMode ? "debug" : "pve");
@@ -4623,6 +5008,17 @@ async function simulate() {
       huntFocusMarked: unit.huntFocusMarked ?? 0,
       huntMarkedDefenseApplyRatio: unit.huntMarkedDefenseApplyRatio ?? 1,
       huntTransferStunMs: unit.huntTransferStunMs ?? 0,
+      precisionCritRequired: unit.precisionCritRequired ?? 0,
+      precisionStunMs: unit.precisionStunMs ?? 0,
+      precisionStunCooldownMs: unit.precisionStunCooldownMs ?? 0,
+      spellCastShieldRatio: unit.spellCastShieldRatio ?? 0,
+      spellCastShieldDurationMs: unit.spellCastShieldDurationMs ?? 0,
+      guardianStrikeEvery: unit.guardianStrikeEvery ?? 0,
+      guardianStrikeHpRatio: unit.guardianStrikeHpRatio ?? 0,
+      assassinOpeningDamageReduction: unit.assassinOpeningDamageReduction ?? 0,
+      assassinOpeningProtectionMs: unit.assassinOpeningProtectionMs ?? 0,
+      assassinRearmCritMultiplier: unit.assassinRearmCritMultiplier ?? 0,
+      assassinRearmCooldownMs: unit.assassinRearmCooldownMs ?? 0,
     };
     unit.critChance = critBase.critChance;
     unit.critDamage = critBase.critDamage;
@@ -4651,6 +5047,7 @@ async function simulate() {
   const openingHiddenEffects = prepareOpeningEffects(allies);
   for (const rule of openingHiddenEffects) addLog(`${rule.name} 발동.`);
   state.pendingHiddenEffects = [];
+  state.precisionCritCounters = {};
   state.enemies.filter(Boolean).forEach((unit) => prepareCombatUnit(unit, "enemy"));
   state.combatGrid = Array(combatGridSize()).fill(null);
   state.enemies.forEach((unit, index) => {
@@ -4670,13 +5067,13 @@ async function simulate() {
     renderCombatFrame();
     await sleep(220);
   }
+  const diverCount = placeBacklineDivers([...allies, ...state.enemies.filter(Boolean)]);
   const openingUtilities = applyOpeningTeamUtilities(allies, state.enemies);
   if (openingUtilities.pulledUnits) {
     renderCombatFrame();
     await sleep(380);
   }
   const huntMarkedUnits = assignHuntMarks(allies, state.enemies);
-  const diverCount = placeBacklineDivers([...allies, ...state.enemies.filter(Boolean)]);
   const boss = living(state.enemies).find((unit) => unit.boss);
   addLog(boss ? `보스전 시작: ${boss.name} 출현!` : `전투 시작: 아군 ${allies.length}명 vs 야생 실험체 ${living(state.enemies).length}명`);
   if (openingUtilities.backlineShielded) addLog(`중장비 발동: 후열 ${openingUtilities.backlineShielded}명 보호막.`);
@@ -4695,82 +5092,108 @@ async function simulate() {
   let nextRenderAt = 0;
   let nextLogAt = 0;
   let lastProgressAt = 0;
+  let simulationElapsedMs = 0;
   const combatLogBuffer = [];
   const flushCombatLogs = () => {
     if (!combatLogBuffer.length) return;
     addLog(combatLogBuffer.splice(0, 3).join(" / "));
   };
   combatElapsedMs = 0;
-  while (living(allies).length && living(state.enemies).length && combatElapsedMs < maxCombatMs) {
+  cinematicElapsedMs = 0;
+  const cinematicTimeStopActive = () => (state.combatGrid || [])
+    .some((unit) => unit && (unit.timeStopRemainingMs || 0) > 0);
+  while (
+    living(allies).length
+    && (living(state.enemies).length || cinematicTimeStopActive())
+    && combatElapsedMs < maxCombatMs
+  ) {
     await sleep(simulationStepMs);
-    combatElapsedMs += simulationStepMs;
+    simulationElapsedMs += simulationStepMs;
+    cinematicElapsedMs += simulationStepMs;
     const combatants = [...living(allies), ...living(state.enemies)];
-    clearCombatStatus(combatants);
-    advanceTimedStatuses(combatants, simulationStepMs);
-    const actors = combatants.sort((a, b) => (a.actionCooldownMs || 0) - (b.actionCooldownMs || 0) || b.speed - a.speed);
     const tickLogs = [];
     const effects = [];
     let actedThisStep = false;
-    const expiredLastStands = combatants.filter((unit) => unit.fenrirLastStandExpired && unit.hp <= 0);
-    if (expiredLastStands.length) {
-      tickLogs.push(...expiredLastStands.map((unit) => `${unit.name} 최후의 저항 종료.`));
-      for (const unit of expiredLastStands) unit.fenrirLastStandExpired = false;
-      removeDeadUnits(expiredLastStands);
-    }
+    const timeStopActive = combatants.some((unit) => (unit.timeStopRemainingMs || 0) > 0);
 
-    for (const actor of actors) {
-      if (actor.hp <= 0) continue;
-      if (actor.trainingDummy) continue;
-      if (actor.stunRemainingMs > 0 || actor.actionLockRemainingMs > 0 || actor.actionCooldownMs > 0) continue;
-      const friends = actor.side === "ally" ? allies : state.enemies;
-      const foes = actor.side === "ally" ? state.enemies : allies;
-      if (!living(foes).length) break;
-      let action;
-      try {
-        action = actor.mana >= unitMaxMana(actor) && !passiveOnlySkill(actor) ? castSkill(actor, friends, foes) : basicAttack(actor, foes);
-      } catch (error) {
-        console.error("[rumia-combat-action]", actor?.name, error);
-        addLog(`전투 행동 오류: ${actor.name} 행동을 건너뜁니다.`, { force: true });
-        actor.mana = 0;
-        actor.actionCooldownMs = balance.battle.moveIntervalMs ?? 500;
-        tickLogs.push(`${actor.name} 행동 오류: 이번 행동을 건너뜁니다.`);
-        continue;
+    if (timeStopActive) {
+      advanceTimeStopTimers(state.combatGrid || combatants, simulationStepMs);
+      const cinematicResult = resolveSkillTimelineEvents(cinematicElapsedMs, cinematicTimeline);
+      tickLogs.push(...cinematicResult.messages);
+      effects.push(...cinematicResult.effects);
+    } else {
+      combatElapsedMs += simulationStepMs;
+      clearCombatStatus(combatants);
+      advanceTimedStatuses(combatants, simulationStepMs);
+      const actors = combatants.sort((a, b) => (a.actionCooldownMs || 0) - (b.actionCooldownMs || 0) || b.speed - a.speed);
+      const expiredLastStands = combatants.filter((unit) => unit.fenrirLastStandExpired && unit.hp <= 0);
+      if (expiredLastStands.length) {
+        tickLogs.push(...expiredLastStands.map((unit) => `${unit.name} 최후의 저항 종료.`));
+        for (const unit of expiredLastStands) unit.fenrirLastStandExpired = false;
+        removeDeadUnits(expiredLastStands);
       }
-      actedThisStep = true;
-      const overdueMs = Math.min(0, actor.actionCooldownMs || 0);
-      actor.actionCooldownMs = Math.max(0, cooldownForAction(actor, action) + overdueMs);
-      const augmentResult = resolveAugmentActionEffects(actor, friends, foes, action);
-      if (action.message) tickLogs.push(action.message);
-      tickLogs.push(...augmentResult.messages);
-      effects.push(...action.effects);
-      effects.push(...augmentResult.effects);
-      if (state.pendingHiddenEffects?.length) effects.push(...state.pendingHiddenEffects.splice(0));
+
+      for (const actor of actors) {
+        if (actor.hp <= 0) continue;
+        if (actor.trainingDummy) continue;
+        if (actor.stunRemainingMs > 0 || actor.actionLockRemainingMs > 0 || actor.actionCooldownMs > 0) continue;
+        const friends = actor.side === "ally" ? allies : state.enemies;
+        const foes = actor.side === "ally" ? state.enemies : allies;
+        if (!living(foes).length) break;
+        let action;
+        try {
+          const castingSkill = actor.mana >= unitMaxMana(actor) && !passiveOnlySkill(actor);
+          action = castingSkill ? castSkill(actor, friends, foes) : basicAttack(actor, foes);
+          if (castingSkill && actor.mana === 0) {
+            const shieldEffect = applySpellCastShield(actor);
+            if (shieldEffect) action.effects.push(shieldEffect);
+          }
+        } catch (error) {
+          console.error("[rumia-combat-action]", actor?.name, error);
+          addLog(`전투 행동 오류: ${actor.name} 행동을 건너뜁니다.`, { force: true });
+          actor.mana = 0;
+          actor.actionCooldownMs = balance.battle.moveIntervalMs ?? 500;
+          tickLogs.push(`${actor.name} 행동 오류: 이번 행동을 건너뜁니다.`);
+          continue;
+        }
+        actedThisStep = true;
+        const overdueMs = Math.min(0, actor.actionCooldownMs || 0);
+        actor.actionCooldownMs = Math.max(0, cooldownForAction(actor, action) + overdueMs);
+        const augmentResult = resolveAugmentActionEffects(actor, friends, foes, action);
+        if (action.message) tickLogs.push(action.message);
+        tickLogs.push(...augmentResult.messages);
+        effects.push(...action.effects);
+        effects.push(...augmentResult.effects);
+        if (state.pendingHiddenEffects?.length) effects.push(...state.pendingHiddenEffects.splice(0));
+      }
+
+      const timelineResult = resolveSkillTimelineEvents(combatElapsedMs);
+      const cinematicResult = resolveSkillTimelineEvents(cinematicElapsedMs, cinematicTimeline);
+      tickLogs.push(...timelineResult.messages, ...cinematicResult.messages);
+      effects.push(...timelineResult.effects, ...cinematicResult.effects);
+      effects.push(...applyTimedAugments(allies));
+      const lastSurvivorEffect = applyLastSurvivorAugment(allies);
+      if (lastSurvivorEffect) effects.push(lastSurvivorEffect);
     }
 
-    const timelineResult = resolveSkillTimelineEvents(combatElapsedMs);
-    tickLogs.push(...timelineResult.messages);
-    effects.push(...timelineResult.effects);
-    effects.push(...applyTimedAugments(allies));
-    const lastSurvivorEffect = applyLastSurvivorAugment(allies);
-    if (lastSurvivorEffect) effects.push(lastSurvivorEffect);
-    if (actedThisStep || tickLogs.length || effects.length || timelineResult.messages.length || timelineResult.effects.length) {
-      lastProgressAt = combatElapsedMs;
-    } else if (combatElapsedMs - lastProgressAt > 3000) {
+    if (actedThisStep || tickLogs.length || effects.length || timeStopActive) {
+      lastProgressAt = simulationElapsedMs;
+    } else if (simulationElapsedMs - lastProgressAt > 3000) {
       addLog("전투 진행 정체 감지: 남은 예약/상태를 정리하고 라운드를 종료합니다.", { force: true });
       addLog("전투 진행 정체 감지: 남은 예약/상태를 정리하고 라운드를 종료합니다.");
       break;
     }
 
     if (tickLogs.length) combatLogBuffer.push(tickLogs.slice(0, 3).join(" / "));
-    if (combatElapsedMs >= nextLogAt) {
+    if (simulationElapsedMs >= nextLogAt) {
       flushCombatLogs();
-      nextLogAt = combatElapsedMs + 250;
+      nextLogAt = simulationElapsedMs + 250;
     }
-    const shouldRender = combatElapsedMs >= nextRenderAt;
+    const shouldRender = simulationElapsedMs >= nextRenderAt;
     if (shouldRender) {
       refs.phase.textContent = `전투 중: ${(combatElapsedMs / 1000).toFixed(1)}초 · 아군 ${living(allies).length}명 / 적 ${living(state.enemies).length}명`;
       renderCombatFrame();
-      nextRenderAt = combatElapsedMs + renderIntervalMs;
+      nextRenderAt = simulationElapsedMs + renderIntervalMs;
     }
     playCombatEffects(effects);
   }
@@ -4791,7 +5214,9 @@ async function simulate() {
   state.busy = false;
   state.round += 1;
   state.combatGrid = null;
+  state.precisionCritCounters = {};
   skillTimeline.clear();
+  cinematicTimeline.clear();
   addXp(balance.player.combatXp, "전투 보상");
   for (const unit of boardAllies) {
     if (unit.combatBase) {
@@ -4836,6 +5261,17 @@ async function simulate() {
       unit.huntFocusMarked = unit.combatBase.huntFocusMarked;
       unit.huntMarkedDefenseApplyRatio = unit.combatBase.huntMarkedDefenseApplyRatio;
       unit.huntTransferStunMs = unit.combatBase.huntTransferStunMs;
+      unit.precisionCritRequired = unit.combatBase.precisionCritRequired;
+      unit.precisionStunMs = unit.combatBase.precisionStunMs;
+      unit.precisionStunCooldownMs = unit.combatBase.precisionStunCooldownMs;
+      unit.spellCastShieldRatio = unit.combatBase.spellCastShieldRatio;
+      unit.spellCastShieldDurationMs = unit.combatBase.spellCastShieldDurationMs;
+      unit.guardianStrikeEvery = unit.combatBase.guardianStrikeEvery;
+      unit.guardianStrikeHpRatio = unit.combatBase.guardianStrikeHpRatio;
+      unit.assassinOpeningDamageReduction = unit.combatBase.assassinOpeningDamageReduction;
+      unit.assassinOpeningProtectionMs = unit.combatBase.assassinOpeningProtectionMs;
+      unit.assassinRearmCritMultiplier = unit.combatBase.assassinRearmCritMultiplier;
+      unit.assassinRearmCooldownMs = unit.combatBase.assassinRearmCooldownMs;
       unit.huntMarked = false;
       unit.huntMarkRank = 0;
       delete unit.combatBase;
@@ -4875,6 +5311,14 @@ async function simulate() {
     unit.actionCooldownMs = 0;
     unit.shield = 0;
     unit.leniShield = 0;
+    unit.witchShield = 0;
+    unit.witchShieldRemainingMs = 0;
+    unit.witchShieldDurationMs = 0;
+    unit.assassinOpeningProtectionRemainingMs = 0;
+    unit.assassinRearmReady = false;
+    unit.assassinRearmReadyAt = 0;
+    unit.precisionStunReadyAt = 0;
+    unit.openingDiverTargetId = null;
     unit.healReduction = 0;
     unit.healReductionRemainingMs = 0;
     unit.healReductionDurationMs = 0;
@@ -4925,7 +5369,6 @@ async function simulate() {
     delete unit.augmentThreeStarRevived;
     delete unit.augmentWarmupStacks;
     delete unit.lukeCleaningBoost;
-    delete unit.sevenElixirUsed;
     delete unit.theodoreAssistReadyAt;
     for (const key of Object.keys(unit)) {
       if (key.startsWith("augmentLowHp")) delete unit[key];
@@ -4996,8 +5439,10 @@ async function simulate() {
     state.combatGrid = null;
     state.enemies = [];
     state.board = originalBoard;
+    state.precisionCritCounters = {};
     state.pendingHiddenEffects = [];
     skillTimeline.clear();
+    cinematicTimeline.clear();
     try {
       clearSkillVisuals?.();
     } catch (clearError) {
@@ -5023,6 +5468,17 @@ async function simulate() {
         unit.huntFocusMarked = unit.combatBase.huntFocusMarked;
         unit.huntMarkedDefenseApplyRatio = unit.combatBase.huntMarkedDefenseApplyRatio;
         unit.huntTransferStunMs = unit.combatBase.huntTransferStunMs;
+        unit.precisionCritRequired = unit.combatBase.precisionCritRequired;
+        unit.precisionStunMs = unit.combatBase.precisionStunMs;
+        unit.precisionStunCooldownMs = unit.combatBase.precisionStunCooldownMs;
+        unit.spellCastShieldRatio = unit.combatBase.spellCastShieldRatio;
+        unit.spellCastShieldDurationMs = unit.combatBase.spellCastShieldDurationMs;
+        unit.guardianStrikeEvery = unit.combatBase.guardianStrikeEvery;
+        unit.guardianStrikeHpRatio = unit.combatBase.guardianStrikeHpRatio;
+        unit.assassinOpeningDamageReduction = unit.combatBase.assassinOpeningDamageReduction;
+        unit.assassinOpeningProtectionMs = unit.combatBase.assassinOpeningProtectionMs;
+        unit.assassinRearmCritMultiplier = unit.combatBase.assassinRearmCritMultiplier;
+        unit.assassinRearmCooldownMs = unit.combatBase.assassinRearmCooldownMs;
         unit.huntMarked = false;
         unit.huntMarkRank = 0;
         delete unit.combatBase;
@@ -5043,6 +5499,19 @@ async function simulate() {
       unit.actionLockDurationMs = 0;
       unit.manaLockRemainingMs = 0;
       unit.manaLockDurationMs = 0;
+      unit.shield = 0;
+      unit.leniShield = 0;
+      unit.witchShield = 0;
+      unit.witchShieldRemainingMs = 0;
+      unit.witchShieldDurationMs = 0;
+      unit.assassinOpeningProtectionRemainingMs = 0;
+      unit.assassinRearmReady = false;
+      unit.assassinRearmReadyAt = 0;
+      unit.precisionStunReadyAt = 0;
+      unit.openingDiverTargetId = null;
+      unit.focusTargetId = null;
+      unit.forcedFocusTargetId = null;
+      unit.killContributors = null;
       unit.hiddenAbsorbed = false;
     }
     refs.phase.textContent = "전투 처리 오류가 발생해 상태를 복구했습니다. 다시 전투를 시작할 수 있습니다.";

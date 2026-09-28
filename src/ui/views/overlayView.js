@@ -215,7 +215,8 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
       case "lenoxChainSentence": lines.push(`속박 ${seconds(effect.bindSeconds)} / 받는 피해 ${signedPercent(effect.damageTakenAdd)} / 처치 시 주변 제압 ${seconds(effect.onDeathNearbySuppressSeconds)}`); break;
       case "theodoreSniperProtocol": lines.push(`지원 사격 스증 ${percent(effect.assistDamageSkillAmpRatio)} / 보호막 ${percent(effect.allyShieldHpRatio)} / 쿨다운 ${seconds(effect.cooldownSeconds)}`); break;
       case "iremCatfishMayhem": lines.push(`처치 관여마다 공격력 ${signedNumber(effect.killAtkAdd)} / 스킬증폭 ${signedNumber(effect.killSkillAmpAdd)}. 전술 표적이면 x${effect.tacticalTargetBonusMultiply || 1}`); break;
-      case "shoichiSevenElixir": lines.push(`전투당 1회 ${effect.dashCount || 7}회 단검 이동 / 경로 피해 공격력 ${percent(effect.pathDamageAtkRatio)} + 스킬증폭 ${percent(effect.pathDamageSkillAmpRatio)} / 마지막 피해 공격력 ${percent(effect.finalDamageAtkRatio)} + 스킬증폭 ${percent(effect.finalDamageSkillAmpRatio)} / 보스 피해 x${effect.bossDamageMultiplier || 1}`); break;
+      case "shoichiSevenElixir": lines.push(`쇼이치 스킬을 7단비약으로 변경 / 매 시전 시 시간 정지 / 생존한 모든 적 ${effect.dashCount || 7}회 타격 / 1~${Math.max(1, (effect.dashCount || 7) - 1)}타 공격력 ${percent(effect.pathDamageAtkRatio)} + 스킬증폭 ${percent(effect.pathDamageSkillAmpRatio)} / 마지막 타격 공격력 ${percent(effect.finalDamageAtkRatio)} + 스킬증폭 ${percent(effect.finalDamageSkillAmpRatio)} / 모든 타격 개별 치명타 적용 / 보스 피해 x${effect.bossDamageMultiplier || 1}`); break;
+      case "abigailWarpSlash": lines.push(`모든 적 1회 타격 / 타격당 공격력 ${percent(effect.atkRatio)} + 스킬증폭 ${percent(effect.skillAmpRatio)} + ${effect.flatDamage || 0} / 보스 피해 x${effect.bossDamageMultiplier || 1} / 개별 치명타 적용 / 연출 중 무적`); break;
       default: break;
     }
     const grants = [

@@ -262,7 +262,7 @@
     "defense": 17,
     "skill": "숄 장막",
     "skillId": "mai_shawl_curtain",
-    "skillTooltip": "스킬 증폭의 125% + 방어력의 160% + 18 보호막을 얻습니다. 1.8초간 보호막이 남아 있으면 받는 피해가 25% 감소합니다.",
+    "skillTooltip": "스킬 증폭의 110% + 방어력의 135% + 15 보호막을 얻습니다. 1.8초간 보호막이 남아 있으면 받는 피해가 18% 감소합니다.",
     "art": "./assets/characters/045_Mai.png",
     "active": true,
     "maxMana": 115
@@ -1642,7 +1642,7 @@
     "defense": 9,
     "attackRange": 1,
     "skill": "최후의 저항",
-    "skillTooltip": "패시브: 사망 시 전투당 1회 체력 100%로 부활해 최후의 저항 상태가 됩니다. 부활 후 3초 동안 피해를 받지 않으며 공격속도가 30% 증가합니다. 3초가 지난 뒤부터 다시 피해를 받습니다.",
+    "skillTooltip": "패시브: 사망 시 전투당 1회 체력 55%로 부활해 최후의 저항 상태가 됩니다. 부활 후 1.5초 동안 피해를 받지 않으며 공격속도가 30% 증가합니다. 1.5초가 지난 뒤부터 다시 피해를 받습니다.",
     "artFile": "086_Fenrir.png",
     "art": "./assets/characters/086_Fenrir.png",
     "skillId": "fenrir_last_stand",

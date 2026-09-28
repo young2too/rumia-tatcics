@@ -358,18 +358,53 @@
       "쇼이치",
       "dash"
     ],
-    "summary": "쇼이치 스킬 시 7연속 비약",
-    "description": "쇼이치가 스킬 시전 후 전투당 1회 7단비약을 사용합니다. 여러 차례 단검을 타며 경로의 적에게 피해를 주고 마지막에 큰 피해를 줍니다. 선택 시 쇼이치 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "summary": "쇼이치의 스킬을 시간 정지 7연속 비약으로 변경",
+    "description": "쇼이치의 스킬을 7단비약으로 변경합니다. 스킬을 사용할 때마다 시간을 멈추고 전장을 일곱 번 가릅니다. 1~6타는 생존한 모든 적에게 공격력의 45% + 스킬 증폭의 60% 피해를 주고, 마지막 타격은 공격력의 140% + 스킬 증폭의 180% 피해를 줍니다. 모든 타격은 쇼이치의 치명타 확률과 치명타 피해를 적용합니다. 선택 시 쇼이치 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
     "effect": {
       "type": "shoichiSevenElixir",
       "unit": "쇼이치",
-      "oncePerCombat": true,
       "dashCount": 7,
-      "pathDamageAtkRatio": 0.35,
-      "pathDamageSkillAmpRatio": 0.45,
-      "finalDamageAtkRatio": 1.1,
-      "finalDamageSkillAmpRatio": 1.4,
-      "bossDamageMultiplier": 0.45,
+      "startDelayMs": 180,
+      "hitIntervalMs": 150,
+      "finishDelayMs": 260,
+      "pathDamageAtkRatio": 0.45,
+      "pathDamageSkillAmpRatio": 0.6,
+      "finalDamageAtkRatio": 1.4,
+      "finalDamageSkillAmpRatio": 1.8,
+      "bossDamageMultiplier": 1,
+      "canCrit": true,
+      "grantUnitCopy": {
+        "tier": 1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "stage1_prismatic_abigail_warp_slash",
+    "name": "워프 슬래시",
+    "rarity": "prismatic",
+    "stages": [
+      1
+    ],
+    "tags": [
+      "stage1",
+      "unit",
+      "아비게일",
+      "assassin"
+    ],
+    "summary": "아비게일이 시간을 멈추고 모든 적을 베어냅니다",
+    "description": "아비게일의 스킬을 워프 슬래시로 변경합니다. 시간을 멈춘 뒤 모든 적에게 한 번씩 순간이동하여 공격력의 125% + 스킬 증폭의 160% + 16 피해를 줍니다. 보스에게는 피해가 1.75배로 증가합니다. 각 타격은 아비게일의 치명타 확률과 치명타 피해를 적용합니다. 연출 중 아비게일은 무적입니다. 선택 시 아비게일 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "effect": {
+      "type": "abigailWarpSlash",
+      "unit": "아비게일",
+      "atkRatio": 1.25,
+      "skillAmpRatio": 1.6,
+      "flatDamage": 16,
+      "bossDamageMultiplier": 1.75,
+      "startDelayMs": 180,
+      "hitIntervalMs": 160,
+      "finishDelayMs": 260,
+      "canCrit": true,
       "grantUnitCopy": {
         "tier": 1
       }
