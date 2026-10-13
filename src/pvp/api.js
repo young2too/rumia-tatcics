@@ -1,6 +1,6 @@
 // Owns Supabase authentication and persistent PvP room RPC calls.
-import { createClient } from "@supabase/supabase-js";
 import { rankingConfig } from "../core/data.js";
+import { getSharedSupabaseClient } from "../core/supabase.js";
 
 const url = String(rankingConfig.url || "").trim();
 const publishableKey = String(rankingConfig.anonKey || "").trim();
@@ -8,13 +8,7 @@ const publishableKey = String(rankingConfig.anonKey || "").trim();
 export const pvpBackendAvailable = Boolean(url && publishableKey);
 
 const supabase = pvpBackendAvailable
-  ? createClient(url, publishableKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: false,
-    },
-  })
+  ? getSharedSupabaseClient(url, publishableKey)
   : null;
 let sessionPromise = null;
 
