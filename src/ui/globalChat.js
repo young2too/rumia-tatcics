@@ -127,6 +127,10 @@ export function createGlobalChat({ presenceConfig = {}, rankingConfig = {} } = {
     }
   }
 
+  function isActivelyReading() {
+    return opened && document.visibilityState === "visible" && document.hasFocus();
+  }
+
   function receive(raw, { historical = false, deferRender = false } = {}) {
     const message = raw?.payload || raw;
     const id = String(message?.id || "");
@@ -146,7 +150,7 @@ export function createGlobalChat({ presenceConfig = {}, rankingConfig = {} } = {
       if (removed) seenIds.delete(removed.id);
     }
     storeSessionMessages();
-    if (!historical && !opened && message.senderId !== senderId) {
+    if (!historical && !isActivelyReading() && message.senderId !== senderId) {
       unread += 1;
       renderUnread();
     }
@@ -227,6 +231,9 @@ export function createGlobalChat({ presenceConfig = {}, rankingConfig = {} } = {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       sendMessage();
+    });
+    nicknameInput.addEventListener("input", () => {
+      nickname = cleanNickname(nicknameInput.value) || fallbackNickname;
     });
     nicknameInput.addEventListener("change", () => {
       nickname = cleanNickname(nicknameInput.value) || fallbackNickname;
