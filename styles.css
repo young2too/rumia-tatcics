@@ -1783,8 +1783,7 @@ h2 {
 .global-chat-panel {
   display: grid;
   width: min(370px, calc(100vw - 24px));
-  height: min(560px, calc(100dvh - 84px));
-  max-height: min(620px, calc(100vh - 84px));
+  height: min(370px, calc(100vw - 24px), calc(100dvh - 84px));
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid #43545d;
@@ -1971,8 +1970,7 @@ h2 {
 
   .global-chat-panel {
     width: 100%;
-    height: min(560px, calc(100dvh - 68px));
-    max-height: calc(100vh - 68px);
+    height: min(calc(100vw - 16px), calc(100dvh - 68px));
   }
 
   .global-chat-toggle {
