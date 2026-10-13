@@ -61,14 +61,14 @@ export async function listJoinedPvpRooms() {
   const user = await ensurePvpSession();
   const memberships = unwrap(await client
     .from("pvp_room_players")
-    .select("room_id, status, ready, health, credits, level, updated_at")
+    .select("id, room_id, status, ready, health, credits, level, updated_at")
     .eq("user_id", user.id)
     .eq("status", "active")
     .order("updated_at", { ascending: false })) || [];
   const roomIds = [...new Set(memberships.map((entry) => entry.room_id).filter(Boolean))];
   if (!roomIds.length) return [];
 
-  const [rooms, players] = await Promise.all([
+  const [rooms, players, snapshotLists] = await Promise.all([
     unwrap(await client
       .from("pvp_rooms")
       .select("id, code, name, mode, visibility, status, phase, max_players, current_round, async_turn_minutes, planning_seconds, game_version, revision, created_at, updated_at, started_at")
@@ -79,8 +79,20 @@ export async function listJoinedPvpRooms() {
       .select("room_id, status")
       .in("room_id", roomIds)
       .neq("status", "left")),
+    Promise.all(memberships.map(async (membership) => unwrap(await client
+      .from("pvp_squad_snapshots")
+      .select("room_id, player_id, round, board, bench, augments, economy, submitted_at")
+      .eq("player_id", membership.id)
+      .order("round", { ascending: false })
+      .order("submitted_at", { ascending: false })
+      .limit(1)) || [])),
   ]);
   const membershipByRoom = new Map(memberships.map((entry) => [entry.room_id, entry]));
+  const snapshotByPlayer = new Map();
+  for (const snapshots of snapshotLists || []) {
+    const snapshot = snapshots[0];
+    if (snapshot) snapshotByPlayer.set(snapshot.player_id, snapshot);
+  }
   const playerCountByRoom = (players || []).reduce((counts, entry) => {
     counts.set(entry.room_id, (counts.get(entry.room_id) || 0) + 1);
     return counts;
@@ -91,6 +103,7 @@ export async function listJoinedPvpRooms() {
       ...room,
       player_count: playerCountByRoom.get(room.id) || 0,
       membership: membershipByRoom.get(room.id) || null,
+      snapshot: snapshotByPlayer.get(membershipByRoom.get(room.id)?.id) || null,
     }))
     .sort((left, right) => {
       const leftTime = Date.parse(left.membership?.updated_at || left.updated_at || left.created_at || 0);
@@ -174,8 +187,17 @@ export async function enqueueAsyncPvpMatch({ ticketId, nickname, gameVersion, sn
 
 export async function listOwnAsyncMatchQueue() {
   const client = assertBackend();
-  await ensurePvpSession();
-  return unwrap(await client.rpc("pvp_list_own_async_queue")) || [];
+  const user = await ensurePvpSession();
+  const [queueRows, details] = await Promise.all([
+    unwrap(await client.rpc("pvp_list_own_async_queue")) || [],
+    unwrap(await client
+      .from("pvp_matchmaking_queue")
+      .select("id, board, bench, augments, economy")
+      .eq("user_id", user.id)
+      .eq("status", "queued")) || [],
+  ]);
+  const detailById = new Map(details.map((entry) => [entry.id, entry]));
+  return queueRows.map((entry) => ({ ...entry, ...(detailById.get(entry.id) || {}) }));
 }
 
 export async function cancelAsyncPvpMatch(ticketId) {

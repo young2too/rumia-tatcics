@@ -183,6 +183,7 @@ function joinedRoomFromRow(row) {
     planningSeconds: row.planning_seconds == null ? null : Number(row.planning_seconds),
     gameVersion: row.game_version || "",
     membership: row.membership || null,
+    snapshot: row.snapshot || null,
   };
 }
 
@@ -230,6 +231,7 @@ function renderJoinedRoomCard(room) {
   const progress = !inLobby
     ? `${Math.max(1, room.round)}라운드 · 체력 ${Number(room.membership?.health) || 0}`
     : `${room.players}/${room.maxPlayers}명 참가`;
+  const summarySource = room.snapshot || joinedRoomLocalProgress(room);
   return `
     <article class="pvp-room-card joined state-${visualState}">
       <div class="pvp-room-main">
@@ -240,6 +242,7 @@ function renderJoinedRoomCard(room) {
         <span class="pvp-room-state-badge status-${activity.kind}">${escapeHtml(activity.label)}</span>
       </div>
       <p><strong class="pvp-room-progress">${escapeHtml(progress)}</strong> · ${escapeHtml(timingLabel(room))} · ${escapeHtml(room.gameVersion || "버전 미상")} · 코드 ${escapeHtml(room.code)}</p>
+      ${renderGameSummary(summarySource, room.membership?.credits, room.membership?.credits)}
       <a class="pvp-room-enter" href="${destination}">${actionLabel}</a>
     </article>
   `;
@@ -247,6 +250,40 @@ function renderJoinedRoomCard(room) {
 
 function rarityLabel(rarity) {
   return { silver: "실버", gold: "골드", prismatic: "프리즘" }[rarity] || "등급 확인 중";
+}
+
+function normalizeGameSummary(source, fallbackCredits = 0, creditsOverride) {
+  if (!source) return { units: [], augments: [], credits: Math.max(0, Number(fallbackCredits) || 0) };
+  const units = (Array.isArray(source.board) ? source.board : []).filter(Boolean);
+  const augments = (Array.isArray(source.augments) ? source.augments : source.selectedAugments || []).filter(Boolean);
+  const credits = creditsOverride ?? source.economy?.gold ?? source.gold ?? fallbackCredits;
+  return { units, augments, credits: Math.max(0, Number(credits) || 0) };
+}
+
+function renderGameSummary(source, fallbackCredits = 0, creditsOverride) {
+  const summary = normalizeGameSummary(source, fallbackCredits, creditsOverride);
+  const units = summary.units.length
+    ? summary.units.map((unit) => {
+      const name = unit.displayName || unit.name || "유닛";
+      const tier = unit.fourStarAscended ? 4 : Math.max(1, Math.min(3, Number(unit.tier) || 1));
+      return `<span class="pvp-summary-unit" title="${escapeHtml(`${name} ${tier}성`)}">
+        ${unit.art ? `<img src="${escapeHtml(unit.art)}" alt="">` : `<b>${escapeHtml(name.slice(0, 1))}</b>`}
+        <i>${"★".repeat(tier)}</i>
+      </span>`;
+    }).join("")
+    : `<span class="pvp-summary-empty">제출된 덱 없음</span>`;
+  const augments = summary.augments.length
+    ? summary.augments.map((augment) => `<span class="pvp-summary-augment" title="${escapeHtml(augment.name || "증강")}">${escapeHtml(augment.name || "증강")}</span>`).join("")
+    : `<span class="pvp-summary-empty">증강 없음</span>`;
+  return `
+    <div class="pvp-game-summary" aria-label="제출 덱 요약">
+      <div class="pvp-summary-units">${units}</div>
+      <div class="pvp-summary-meta">
+        <span class="pvp-summary-credits">크레딧 <strong>${summary.credits}</strong></span>
+        <div class="pvp-summary-augments">${augments}</div>
+      </div>
+    </div>
+  `;
 }
 
 function renderQueueCard(entry) {
@@ -262,6 +299,7 @@ function renderQueueCard(entry) {
         <span class="pvp-room-state-badge status-${matched ? "running" : "waiting"}">${matched ? "매칭 완료" : `비동기 매칭 중 ${queuedCount}/8`}</span>
       </div>
       <p>${escapeHtml(rarityLabel(entry.augment_rarity))} 증강 · ${escapeHtml(entry.game_version || "버전 미상")}</p>
+      ${renderGameSummary(entry, entry.economy?.gold)}
       ${matched
         ? `<a class="pvp-room-enter" href="./index.html?pvpRoom=${encodeURIComponent(entry.matched_room_id)}">게임 입장</a>`
         : `<div class="pvp-queue-actions">
