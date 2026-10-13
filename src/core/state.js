@@ -1,17 +1,52 @@
 const LOCAL_TEST_GOLD = 999999;
 
-export function createGameState({ balance, roster, createUnitPool, communityBoardConfig, pvpRoomsConfig = {} }) {
+export function createGameState({ balance, roster, createUnitPool, communityBoardConfig, pvpRoomsConfig = {}, gameMode = "pve", pvpRoomId = "", pvpQueueId = "", pvpQueueNickname = "" }) {
   const localTest = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  const pvpMode = gameMode === "pvp" && Boolean(pvpRoomId || pvpQueueId);
   const state = {
     debugMode: localTest,
+    gameMode: pvpMode ? "pvp" : "pve",
+    pvpRoomId: pvpMode ? pvpRoomId : "",
+    pvpQueueId: pvpMode ? pvpQueueId : "",
+    pvpQueueNickname: pvpMode ? pvpQueueNickname : "",
+    pvpQueuePreparation: pvpMode && Boolean(pvpQueueId) && !pvpRoomId,
+    pvpMode: pvpMode && pvpQueueId && !pvpRoomId ? "async" : "",
+    pvpRoomPhase: pvpMode ? "pve" : "",
+    pvpPhaseDeadline: null,
+    pvpRealtimeSnapshotChecksum: "",
+    pvpRealtimeSnapshotSyncing: false,
+    pvpAutoBattleStarting: false,
+    pvpRealtimePveStarting: false,
+    pvpRealtimePveWaiting: false,
+    pvpRealtimePveCompletedRound: 0,
+    pvpRealtimeAugmentAutoPicking: false,
+    pvpSnapshotSubmitted: false,
+    pvpSnapshotSubmitting: false,
+    pvpSnapshotError: "",
+    pvpStreakInitialized: false,
+    pvpMatch: null,
+    pvpMatchLoading: false,
+    pvpMatchError: "",
+    pvpMatchResolved: false,
+    pvpLastReplay: null,
+    pvpReplaying: false,
+    pvpCurrentRound: 0,
+    pvpLastRewardedRound: 0,
+    pvpPendingResultWin: null,
+    pvpFinished: false,
+    pvpPlayers: [],
+    pvpOwnPlayerId: "",
+    pvpActivePlayerCount: 0,
+    pvpLumiShopClaims: [],
     debugDummyPlacement: false,
     debugDummies: Array(balance.battle.enemySlots).fill(null),
     round: 1,
     hp: balance.player.startHp,
-    gold: localTest ? LOCAL_TEST_GOLD : balance.player.startGold,
+    gold: localTest && !pvpMode ? LOCAL_TEST_GOLD : balance.player.startGold,
     level: 1,
     xp: 0,
     shop: [],
+    shopTransactionPending: false,
     shopPanelTab: "shop",
     combatMetricMode: "damageDone",
     lastCombatMetrics: [],
@@ -28,10 +63,24 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
     augmentOfferRarity: "",
     augmentOfferRerollIndex: 0,
     augmentRerolledSlots: [],
+    augmentRerollsPerSlot: 1,
     augmentSeenIds: [],
     selectedAugments: [],
+    nextAugmentRarity: "",
+    nextAugmentChoiceBonus: 0,
+    nextAugmentRerollPerCardBonus: 0,
+    lumiShopOpen: false,
+    lumiShopRound: 0,
+    lumiShopOffers: [],
+    lumiShopOfferSeed: "",
+    lumiShopResolved: true,
+    lumiShopPendingProductId: "",
+    lumiShopDeadline: null,
+    lumiShopHistory: [],
+    lumiIceShieldReady: false,
     activeAugmentsCollapsed: false,
     pendingAugmentTarget: null,
+    fourStarPromotionCount: 0,
     freeShopRerollsRemaining: 0,
     shopOddsMaxLevelRerollsRemaining: 0,
     augmentTranscendTargetId: null,
@@ -93,7 +142,7 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
   };
 
   function syncLocalTestGold() {
-    if (localTest && state.gold < LOCAL_TEST_GOLD) state.gold = LOCAL_TEST_GOLD;
+    if (localTest && !pvpMode && state.gold < LOCAL_TEST_GOLD) state.gold = LOCAL_TEST_GOLD;
   }
 
   return { state, syncLocalTestGold };

@@ -180,6 +180,11 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
       case "threeStarStat": lines.push(`3성 유닛: ${statLines(effect.stats).join(" / ")}`); break;
       case "threeStarCollector": lines.push(`보유 3성 1명당 ${statLines(effect.perThreeStar).join(" / ")}`); break;
       case "transcendThreeStar": lines.push(`선택한 3성 유닛: ${statLines(effect.stats).join(" / ")}`); break;
+      case "fourStarAscension":
+        lines.push(`승급 비용 ${effect.baseCost || 100}크레딧부터 시작 / 승급마다 ${effect.costIncrease || 50}크레딧 증가`);
+        lines.push(`4성 유닛: ${statLines(effect.stats).join(" / ")}`);
+        lines.push(`두 번째 승급부터 배율 ${signedNumber(effect.multiplierIncreasePerPromotion || 0)}씩 증가`);
+        break;
       case "positionStat": lines.push(`${effect.rows === "front2" ? "전열 2줄" : "지정 위치"} 유닛: ${statLines(effect.stats).join(" / ")}`); break;
       case "frontlineShieldAndDefense": lines.push(`전열 2줄: 최대체력 ${percent(effect.shieldHpRatio)} 보호막 / 방어력 x${effect.defenseMultiply || 1}`); break;
       case "adjacentAllyStat": lines.push(`인접 아군 ${effect.minAdjacentAllies || 2}명 이상이면 ${statLines(effect.stats).join(" / ")}`); break;
@@ -312,7 +317,7 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
       : entries.length ? entries.map((entry, index) => `
         <div class="rank-entry ${entry.isSubmittedEntry ? "submitted" : ""}">
           <strong><span>${entry.isSubmittedEntry ? "등록됨" : `${index + 1}.`} ${escapeHtml(entry.name)}</span>${entry.rankingVersion ? `<em class="rank-version">${escapeHtml(entry.rankingVersion)}</em>` : ""}<b>${entry.stage}라운드</b></strong>
-          <div class="rank-board">${entry.board.map((unit) => `<span class="rank-unit" title="${escapeHtml(unit.name)}">${unit.art ? `<img src="${unit.art}" alt="">` : escapeHtml(unit.name.slice(0, 1))}<i>${"★".repeat(unit.tier)}</i></span>`).join("")}</div>
+          <div class="rank-board">${entry.board.map((unit) => `<span class="rank-unit" title="${escapeHtml(unit.name)}">${unit.art ? `<img src="${unit.art}" alt="">` : escapeHtml(unit.name.slice(0, 1))}<i>${"★".repeat(unit.fourStarAscended ? 4 : unit.tier)}</i></span>`).join("")}</div>
         </div>
       `).join("") : `<div class="ranking-empty">등록된 기록이 없습니다.</div>`;
     if (status) refs.rankingPanel.insertAdjacentHTML("afterbegin", status);
@@ -383,7 +388,7 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
     refs.augmentTitle.textContent = `${state.augmentStage || 1}단계 증강 선택`;
     refs.augmentMeta.textContent = [
       `${rarityLabel} 등급`,
-      "각 카드 1회 리롤",
+      `각 카드 ${Math.max(1, Number(state.augmentRerollsPerSlot) || 1)}회 리롤`,
       state.debugMode ? `seed ${shortSeed(state.augmentOfferSeed)}` : "",
       "선택 후 되돌릴 수 없습니다.",
     ].filter(Boolean).join(" · ");
@@ -395,7 +400,10 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
       ? state.augmentChoices.map((augment, index) => {
         const rarity = augment.rarity || "silver";
         const isContract = augment.tags?.includes("contract");
-        const canReroll = !(state.augmentRerolledSlots || []).includes(index);
+        const rerollLimit = Math.max(1, Number(state.augmentRerollsPerSlot) || 1);
+        const rerollUsed = (state.augmentRerolledSlots || []).filter((slot) => Number(slot) === index).length;
+        const rerollRemaining = Math.max(0, rerollLimit - rerollUsed);
+        const canReroll = rerollRemaining > 0;
         return `
           <article class="augment-card ${escapeHtml(rarity)} ${isContract ? "contract" : ""}">
             <span class="augment-rarity">${escapeHtml(rarityLabels[rarity] || rarity)}</span>
@@ -412,7 +420,7 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
                   <path d="M7 19H4v3" />
                   <path d="M17 5h3V2" />
                 </svg>
-                <span>${canReroll ? "리롤" : "완료"}</span>
+                <span>${canReroll ? `리롤 ${rerollRemaining}` : "완료"}</span>
               </button>
               <button type="button" class="primary" data-augment-id="${escapeHtml(augment.id)}">선택</button>
             </div>

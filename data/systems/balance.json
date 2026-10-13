@@ -60,13 +60,13 @@
   },
   "tierPowerTargets": {
     "formula": "hp * 0.32 + atk * 4 + skillAmp * 1.4 + defense * 6 + speed * 22",
-    "notes": "PvE 기준 체급표. 고코스트 3성은 강하지만 자동승리 기물이 되지 않도록 5코 3성 평균을 4코 3성의 약 1.25배 선으로 둔다.",
+    "notes": "PvP 구매 가치 기준 체급표. 1코 2성 < 4코 1성 < 5코 1성 < 2코 2성의 경제 서열을 유지한다.",
     "targets": {
-      "1": [238, 345, 505],
-      "2": [247, 368, 554],
-      "3": [258, 400, 623],
-      "4": [267, 448, 755],
-      "5": [309, 556, 937]
+      "1": [249, 365, 537],
+      "2": [268, 400, 602],
+      "3": [284, 441, 690],
+      "4": [370, 629, 1069],
+      "5": [390, 720, 1215]
     }
   },
   "shop": {
@@ -351,6 +351,7 @@
     "meleeRange": 1,
     "rangedRange": 4,
     "baseIncome": 2,
+    "pvpBaseIncome": 5,
     "winIncome": 1,
     "maxInterest": 5,
     "interestStep": 10,
@@ -426,7 +427,9 @@
     "legacySkillActionIntervalMs": 520,
     "moveIntervalMs": 500,
     "statusTurnMs": 500,
-    "maxCombatMs": 15000,
+    "maxCombatMs": 30000,
+    "combatAccelerationStartMs": 15000,
+    "combatTimeScale": 2,
     "manaPerAttack": 34,
     "manaPerHit": 16,
     "basicDamageMultiplier": 0.68,

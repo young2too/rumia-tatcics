@@ -6,6 +6,7 @@ import traitRulesData from "../../data/systems/traits.json" with { type: "json" 
 import hiddenTraitRulesData from "../../data/systems/hidden-traits.json" with { type: "json" };
 import bossRosterData from "../../data/systems/bosses.json" with { type: "json" };
 import bossPatternsData from "../../data/systems/boss-patterns.json" with { type: "json" };
+import lumiShopData from "../../data/systems/lumi-shop.json" with { type: "json" };
 import uiSettingsData from "../../data/ui/settings.json" with { type: "json" };
 import pvpRoomsData from "../../data/ui/pvp-rooms.json" with { type: "json" };
 import augmentSettingsData from "../../data/augments/settings.json" with { type: "json" };
@@ -29,6 +30,7 @@ export const traitRules = structuredClone(traitRulesData);
 export const hiddenTraitRules = structuredClone(hiddenTraitRulesData);
 export const bossRoster = bossRosterData.map((boss) => ({ ...boss }));
 export const bossPatterns = structuredClone(bossPatternsData);
+export const lumiShopConfig = structuredClone(lumiShopData);
 export const uiSettings = structuredClone(uiSettingsData);
 export const pvpRoomsConfig = structuredClone(pvpRoomsData);
 export const augmentSettings = structuredClone(augmentSettingsData);
@@ -74,6 +76,11 @@ export const presenceConfig = {
   url: window.LUMIA_TACTICS_CONFIG?.supabase?.url,
   anonKey: window.LUMIA_TACTICS_CONFIG?.supabase?.anonKey,
   ...(window.LUMIA_TACTICS_CONFIG?.presence || {}),
+};
+export const pushConfig = {
+  url: window.LUMIA_TACTICS_CONFIG?.supabase?.url,
+  anonKey: window.LUMIA_TACTICS_CONFIG?.supabase?.anonKey,
+  ...(window.LUMIA_TACTICS_CONFIG?.push || {}),
 };
 export const bgmConfig = {
   ...uiSettings.bgm,

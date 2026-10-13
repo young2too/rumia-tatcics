@@ -1,6 +1,7 @@
 import { Application, Container, Graphics } from "pixi.js";
 
 export function createSkillEffectRenderer() {
+  let timeScale = 1;
   let canvas = null;
   let context = null;
   let pixiApp = null;
@@ -110,8 +111,9 @@ export function createSkillEffectRenderer() {
     const generation = pixiGeneration;
     pixiInitPromise = (async () => {
       destroyPixiApp();
-      pixiApp = new Application();
-      await pixiApp.init({
+      const app = new Application();
+      pixiApp = app;
+      await app.init({
         width: layout.width,
         height: layout.height,
         resolution: Math.min(window.devicePixelRatio || 1, effectResolutionCap("pixi")),
@@ -120,19 +122,19 @@ export function createSkillEffectRenderer() {
         preference: "webgl",
         autoStart: false,
       });
-      if (generation !== pixiGeneration || !layout.battlefield.isConnected) {
-        destroyPixiApp();
-        pixiApp = null;
+      if (generation !== pixiGeneration || !layout.battlefield.isConnected || pixiApp !== app) {
+        if (pixiApp === app) pixiApp = null;
+        destroyPixiInstance(app);
         return null;
       }
       pixiHost = layout.battlefield;
-      pixiLayer = pixiApp.canvas;
+      pixiLayer = app.canvas;
       pixiLayer.className = "skill-effect-canvas pixi-skill-effect-canvas";
       pixiLayer.setAttribute("aria-hidden", "true");
       pixiLayer.style.width = `${layout.width}px`;
       pixiLayer.style.height = `${layout.height}px`;
       layout.battlefield.append(pixiLayer);
-      return pixiApp;
+      return app;
     })().finally(() => {
       pixiInitPromise = null;
     });
@@ -162,8 +164,7 @@ export function createSkillEffectRenderer() {
   }
 
   function effectDuration(type, overrideMs = 0) {
-    if (Number(overrideMs) > 0) return Number(overrideMs);
-    return {
+    const duration = Number(overrideMs) > 0 ? Number(overrideMs) : ({
       "yuki-bloom": 900,
       "yuki-cast": 760,
       "hisui-tsubame-gaeshi": 980,
@@ -203,7 +204,8 @@ export function createSkillEffectRenderer() {
       "luke-obsession": 760,
       "silvia-speed-gun": 680,
       "bianca-reign": 1150,
-    }[type] || 760;
+    }[type] || 760);
+    return duration / timeScale;
   }
 
   function hexColor(value) {
@@ -218,17 +220,25 @@ export function createSkillEffectRenderer() {
     graphics.fill({ color: hexColor(color), alpha });
   }
 
-  function destroyPixiApp() {
-    if (!pixiApp) return;
-    const app = pixiApp;
-    pixiApp = null;
+  function destroyPixiInstance(app) {
+    if (!app) return;
     try {
+      if (!app.renderer) {
+        pixiLayer?.remove();
+        return;
+      }
       if (typeof app._cancelResize !== "function") app._cancelResize = () => {};
       app.destroy(true);
     } catch (error) {
       if (!String(error?.message || error).includes("_cancelResize")) console.warn("[rumia-pixi-destroy]", error);
       pixiLayer?.remove();
     }
+  }
+
+  function destroyPixiApp() {
+    const app = pixiApp;
+    pixiApp = null;
+    destroyPixiInstance(app);
   }
 
   function drawPixiVortex(graphics, center, progress, options = {}) {
@@ -3566,7 +3576,6 @@ export function createSkillEffectRenderer() {
     pixiApp = null;
     pixiLayer = null;
     pixiHost = null;
-    pixiInitPromise = null;
   }
 
   async function benchmark(options = {}) {
@@ -3619,5 +3628,8 @@ export function createSkillEffectRenderer() {
     clear,
     effectTypes: benchmarkEffectTypes,
     play,
+    setTimeScale: (value) => {
+      timeScale = Math.max(0.1, Number(value) || 1);
+    },
   };
 }

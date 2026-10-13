@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build && node scripts/copy-static.mjs",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "test:pvp-flow": "node scripts/pvp-flow-smoke.mjs"
   },
   "devDependencies": {
     "vite": "^8.0.16"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "pixi.js": "^8.19.0"
   }
 }

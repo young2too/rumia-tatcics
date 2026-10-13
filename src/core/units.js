@@ -35,6 +35,21 @@ export function unitCopyCount(unit) {
   return unit.tier === 3 ? 9 : unit.tier === 2 ? 3 : 1;
 }
 
+export function poolExemptCopyCount(unit) {
+  return Math.max(0, Math.min(unitCopyCount(unit), Math.floor(Number(unit?.poolExemptCopies) || 0)));
+}
+
+export function poolBackedCopyCount(unit) {
+  return Math.max(0, unitCopyCount(unit) - poolExemptCopyCount(unit));
+}
+
+export function preservePoolExemptCopies(target, sources = []) {
+  if (!target) return target;
+  const exemptCopies = sources.reduce((sum, unit) => sum + poolExemptCopyCount(unit), 0);
+  if (exemptCopies > 0) target.poolExemptCopies = Math.min(unitCopyCount(target), exemptCopies);
+  return target;
+}
+
 export function sellValue(unit) {
   return unit.cost * unitCopyCount(unit);
 }

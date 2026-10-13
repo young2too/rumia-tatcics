@@ -3,9 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Lumia Tactics 비동기 PvP 방 목록" />
+    <meta name="description" content="Lumia Tactics PvP 매칭 및 실시간 방 목록" />
     <meta name="robots" content="noindex, follow" />
     <title>Lumia Tactics PvP</title>
+    <meta name="theme-color" content="#11191b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="루미아 택틱스" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./assets/characters/000_Dr.Nadja.png" />
     <link rel="icon" href="./assets/characters/000_Dr.Nadja.png" />
     <link rel="stylesheet" href="./stats.css" />
     <link rel="stylesheet" href="./styles.css?v=async-pvp" />
@@ -17,43 +22,46 @@
           <span><img src="./assets/characters/000_Dr.Nadja.png" alt="" /></span>
           <div>
             <strong>Lumia Tactics</strong>
-            <small>비동기 PvP</small>
+            <small>PvP 베타</small>
           </div>
         </a>
         <div class="statistics-toolbar">
           <button id="refreshPvpRooms" class="refresh-button" type="button" title="방 목록 새로고침" aria-label="방 목록 새로고침">↻</button>
-          <a class="back-button" href="./index.html">게임으로</a>
+          <a class="back-button" href="./index.html" aria-label="PvE 모드로 이동">PvE로</a>
         </div>
       </header>
 
       <section class="pvp-hero">
         <div>
-          <h1>PvP 방 목록</h1>
-          <p>15라 보스를 격파한 뒤 덱을 등록하고, 8명이 모이면 비동기 라운드로 겨루는 구조를 준비 중입니다.</p>
+          <h1>PvP</h1>
+          <p>비동기는 준비 덱을 매칭 큐에 등록하고, 실시간은 방을 만들어 함께 진행합니다.</p>
         </div>
         <div class="pvp-hero-actions">
+          <button id="pvpNotificationsToggle" class="pvp-notification-button" type="button" hidden>알림 받기</button>
           <button id="pvpRulesToggle" type="button">규칙서</button>
-          <button type="button" disabled>방 만들기 준비 중</button>
+          <button id="joinPvpRoomButton" type="button">코드 참가</button>
+          <button id="createPvpRoomButton" type="button">실시간 방 만들기</button>
+          <button id="startAsyncMatchButton" class="primary" type="button">비동기 매칭</button>
         </div>
       </section>
 
       <section id="pvpRulesPanel" class="pvp-rules-panel" hidden>
         <header>
-          <h2>비동기 PvP 규칙서</h2>
-          <p>실시간 8인 매칭 대신, 각자 덱을 준비하고 라운드별로 결과를 처리하는 방식입니다.</p>
+          <h2>PvP 규칙서</h2>
+          <p>같은 전투 규칙을 사용하며, 방 설정에 따라 라운드 진행 속도가 달라집니다.</p>
         </header>
         <div class="pvp-rules-grid">
           <article>
             <strong>1. 입장과 준비</strong>
-            <p>방에 들어오면 먼저 PvE를 15라운드까지 진행합니다. 15라 보스를 격파해야 PvP 덱 등록이 열립니다.</p>
+            <p>비동기는 혼자 준비를 시작하고, 실시간은 방에 참가해 준비를 누릅니다.</p>
           </article>
           <article>
-            <strong>2. 덱 등록</strong>
-            <p>현재 보드 배치, 유닛 성급, 시너지, 보유 크레딧 정보를 PvP 방에 저장하고 준비 상태로 전환합니다.</p>
+            <strong>2. 초기 덱 구성</strong>
+            <p>4라운드 동안 초기 덱을 구성하고 첫 번째 증강을 선택하면 PvP 준비가 끝납니다.</p>
           </article>
           <article>
-            <strong>3. 방 잠금</strong>
-            <p>8명이 모두 준비하면 방이 잠기며, 그 이후에는 신규 참가자가 들어올 수 없습니다.</p>
+            <strong>3. 진행 방식</strong>
+            <p>비동기는 8개의 준비 덱이 모이면 자동 매칭되며, 실시간은 정해진 준비시간이 끝나면 자동으로 배치를 확정합니다.</p>
           </article>
           <article>
             <strong>4. PvP 라운드</strong>
@@ -61,11 +69,11 @@
           </article>
           <article>
             <strong>5. 성장</strong>
-            <p>라운드 보상으로 받은 크레딧은 상점, 리롤, 합성, 배치 조정, 강화에 사용할 수 있습니다.</p>
+            <p>준비 PvE의 기본 수입은 2크레딧, PvP 대전 기본 수입은 5크레딧입니다. 상점, 리롤, 합성, 배치 조정, 강화로 덱을 계속 성장시킵니다.</p>
           </article>
           <article>
             <strong>6. 공유 기물 풀</strong>
-            <p>정식 구현에서는 방 단위 기물 풀을 공유합니다. 같은 유닛을 여러 명이 노리면 서로 상점 출현에 영향을 줍니다.</p>
+            <p>방 단위 기물 풀을 공유합니다. 같은 유닛을 여러 명이 노리면 서로 상점 출현에 영향을 줍니다.</p>
           </article>
         </div>
       </section>
@@ -74,6 +82,141 @@
 
       <section id="pvpRoomsPanel" class="pvp-rooms-page-panel" aria-label="PvP 방 목록"></section>
     </main>
+
+    <div id="pvpCreateModal" class="pvp-page-modal" hidden>
+      <section class="pvp-page-dialog" role="dialog" aria-modal="true" aria-labelledby="pvpCreateTitle">
+        <header>
+          <div>
+            <span>새 게임</span>
+            <h2 id="pvpCreateTitle">실시간 PvP 방 만들기</h2>
+          </div>
+          <button class="pvp-modal-close" type="button" data-close-pvp-modal aria-label="닫기">×</button>
+        </header>
+        <form id="pvpCreateForm" class="pvp-room-form">
+          <label>
+            <span>방 이름</span>
+            <input name="roomName" maxlength="30" value="Lumia PvP" required />
+          </label>
+          <label>
+            <span>닉네임</span>
+            <input name="nickname" maxlength="12" autocomplete="nickname" required />
+          </label>
+
+          <input type="hidden" name="mode" value="realtime" />
+
+          <div class="pvp-form-grid">
+            <label>
+              <span>최대 인원</span>
+              <select name="maxPlayers">
+                <option value="2">2명</option>
+                <option value="4">4명</option>
+                <option value="6">6명</option>
+                <option value="8" selected>8명</option>
+              </select>
+            </label>
+            <label>
+              <span>공개 설정</span>
+              <select name="visibility">
+                <option value="public">공개</option>
+                <option value="invite">초대 코드</option>
+              </select>
+            </label>
+            <label id="pvpRealtimeTimingField">
+              <span>준비시간</span>
+              <select name="planningSeconds">
+                <option value="30" selected>30초</option>
+                <option value="45">45초</option>
+                <option value="60">60초</option>
+                <option value="90">90초</option>
+              </select>
+            </label>
+          </div>
+
+          <p id="pvpCreateError" class="pvp-form-error" role="alert" hidden></p>
+          <footer>
+            <button type="button" data-close-pvp-modal>취소</button>
+            <button class="primary" type="submit">방 생성</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+
+    <div id="pvpAsyncModal" class="pvp-page-modal" hidden>
+      <section class="pvp-page-dialog compact" role="dialog" aria-modal="true" aria-labelledby="pvpAsyncTitle">
+        <header>
+          <div>
+            <span>자동 매칭</span>
+            <h2 id="pvpAsyncTitle">비동기 PvP 준비</h2>
+          </div>
+          <button class="pvp-modal-close" type="button" data-close-pvp-modal aria-label="닫기">×</button>
+        </header>
+        <form id="pvpAsyncForm" class="pvp-room-form">
+          <p>4라운드 PvE와 첫 증강 선택을 마치면 덱이 큐에 등록됩니다. 같은 버전과 증강 등급의 덱 8개가 모이면 게임이 시작됩니다.</p>
+          <label>
+            <span>닉네임</span>
+            <input name="nickname" maxlength="12" autocomplete="nickname" required />
+          </label>
+          <p id="pvpAsyncError" class="pvp-form-error" role="alert" hidden></p>
+          <footer>
+            <button type="button" data-close-pvp-modal>취소</button>
+            <button class="primary" type="submit">준비 시작</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+
+    <div id="pvpJoinModal" class="pvp-page-modal" hidden>
+      <section class="pvp-page-dialog compact" role="dialog" aria-modal="true" aria-labelledby="pvpJoinTitle">
+        <header>
+          <div>
+            <span>방 참가</span>
+            <h2 id="pvpJoinTitle">코드로 참가</h2>
+          </div>
+          <button class="pvp-modal-close" type="button" data-close-pvp-modal aria-label="닫기">×</button>
+        </header>
+        <form id="pvpJoinForm" class="pvp-room-form">
+          <label>
+            <span>방 코드</span>
+            <input name="roomCode" maxlength="8" autocapitalize="characters" required />
+          </label>
+          <label>
+            <span>닉네임</span>
+            <input name="nickname" maxlength="12" autocomplete="nickname" required />
+          </label>
+          <p id="pvpJoinError" class="pvp-form-error" role="alert" hidden></p>
+          <footer>
+            <button type="button" data-close-pvp-modal>취소</button>
+            <button class="primary" type="submit">참가</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+
+    <aside id="globalChat" class="global-chat" hidden aria-label="현재 접속자 광장 채팅">
+      <section id="globalChatPanel" class="global-chat-panel" hidden>
+        <header>
+          <div>
+            <strong>광장 채팅</strong>
+            <small>현재 접속자와 대화</small>
+          </div>
+          <button id="globalChatClose" type="button" title="채팅 닫기" aria-label="채팅 닫기">×</button>
+        </header>
+        <label class="global-chat-nickname">
+          <span>닉네임</span>
+          <input id="globalChatNickname" maxlength="12" autocomplete="nickname" aria-label="광장 채팅 닉네임" />
+          <i id="globalChatStatus">채팅 연결 중</i>
+        </label>
+        <div id="globalChatMessages" class="global-chat-messages" aria-live="polite"></div>
+        <form id="globalChatForm" class="global-chat-form">
+          <input id="globalChatInput" maxlength="120" autocomplete="off" placeholder="같이 할 사람을 찾아보세요" aria-label="광장 채팅 메시지" disabled />
+          <button type="submit">전송</button>
+        </form>
+      </section>
+      <button id="globalChatToggle" class="global-chat-toggle" type="button" title="현재 접속자 광장 채팅" aria-expanded="false">
+        광장
+        <span id="globalChatUnread" hidden>0</span>
+      </button>
+    </aside>
 
     <script type="module" src="./src/pvp/main.js"></script>
   </body>

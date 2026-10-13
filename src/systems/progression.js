@@ -53,7 +53,9 @@ export function createProgressionController({ state, balance, addLog, render, bo
 
   function grantRoundIncome(win) {
     updateStreak(win);
-    const base = balance.battle.baseIncome;
+    const base = state.gameMode === "pvp" && state.pvpRoomPhase !== "pve"
+      ? balance.battle.pvpBaseIncome
+      : balance.battle.baseIncome;
     const winGold = win ? balance.battle.winIncome : 0;
     const streakGold = streakBonus();
     const interest = interestGold();

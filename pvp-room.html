@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Lumia Tactics PvP 대기실" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Lumia Tactics PvP 대기실</title>
+    <meta name="theme-color" content="#11191b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./assets/characters/000_Dr.Nadja.png" />
+    <link rel="icon" href="./assets/characters/000_Dr.Nadja.png" />
+    <link rel="stylesheet" href="./stats.css" />
+    <link rel="stylesheet" href="./styles.css?v=pvp-room" />
+  </head>
+  <body>
+    <main class="pvp-app pvp-room-app">
+      <header class="statistics-header">
+        <a class="statistics-brand" href="./pvp.html" aria-label="PvP 방 목록으로 돌아가기">
+          <span><img src="./assets/characters/000_Dr.Nadja.png" alt="" /></span>
+          <div>
+            <strong>Lumia Tactics</strong>
+            <small>PvP 대기실</small>
+          </div>
+        </a>
+        <div class="statistics-toolbar">
+          <button id="refreshPvpRoom" class="refresh-button" type="button" title="대기실 새로고침" aria-label="대기실 새로고침">↻</button>
+          <a class="back-button" href="./pvp.html">방 목록</a>
+        </div>
+      </header>
+
+      <div id="pvpRoomStatus" class="statistics-status loading" role="status">대기실에 연결하는 중입니다.</div>
+      <section id="pvpRoomPanel" class="pvp-lobby-shell" aria-live="polite"></section>
+    </main>
+
+    <aside id="globalChat" class="global-chat" hidden aria-label="현재 접속자 광장 채팅">
+      <section id="globalChatPanel" class="global-chat-panel" hidden>
+        <header>
+          <div>
+            <strong>광장 채팅</strong>
+            <small>현재 접속자와 대화</small>
+          </div>
+          <button id="globalChatClose" type="button" title="채팅 닫기" aria-label="채팅 닫기">×</button>
+        </header>
+        <label class="global-chat-nickname">
+          <span>닉네임</span>
+          <input id="globalChatNickname" maxlength="12" autocomplete="nickname" aria-label="광장 채팅 닉네임" />
+          <i id="globalChatStatus">채팅 연결 중</i>
+        </label>
+        <div id="globalChatMessages" class="global-chat-messages" aria-live="polite"></div>
+        <form id="globalChatForm" class="global-chat-form">
+          <input id="globalChatInput" maxlength="120" autocomplete="off" placeholder="같이 할 사람을 찾아보세요" aria-label="광장 채팅 메시지" disabled />
+          <button type="submit">전송</button>
+        </form>
+      </section>
+      <button id="globalChatToggle" class="global-chat-toggle" type="button" title="현재 접속자 광장 채팅" aria-expanded="false">
+        광장
+        <span id="globalChatUnread" hidden>0</span>
+      </button>
+    </aside>
+
+    <script type="module" src="./src/pvp/room.js"></script>
+  </body>
+</html>

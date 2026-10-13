@@ -52,8 +52,13 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   });
 
   $("battle").addEventListener("click", actions.simulate);
+  refs.replayBattle?.addEventListener("click", actions.replayLastPvpBattle);
   $("levelUp").addEventListener("click", actions.buyXp);
   refs.temporaryBoosts?.addEventListener("click", (event) => {
+    if (event.target.closest("[data-four-star-promotion]")) {
+      actions.beginFourStarPromotion?.();
+      return;
+    }
     const button = event.target.closest("[data-boost]");
     if (button) actions.buyTemporaryBoost(button.dataset.boost);
   });
@@ -92,6 +97,16 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   refs.augmentReroll?.addEventListener("click", actions.rerollAugments);
   refs.augmentClose?.addEventListener("click", actions.closeAugments);
   refs.augmentResumeCenter?.addEventListener("click", actions.reopenAugments);
+  refs.lumiShopResumeCenter?.addEventListener("click", () => {
+    if (state.lumiShopPendingProductId) actions.cancelLumiShopTarget?.();
+    else actions.reopenLumiShop?.();
+  });
+  refs.lumiShopClose?.addEventListener("click", actions.closeLumiShop);
+  refs.lumiShopSkip?.addEventListener("click", actions.skipLumiShop);
+  refs.lumiShopPanel?.addEventListener("click", (event) => {
+    const productId = event.target.closest("[data-lumi-product-id]")?.dataset.lumiProductId;
+    if (productId) actions.buyLumiShopProduct?.(productId);
+  });
   refs.activeAugments?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : event.target?.parentElement;
     if (target?.closest("[data-active-augments-toggle]")) {

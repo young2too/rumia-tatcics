@@ -1,6 +1,6 @@
 import { traitPills } from "./traitHelpers.js";
 
-export function createShopView({ state, refs, balance, roster, buyUnit, displayNameFor = (unit) => unit.name, augmentPools = {} }) {
+export function createShopView({ state, refs, balance, roster, buyUnit, displayNameFor = (unit) => unit.name, augmentPools = {}, canModify = () => true }) {
   const metricModes = {
     damageDone: { label: "딜량", iconClass: "sword", empty: "아직 기록된 피해량이 없습니다." },
     damageTaken: { label: "받은 피해", iconClass: "shield", empty: "아직 기록된 받은 피해량이 없습니다." },
@@ -15,6 +15,20 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
     if (tierOne >= 2 && tierTwo >= 2) return { className: "can-upgrade tier-3", label: "3성 가능", stars: "★★★" };
     if (tierOne >= 2) return { className: "can-upgrade tier-2", label: "2성 가능", stars: "★★" };
     return { className: "owned", label: "", stars: "" };
+  }
+
+  function shopDisabledState() {
+    if (state.busy) return { disabled: true, reason: "전투 중에는 유닛을 영입할 수 없습니다." };
+    if (state.shopTransactionPending) {
+      return {
+        disabled: true,
+        reason: state.debugMode ? "공유 기물 풀을 확인하고 있습니다." : "",
+      };
+    }
+    if (state.gameMode !== "pvp") return { disabled: false, reason: "" };
+    if (state.pvpSnapshotSubmitted) return { disabled: true, reason: "이번 라운드 덱 제출을 완료해 상점이 잠겼습니다." };
+    if (!canModify()) return { disabled: true, reason: "현재 PvP 단계에서는 상점을 이용할 수 없습니다." };
+    return { disabled: false, reason: "" };
   }
 
   function renderShop() {
@@ -66,6 +80,10 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
       }
     }
     refs.shop.innerHTML = "";
+    const { disabled: shopDisabled, reason: disabledReason } = shopDisabledState();
+    refs.shop.classList.toggle("disabled-state", Boolean(disabledReason));
+    if (disabledReason) refs.shop.dataset.disabledReason = disabledReason;
+    else delete refs.shop.dataset.disabledReason;
     for (const [index, unit] of state.shop.entries()) {
       const status = shopCardStatus(unit);
       const card = document.createElement("button");
@@ -80,8 +98,10 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
           <span class="shop-card-tags">${traitPills(unit)}</span>
           <small>HP ${unit.maxHp} / 공격 ${unit.atk} / 스증 ${unit.skillAmp}</small>
         </span>
-        <span class="price"><b>${unit.cost}코</b><small>풀 ${state.pool[unit.name] ?? 0}</small></span>
+        <span class="price"><b>${unit.cost}코</b>${state.gameMode === "pvp" ? "" : `<small>풀 ${state.pool[unit.name] ?? 0}</small>`}</span>
       `;
+      card.disabled = shopDisabled;
+      if (disabledReason) card.title = disabledReason;
       card.addEventListener("click", () => buyUnit(index));
       refs.shop.append(card);
     }
