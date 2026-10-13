@@ -1,7 +1,7 @@
 // 전투 컨트롤러: 전투 상태 생성, 전투 루프, 캐릭터 스킬 실행을 조립합니다.
 import { createCombatSeed, createSeededRng } from "../../core/rng.js";
 import { tierStatMultiplier } from "../../core/tier.js";
-import { makeUnit, stockLimit, unitCopyCount } from "../../core/units.js";
+import { makeUnit, poolBackedCopyCount, preservePoolExemptCopies, stockLimit } from "../../core/units.js";
 import { applyAugmentStatsToUnit, applyStatPatch, augmentEffects, unitTraits } from "../augmentEffects.js";
 
 import { createSkillTimeline } from "./timeline.js";
@@ -34,6 +34,7 @@ export function createCombatController(context) {
     triggerKillEffects,
     playSkillVisual,
     clearSkillVisuals,
+    setCombatTimeScale,
     render,
     renderCombatFrame = render,
     rollShop,
@@ -41,7 +42,7 @@ export function createCombatController(context) {
     grantRoundIncome,
     captureDeathRecord,
     offerAugments,
-    offerPvpEntry,
+    offerLumiShop,
     sleep,
   } = context;
 
@@ -49,6 +50,7 @@ const skillTimeline = createSkillTimeline();
 const cinematicTimeline = createSkillTimeline();
 let combatElapsedMs = 0;
 let cinematicElapsedMs = 0;
+let activeCombatTimeScale = 1;
 let combatRng = createSeededRng("combat-bootstrap");
 
 function random() {
@@ -107,7 +109,7 @@ function bossSpawnIndex() {
 
 function dealSkillDamage(source, target, amount, options = {}) {
   if (options.fixed) return dealDamage(source, target, amount, options);
-  const critical = Math.random() < (source?.skillCritChance || 0);
+  const critical = random() < (source?.skillCritChance || 0);
   source._skillCriticalQueue ||= [];
   source._skillCriticalQueue.push(critical);
   return dealDamage(source, target, skillOutput(source, amount) * (critical ? (source.skillCritDamage || 1.5) : 1), options);
@@ -231,7 +233,7 @@ function baseCritStats(unit) {
 }
 
 function isBossRound() {
-  return state.round % balance.battle.bossInterval === 0;
+  return state.gameMode !== "pvp" && state.round % balance.battle.bossInterval === 0;
 }
 
 function currentBossInfo() {
@@ -547,6 +549,16 @@ function distanceBetween(a, b) {
   return hexDistanceSlots(from, to);
 }
 
+function canMeleeAttackCrowdedBoss(attacker, target) {
+  if (!target?.boss || unitAttackRange(attacker) !== 1 || distanceBetween(attacker, target) !== 2) return false;
+  const targetSlot = unitSlot(target);
+  if (!targetSlot || !state.combatGrid) return false;
+  return hexNeighborSteps(targetSlot.x, targetSlot.y).every((step) => {
+    const index = slotIndexFor(attacker.side, targetSlot.x + step.x, targetSlot.y + step.y, true);
+    return index < 0 || Boolean(state.combatGrid[index]);
+  });
+}
+
 function isBacklineUnit(unit) {
   const slot = unitSlot(unit);
   if (!slot) return false;
@@ -640,7 +652,7 @@ function enemyBacklineRows(attacker) {
   return attacker.side === "ally" ? [0, 1] : [totalRows() - 1, totalRows() - 2];
 }
 
-function emptyBacklineSlots(unit) {
+function emptyBacklineSlots(unit, preferredTarget = null) {
   const from = unitSlot(unit);
   if (!state.combatGrid || !from) return [];
   const rows = backlineJumpRows(unit);
@@ -650,7 +662,11 @@ function emptyBacklineSlots(unit) {
       const slot = unitSlot(target);
       return slot && rows.includes(slot.y);
     })
-    .sort((a, b) => compareByDistanceThenHp(unit, a, b));
+    .sort((a, b) => {
+      if (a === preferredTarget) return -1;
+      if (b === preferredTarget) return 1;
+      return compareByDistanceThenHp(unit, a, b);
+    });
   const slots = [];
   const targetSlots = backlineTargets
     .map((target) => ({ target, slot: unitSlot(target) }))
@@ -680,23 +696,35 @@ function emptyBacklineSlots(unit) {
 
 function placeBacklineDivers(units) {
   let moved = 0;
-  for (const unit of units.filter((unit) =>
+  const divers = units.filter((unit) =>
     isBacklineDiver(unit)
     && unit.status !== "tactical-pulled"
     && !unit.forcedFocusTargetId
-  )) {
-    const from = unitSlot(unit);
-    const to = emptyBacklineSlots(unit)[0];
-    if (!from || !to) continue;
-    state.combatGrid[from.index] = null;
-    state.combatGrid[to.index] = unit;
-    unit.status = "moving";
-    if (to.target?.id) {
-      unit.openingDiverTargetId = to.target.id;
-      unit.focusTargetId = to.target.id;
-      unit.hasPickedOpeningTarget = true;
+  );
+  for (const side of ["ally", "enemy"]) {
+    const sideDivers = divers.filter((unit) => unit.side === side);
+    if (!sideDivers.length) continue;
+    const rows = enemyBacklineRows(sideDivers[0]);
+    const foes = living(units).filter((unit) => unit.side && unit.side !== side);
+    const backline = foes.filter((unit) => rows.includes(unitSlot(unit)?.y));
+    const focusTarget = (backline.length ? backline : foes)
+      .slice()
+      .sort((a, b) => (a.hp + a.defense * 4) - (b.hp + b.defense * 4) || a.hp - b.hp)[0];
+
+    for (const unit of sideDivers) {
+      const from = unitSlot(unit);
+      const to = emptyBacklineSlots(unit, focusTarget)[0];
+      if (!from || !to) continue;
+      state.combatGrid[from.index] = null;
+      state.combatGrid[to.index] = unit;
+      unit.status = "moving";
+      if (focusTarget?.id) {
+        unit.openingDiverTargetId = focusTarget.id;
+        unit.focusTargetId = focusTarget.id;
+        unit.hasPickedOpeningTarget = true;
+      }
+      moved += 1;
     }
-    moved += 1;
   }
   return moved;
 }
@@ -1182,11 +1210,12 @@ function applyOpeningShield(units, targetsKey, ratioKey, preferBackline) {
 function pullBacklineEnemies(allies, enemies) {
   const targetCount = Math.max(...allies.map((unit) => unit.pullBacklineTargets || 0), 0);
   if (!targetCount || !state.combatGrid) return { units: [] };
+  const actingSide = living(allies)[0]?.side || "ally";
   const diverTargetIds = new Set(living(allies).map((unit) => unit.openingDiverTargetId).filter(Boolean));
   const candidates = living(enemies)
     .map((unit) => ({ unit, slot: unitSlot(unit) }))
-    .filter(({ slot }) => slot && slot.y <= 1)
-    .sort((a, b) => a.slot.y - b.slot.y || a.unit.hp - b.unit.hp);
+    .filter(({ slot }) => slot && (actingSide === "ally" ? slot.y <= 1 : slot.y >= totalRows() - 2))
+    .sort((a, b) => (actingSide === "ally" ? a.slot.y - b.slot.y : b.slot.y - a.slot.y) || a.unit.hp - b.unit.hp);
   const targets = [
     ...candidates.filter(({ unit }) => !diverTargetIds.has(unit.id)),
     ...candidates.filter(({ unit }) => diverTargetIds.has(unit.id)),
@@ -1196,9 +1225,11 @@ function pullBacklineEnemies(allies, enemies) {
     const from = unitSlot(unit);
     if (!from) continue;
     const destinations = [];
-    for (let y = allyStartRow(); y < totalRows(); y++) {
+    const startRow = actingSide === "ally" ? allyStartRow() : 0;
+    const endRow = actingSide === "ally" ? totalRows() : enemyRows();
+    for (let y = startRow; y < endRow; y++) {
       for (let x = 0; x < balance.battle.columns; x++) {
-        const index = slotIndexFor("ally", x, y, true);
+        const index = slotIndexFor(actingSide, x, y, true);
         if (index < 0 || state.combatGrid[index]) continue;
         const slot = { x, y, index };
         const distances = living(allies).map((ally) => ({
@@ -1217,7 +1248,7 @@ function pullBacklineEnemies(allies, enemies) {
       b.adjacentAllies - a.adjacentAllies
       || b.readyAttackers - a.readyAttackers
       || a.totalDistance - b.totalDistance
-      || b.y - a.y
+      || (actingSide === "ally" ? b.y - a.y : a.y - b.y)
       || Math.abs(a.x - 3.5) - Math.abs(b.x - 3.5)
     )[0];
     if (!destination) continue;
@@ -1237,7 +1268,6 @@ function applyOpeningTeamUtilities(allies, enemies) {
   const focusTarget = pullResult.units[0] || null;
   if (focusTarget) {
     for (const ally of living(allies)) {
-      if (ally.openingDiverTargetId) continue;
       ally.forcedFocusTargetId = focusTarget.id;
       ally.focusTargetId = focusTarget.id;
       ally.hasPickedOpeningTarget = true;
@@ -1251,9 +1281,10 @@ function applyOpeningTeamUtilities(allies, enemies) {
   };
 }
 
-function prepareCombatUnit(unit, side, counts = {}) {
+function prepareCombatUnit(unit, side, counts = {}, playerState = null, playerUnits = []) {
   unit.side = side;
-  const stats = side === "ally" ? applySynergy(unit, counts) : {
+  const controlledState = playerState || (side === "ally" ? state : null);
+  const stats = controlledState ? applySynergy(unit, counts, controlledState) : {
     hp: unit.maxHp,
     atk: unit.atk,
     speed: unit.speed,
@@ -1308,15 +1339,16 @@ function prepareCombatUnit(unit, side, counts = {}) {
     assassinRearmCritMultiplier: unit.assassinRearmCritMultiplier ?? 0,
     assassinRearmCooldownMs: unit.assassinRearmCooldownMs ?? 0,
   };
-  if (side === "ally") {
-    const boosts = state.temporaryBoosts || {};
+  if (controlledState) {
+    const boosts = controlledState.temporaryBoosts || {};
     stats.hp *= 1 + (boosts.hp || 0);
     stats.atk *= 1 + (boosts.atk || 0);
     stats.skillAmp *= 1 + (boosts.skillAmp || 0);
-    applyAugmentStatsToUnit(state, unit, stats, {
+    applyAugmentStatsToUnit(controlledState, unit, stats, {
+      playerControlled: true,
       slotOf: unitSlot,
-      allyStartRow: allyStartRow(),
-      adjacentAllyCount: (target, range = 1) => boardUnits()
+      allyStartRow: side === "ally" ? allyStartRow() : 0,
+      adjacentAllyCount: (target, range = 1) => (playerUnits.length ? playerUnits : boardUnits())
         .filter((candidate) => candidate && candidate !== target)
         .filter((candidate) => {
           candidate.side ||= "ally";
@@ -1932,10 +1964,12 @@ function combineOwnedUnits(name) {
     if (!sameTier) return changed;
     let removed = 0;
     let firstRemoved = null;
+    const consumedUnits = [];
     for (const arr of [state.bench, state.board]) {
       for (let index = 0; index < arr.length; index += 1) {
         if (arr[index]?.name === name && arr[index].tier === sameTier && removed < 3) {
           firstRemoved ||= { arr, index };
+          consumedUnits.push(arr[index]);
           arr[index] = null;
           removed += 1;
         }
@@ -1943,7 +1977,10 @@ function combineOwnedUnits(name) {
     }
     const base = roster.find((unit) => unit.name === name);
     if (base && firstRemoved) {
-      firstRemoved.arr[firstRemoved.index] = makeUnit(base, balance, sameTier + 1);
+      firstRemoved.arr[firstRemoved.index] = preservePoolExemptCopies(
+        makeUnit(base, balance, sameTier + 1),
+        consumedUnits,
+      );
       addLog(`${name} ${sameTier + 1}성 합성!`);
     }
     changed = true;
@@ -1967,24 +2004,27 @@ function applyPandoraBench() {
   let changed = 0;
   for (const index of indexes) {
     const unit = state.bench[index];
-    const copies = unitCopyCount(unit);
+    const poolBackedCopies = poolBackedCopyCount(unit);
     const blockedThreeStars = ownedThreeStarNames();
     const candidates = roster.filter((base) => {
       if (!base || base.active === false) return false;
       if (base.name === unit.name) return false;
       if (base.cost !== unit.cost) return false;
       if (blockedThreeStars.has(base.name)) return false;
-      return (state.pool?.[base.name] || 0) >= copies;
+      return (state.pool?.[base.name] || 0) >= poolBackedCopies;
     });
     const base = randomChoice(candidates);
     if (!base) continue;
     if (state.pool?.[unit.name] !== undefined) {
-      state.pool[unit.name] = Math.min(stockLimit(unit, balance), (state.pool[unit.name] || 0) + copies);
+      state.pool[unit.name] = Math.min(stockLimit(unit, balance), (state.pool[unit.name] || 0) + poolBackedCopies);
     }
     if (state.pool?.[base.name] !== undefined) {
-      state.pool[base.name] = Math.max(0, (state.pool[base.name] || 0) - copies);
+      state.pool[base.name] = Math.max(0, (state.pool[base.name] || 0) - poolBackedCopies);
     }
-    state.bench[index] = makeUnit(base, balance, unit.tier || 1);
+    const transformed = preservePoolExemptCopies(makeUnit(base, balance, unit.tier || 1), [unit]);
+    transformed.fourStarAscended = Boolean(unit.fourStarAscended);
+    transformed.fourStarPromotionOrder = Math.max(0, Number(unit.fourStarPromotionOrder) || 0);
+    state.bench[index] = transformed;
     addLog(`판도라의 벤치: ${unit.name} -> ${base.name} (${unit.cost}코 ${unit.tier || 1}성).`);
     changed += 1;
   }
@@ -2151,7 +2191,7 @@ function advanceDuelSameTargetStack(attacker, target) {
 function basicAttack(attacker, enemies) {
   const target = pickTarget(attacker, enemies);
   if (!target) return { message: "", effects: [] };
-  if (distanceBetween(attacker, target) > unitAttackRange(attacker)) {
+  if (distanceBetween(attacker, target) > unitAttackRange(attacker) && !canMeleeAttackCrowdedBoss(attacker, target)) {
     const moved = moveToward(attacker, target);
     return {
       message: moved ? `${attacker.name} 이동` : `${attacker.name} 대기`,
@@ -4510,9 +4550,13 @@ function shouldRenderDamageNumber(effect, renderedNumberCount, renderedMinorCoun
 }
 
 function playCombatEffects(effects) {
-  if (!effects.length) return;
+  const combatTimeScale = activeCombatTimeScale;
   const field = document.querySelector(".battlefield");
   if (!field) return;
+  if (combatTimeScale > 1) {
+    for (const animation of field.getAnimations({ subtree: true })) animation.playbackRate = combatTimeScale;
+  }
+  if (!effects.length) return;
   const fieldRect = field.getBoundingClientRect();
   const unitElementCache = new Map();
   const unitRectCache = new Map();
@@ -4547,7 +4591,7 @@ function playCombatEffects(effects) {
   let renderedMinorCount = 0;
   for (const effect of effects) {
     if (effect.delayMs > 0) {
-      window.setTimeout(() => playCombatEffects([{ ...effect, delayMs: 0 }]), effect.delayMs);
+      window.setTimeout(() => playCombatEffects([{ ...effect, delayMs: 0 }]), effect.delayMs / combatTimeScale);
       continue;
     }
     const from = getUnitElement(effect.from);
@@ -4924,10 +4968,24 @@ function unlockCombatUi(message = "전투 상태를 복구했습니다. 다시 �
   refs.phase.textContent = message;
 }
 
-async function simulate() {
+async function simulate(options = {}) {
   if (state.busy) return;
+  const pvpBattle = options.mode === "pvp";
+  const acceleratedTimeScale = Math.max(1, Number(balance.battle.combatTimeScale) || 1);
+  const accelerationStartMs = Math.max(0, Number(balance.battle.combatAccelerationStartMs) || 15000);
+  const updateCombatTimeScale = (nextScale) => {
+    activeCombatTimeScale = Math.max(1, Number(nextScale) || 1);
+    setCombatTimeScale?.(activeCombatTimeScale);
+    const field = document.querySelector(".battlefield");
+    if (field) {
+      for (const animation of field.getAnimations({ subtree: true })) {
+        animation.playbackRate = activeCombatTimeScale;
+      }
+    }
+  };
+  updateCombatTimeScale(1);
   const unusedMaxLevelShopRerolls = Math.max(0, Number(state.shopOddsMaxLevelRerollsRemaining) || 0);
-  if (unusedMaxLevelShopRerolls > 0) {
+  if (!pvpBattle && unusedMaxLevelShopRerolls > 0) {
     const refund = unusedMaxLevelShopRerolls * 2;
     state.gold += refund;
     state.freeShopRerollsRemaining = Math.max(0, (Number(state.freeShopRerollsRemaining) || 0) - unusedMaxLevelShopRerolls);
@@ -4946,7 +5004,7 @@ async function simulate() {
     return;
   }
   const allies = boardAllies.slice();
-  const battleRound = state.round;
+  const battleRound = pvpBattle ? Math.max(1, Number(options.round) || 1) : state.round;
   const originalBoard = state.board.slice();
   state.busy = true;
   state.selected = null;
@@ -4956,13 +5014,13 @@ async function simulate() {
   cinematicTimeline.clear();
   clearSkillVisuals?.();
   try {
-  const combatSeed = state.nextCombatSeed || createCombatSeed(battleRound, state.debugMode ? "debug" : "pve");
+  const combatSeed = options.seed || state.nextCombatSeed || createCombatSeed(battleRound, state.debugMode ? "debug" : "pve");
   state.nextCombatSeed = "";
   state.lastCombatSeed = combatSeed;
   state.augmentInheritedThreeStar = false;
   combatRng = createSeededRng(combatSeed);
   const traitCounts = activeTraits();
-  state.enemies = makeEnemies();
+  state.enemies = pvpBattle ? (options.enemies || []).slice() : makeEnemies();
   allies.forEach((unit) => {
     const critBase = baseCritStats(unit);
     unit.combatBase = {
@@ -5026,7 +5084,7 @@ async function simulate() {
     unit.skillCritDamage = unit.skillCritDamage ?? 1.5;
     unit.openingCritMultiplier = critBase.openingCritMultiplier;
   });
-  allies.forEach((unit) => prepareCombatUnit(unit, "ally", traitCounts));
+  allies.forEach((unit) => prepareCombatUnit(unit, "ally", traitCounts, state, allies));
   const absorptions = combatAbsorptions(allies);
   for (const { rule, host, target } of absorptions) {
     target.status = "suppressed";
@@ -5048,7 +5106,13 @@ async function simulate() {
   for (const rule of openingHiddenEffects) addLog(`${rule.name} 발동.`);
   state.pendingHiddenEffects = [];
   state.precisionCritCounters = {};
-  state.enemies.filter(Boolean).forEach((unit) => prepareCombatUnit(unit, "enemy"));
+  state.enemies.filter(Boolean).forEach((unit) => prepareCombatUnit(
+    unit,
+    "enemy",
+    options.enemyTraits || {},
+    pvpBattle ? options.enemyState : null,
+    state.enemies.filter(Boolean)
+  ));
   state.combatGrid = Array(combatGridSize()).fill(null);
   state.enemies.forEach((unit, index) => {
     if (unit) state.combatGrid[index] = unit;
@@ -5069,19 +5133,33 @@ async function simulate() {
   }
   const diverCount = placeBacklineDivers([...allies, ...state.enemies.filter(Boolean)]);
   const openingUtilities = applyOpeningTeamUtilities(allies, state.enemies);
+  const enemyOpeningUtilities = pvpBattle
+    ? applyOpeningTeamUtilities(state.enemies.filter(Boolean), allies)
+    : { backlineShielded: 0, frontlineShielded: 0, pulledUnits: 0, focusTarget: null };
   if (openingUtilities.pulledUnits) {
     renderCombatFrame();
     await sleep(380);
   }
   const huntMarkedUnits = assignHuntMarks(allies, state.enemies);
+  const enemyHuntMarkedUnits = pvpBattle ? assignHuntMarks(state.enemies, allies) : [];
   const boss = living(state.enemies).find((unit) => unit.boss);
-  addLog(boss ? `보스전 시작: ${boss.name} 출현!` : `전투 시작: 아군 ${allies.length}명 vs 야생 실험체 ${living(state.enemies).length}명`);
+  addLog(boss
+    ? `보스전 시작: ${boss.name} 출현!`
+    : pvpBattle
+      ? `PvP 전투 시작: 아군 ${allies.length}명 vs ${options.opponentName || "상대"} ${living(state.enemies).length}명`
+      : `전투 시작: 아군 ${allies.length}명 vs 야생 실험체 ${living(state.enemies).length}명`);
   if (openingUtilities.backlineShielded) addLog(`중장비 발동: 후열 ${openingUtilities.backlineShielded}명 보호막.`);
   if (openingUtilities.frontlineShielded) addLog(`예술 발동: 전열 ${openingUtilities.frontlineShielded}명 보호막.`);
+  if (enemyOpeningUtilities.backlineShielded) addLog(`상대 중장비 발동: 후열 ${enemyOpeningUtilities.backlineShielded}명 보호막.`);
+  if (enemyOpeningUtilities.frontlineShielded) addLog(`상대 예술 발동: 전열 ${enemyOpeningUtilities.frontlineShielded}명 보호막.`);
   if (openingUtilities.pulledUnits) {
     addLog(`전술 발동: 적 후열 ${openingUtilities.pulledUnits}명 아군 진영으로 배달 / ${openingUtilities.focusTarget.name} 집중 공격.`);
   }
+  if (enemyOpeningUtilities.pulledUnits) {
+    addLog(`상대 전술 발동: 아군 후열 ${enemyOpeningUtilities.pulledUnits}명 상대 진영으로 배달 / ${enemyOpeningUtilities.focusTarget.name} 집중 공격.`);
+  }
   if (huntMarkedUnits.length) addLog(`추적 발동: ${huntMarkedUnits.map((unit) => unit.name).join(", ")} 표식.`);
+  if (enemyHuntMarkedUnits.length) addLog(`상대 추적 발동: ${enemyHuntMarkedUnits.map((unit) => unit.name).join(", ")} 표식.`);
   if (diverCount) addLog(`기습 전개: 기습형 ${diverCount}명이 후열로 진입.`);
   render();
   if (openingAugmentEffects.length) playCombatEffects(openingAugmentEffects);
@@ -5100,6 +5178,7 @@ async function simulate() {
   };
   combatElapsedMs = 0;
   cinematicElapsedMs = 0;
+  let accelerationApplied = false;
   const cinematicTimeStopActive = () => (state.combatGrid || [])
     .some((unit) => unit && (unit.timeStopRemainingMs || 0) > 0);
   while (
@@ -5109,7 +5188,13 @@ async function simulate() {
   ) {
     await sleep(simulationStepMs);
     simulationElapsedMs += simulationStepMs;
-    cinematicElapsedMs += simulationStepMs;
+    if (!accelerationApplied && acceleratedTimeScale > 1 && combatElapsedMs >= accelerationStartMs) {
+      accelerationApplied = true;
+      updateCombatTimeScale(acceleratedTimeScale);
+      addLog(`${(accelerationStartMs / 1000).toFixed(0)}초 경과: 전투 속도 ${acceleratedTimeScale}배로 가속합니다.`);
+    }
+    const combatStepMs = simulationStepMs * activeCombatTimeScale;
+    cinematicElapsedMs += combatStepMs;
     const combatants = [...living(allies), ...living(state.enemies)];
     const tickLogs = [];
     const effects = [];
@@ -5117,14 +5202,14 @@ async function simulate() {
     const timeStopActive = combatants.some((unit) => (unit.timeStopRemainingMs || 0) > 0);
 
     if (timeStopActive) {
-      advanceTimeStopTimers(state.combatGrid || combatants, simulationStepMs);
+      advanceTimeStopTimers(state.combatGrid || combatants, combatStepMs);
       const cinematicResult = resolveSkillTimelineEvents(cinematicElapsedMs, cinematicTimeline);
       tickLogs.push(...cinematicResult.messages);
       effects.push(...cinematicResult.effects);
     } else {
-      combatElapsedMs += simulationStepMs;
+      combatElapsedMs += combatStepMs;
       clearCombatStatus(combatants);
-      advanceTimedStatuses(combatants, simulationStepMs);
+      advanceTimedStatuses(combatants, combatStepMs);
       const actors = combatants.sort((a, b) => (a.actionCooldownMs || 0) - (b.actionCooldownMs || 0) || b.speed - a.speed);
       const expiredLastStands = combatants.filter((unit) => unit.fenrirLastStandExpired && unit.hp <= 0);
       if (expiredLastStands.length) {
@@ -5191,12 +5276,14 @@ async function simulate() {
     }
     const shouldRender = simulationElapsedMs >= nextRenderAt;
     if (shouldRender) {
-      refs.phase.textContent = `전투 중: ${(combatElapsedMs / 1000).toFixed(1)}초 · 아군 ${living(allies).length}명 / 적 ${living(state.enemies).length}명`;
+      const speedLabel = activeCombatTimeScale > 1 ? ` · ${activeCombatTimeScale}배속` : "";
+      refs.phase.textContent = `전투 중: ${(combatElapsedMs / 1000).toFixed(1)}초${speedLabel} · 아군 ${living(allies).length}명 / 적 ${living(state.enemies).length}명`;
       renderCombatFrame();
       nextRenderAt = simulationElapsedMs + renderIntervalMs;
     }
     playCombatEffects(effects);
   }
+  updateCombatTimeScale(1);
   flushCombatLogs();
   finishCombatMetrics();
 
@@ -5212,12 +5299,12 @@ async function simulate() {
   }, 0) : 0;
   document.body.classList.remove("fighting");
   state.busy = false;
-  state.round += 1;
+  if (!pvpBattle) state.round += 1;
   state.combatGrid = null;
   state.precisionCritCounters = {};
   skillTimeline.clear();
   cinematicTimeline.clear();
-  addXp(balance.player.combatXp, "전투 보상");
+  if (!pvpBattle) addXp(balance.player.combatXp, "전투 보상");
   for (const unit of boardAllies) {
     if (unit.combatBase) {
       unit.maxHp = unit.combatBase.maxHp;
@@ -5383,6 +5470,37 @@ async function simulate() {
     atk: 0,
     skillAmp: 0,
   };
+  if (pvpBattle) {
+    const damage = Math.max(1, Math.min(20, survivorStarDamage(win ? allies : state.enemies)));
+    state.lastCombatResult = {
+      seed: state.lastCombatSeed,
+      round: battleRound,
+      win,
+      survivors,
+      damage,
+      hp: state.hp,
+      allyMetrics: (state.lastCombatMetrics || []).map((metric) => ({
+        name: metric.name,
+        damageDone: Math.round(metric.damageDone || 0),
+        damageTaken: Math.round(metric.damageTaken || 0),
+        healingDone: Math.round(metric.healingDone || 0),
+      })),
+      remainingEnemies: living(state.enemies).map((unit) => ({
+        name: unit.name,
+        hp: Math.round(unit.hp),
+        mana: Math.round(unit.mana || 0),
+      })),
+    };
+    refs.phase.textContent = options.replay
+      ? `${options.opponentName || "상대"}와의 이전 전투 재생이 끝났습니다.`
+      : win
+        ? `${options.opponentName || "상대"}에게 승리했습니다. 결과를 확정하는 중입니다.`
+        : `${options.opponentName || "상대"}에게 패배했습니다. 결과를 확정하는 중입니다.`;
+    state.enemies = [];
+    clearSkillVisuals?.();
+    render();
+    return state.lastCombatResult;
+  }
   applyPandoraBench();
   if (win) {
     grantRoundIncome(true);
@@ -5392,17 +5510,25 @@ async function simulate() {
     }
     addLog(`승리! 생존 ${survivors}명.`);
     refs.phase.textContent = "승리했습니다. 다음 전투를 준비하세요.";
-    if (wasBossRound) offerAugments?.(battleRound);
-    if (wasBossRound && battleRound === balance.battle.bossInterval) offerPvpEntry?.(battleRound, originalBoard);
+    offerAugments?.(battleRound);
   } else {
     const previousHp = state.hp;
     const damage = wasBossRound ? state.hp : Math.min(20, survivorStarDamage(state.enemies));
     state.hp = Math.max(0, state.hp - damage);
-    if (previousHp > 0 && state.hp === 0) captureDeathRecord(battleRound, originalBoard);
+    const iceShieldTriggered = previousHp > 0 && state.hp === 0 && state.lumiIceShieldReady;
+    if (iceShieldTriggered) {
+      state.hp = 1;
+      state.lumiIceShieldReady = false;
+      addLog("얼음 방패 발동: 치명 피해를 막고 체력 1로 살아남았습니다.", { force: true });
+    } else if (previousHp > 0 && state.hp === 0) {
+      captureDeathRecord(battleRound, originalBoard);
+    }
     grantRoundIncome(false);
-    addLog(`패배. 남은 적 ${survivors}명. 체력 ${damage} 감소.`);
+    addLog(`패배. 남은 적 ${survivors}명. 체력 ${Math.max(0, previousHp - state.hp)} 감소.`);
     refs.phase.textContent = state.hp ? "패배했습니다. 조합을 재정비하세요." : "체력이 0이 되었습니다. 랭킹을 등록할 수 있습니다.";
+    if (state.gameMode === "pvp") offerAugments?.(battleRound);
   }
+  if (state.hp > 0) offerLumiShop?.(battleRound);
   state.lastCombatResult = {
     seed: state.lastCombatSeed,
     round: battleRound,
@@ -5430,6 +5556,7 @@ async function simulate() {
   }
   return state.lastCombatResult;
   } catch (error) {
+    updateCombatTimeScale(1);
     console.error("[rumia-combat-stall-guard]", error);
     unlockCombatUi(`전투 처리 오류 감지: ${error?.message || error || "unknown"} / 전투 상태를 복구했습니다.`);
     addLog(`전투 처리 오류 감지: ${error?.message || error || "unknown"} / 전투 상태를 복구했습니다.`, { force: true });

@@ -14,6 +14,11 @@ window.LUMIA_TACTICS_CONFIG = {
     heartbeatSeconds: 120,
     onlineWindowSeconds: 180,
   },
+  push: {
+    enabled: true,
+    vapidPublicKey: "BCjqLcpJMlC5U9KT2kAtc9wdaX4tvEgJ8tO9E0uQwk-Ruo6pHTgW0iwXny8ANVVe9srFgC1QpzYWDK8BTIm3ofY",
+    pollSeconds: 30,
+  },
   ranking: {
     majorVersion: "260928",
     versionColumn: "ranking_version",

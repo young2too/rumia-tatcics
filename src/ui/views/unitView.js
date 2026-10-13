@@ -1,6 +1,7 @@
 import { traitPills, unitTraitText } from "./traitHelpers.js";
+import { applyStatPatch, fourStarAscensionStats } from "../../systems/augmentEffects.js";
 
-export function createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor = (unit) => unit.name, render, selectAugmentTarget }) {
+export function createUnitView({ state, refs, balance, sellValue, activeTraits, applySynergy, displayNameFor = (unit) => unit.name, render, selectAugmentTarget, selectLumiShopTarget }) {
   function displayedSkillFor(unit) {
     const sevenElixir = unit?.name === "쇼이치"
       && (state.selectedAugments || []).some((augment) => augment.effect?.type === "shoichiSevenElixir");
@@ -40,9 +41,8 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     return unit;
   }
 
-  function detailStats(unit) {
-    if (state.selected?.source === "board") return applySynergy(unit, activeTraits());
-    return {
+  function detailStats(unit, source = state.selected?.source) {
+    const stats = source === "board" ? applySynergy(unit, activeTraits()) : {
       hp: unit.maxHp,
       atk: unit.atk,
       speed: unit.speed,
@@ -79,6 +79,13 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       assassinRearmCritMultiplier: unit.assassinRearmCritMultiplier ?? 0,
       assassinRearmCooldownMs: unit.assassinRearmCooldownMs ?? 0,
     };
+    if (unit.fourStarAscended && ["board", "bench"].includes(source)) {
+      const ascension = (state.selectedAugments || [])
+        .map((augment) => augment?.effect)
+        .find((effect) => effect?.type === "fourStarAscension");
+      if (ascension?.stats) applyStatPatch(stats, fourStarAscensionStats(ascension, unit));
+    }
+    return stats;
   }
 
   function statusEffects(unit) {
@@ -139,8 +146,10 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
 
   function unitNode(unit, source, index, compact = false) {
     const node = document.getElementById("unitTemplate").content.firstElementChild.cloneNode(true);
+    const displayTier = unit.fourStarAscended ? 4 : unit.tier;
     node.classList.add(source);
-    node.classList.add(`tier-${Math.max(1, Math.min(3, unit.tier || 1))}`);
+    if (state.lumiShopPendingProductId && ["board", "bench"].includes(source)) node.classList.add("lumi-shop-targetable");
+    node.classList.add(`tier-${Math.max(1, Math.min(4, displayTier || 1))}`);
     if (unit.boss) {
       node.classList.add("boss-unit");
       if (unit.pattern) node.classList.add(`boss-${unit.pattern}`);
@@ -150,7 +159,10 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     node.dataset.unitId = unit.id;
     if (state.selected?.source === source && state.selected?.index === index) node.classList.add("selected");
     if (state.pendingAugmentTarget && ["board", "bench"].includes(source)) {
-      node.classList.add((unit.tier || 1) >= 3 ? "augment-targetable" : "augment-untargetable");
+      const canTarget = state.pendingAugmentTarget.effect?.type === "fourStarPromotionPurchase"
+        ? (unit.tier || 1) >= 3 && !unit.fourStarAscended
+        : (unit.tier || 1) >= 3;
+      node.classList.add(canTarget ? "augment-targetable" : "augment-untargetable");
     }
     if (unit.status) node.classList.add(unit.status);
     if (unit.untargetableRemainingMs > 0) node.classList.add("untargetable");
@@ -168,7 +180,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     node.querySelector(".portrait").innerHTML = unit.art ? `<img src="${unit.art}" alt="">` : unit.name.slice(0, 1);
     node.querySelector(".name").textContent = displayNameFor(unit);
     node.querySelector(".meta").innerHTML = compact ? "" : traitPills(unit);
-    node.querySelector(".stars").textContent = "★".repeat(unit.tier);
+    node.querySelector(".stars").textContent = "★".repeat(displayTier);
     node.querySelector(".status-badges").innerHTML = statusEffects(unit).map((effect) => `
       <b class="${effect.tone}" style="--status: ${Math.max(0, Math.min(100, Math.round(effect.ratio * 100)))}%">
         <span>${effect.label}</span><i></i>
@@ -186,7 +198,8 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       node.insertAdjacentHTML("beforeend", `<span class="hunt-mark" title="추적 표식" aria-label="추적 표식"></span>`);
     }
     const displayedSkill = displayedSkillFor(unit);
-    node.title = `${displayNameFor(unit)} · ${unit.weapon} | HP ${unit.maxHp} / 공격 ${unit.atk} / 공속 ${unit.speed} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${unit.skillAmp} / 방어 ${unit.defense} | ${displayedSkill.name}${displayedSkill.tooltip ? ` - ${displayedSkill.tooltip}` : ""}`;
+    const preview = ["board", "bench"].includes(source) ? detailStats(unit, source) : unit;
+    node.title = `${displayNameFor(unit)} · ${unit.weapon} | HP ${Math.round(preview.hp ?? unit.maxHp)} / 공격 ${Math.round(preview.atk)} / 공속 ${Number(preview.speed).toFixed(2)} / 사거리 ${unit.range || unitRange(unit)}칸 / 스증 ${Math.round(preview.skillAmp)} / 방어 ${Math.round(preview.defense)} | ${displayedSkill.name}${displayedSkill.tooltip ? ` - ${displayedSkill.tooltip}` : ""}`;
     node.addEventListener("dragstart", () => {
       state.dragging = { source, index };
       document.body.classList.add("dragging-unit");
@@ -203,6 +216,10 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       if (source === "enemy" || state.busy) return;
       if (state.pendingAugmentTarget) {
         if (selectAugmentTarget?.(source, index)) return;
+      }
+      if (state.lumiShopPendingProductId) {
+        selectLumiShopTarget?.(source, index);
+        return;
       }
       const selected = state.selected?.source === source && state.selected?.index === index;
       state.selected = selected ? null : { source, index };
@@ -221,8 +238,10 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       return;
     }
     const effective = detailStats(unit);
+    const effectiveMaxHp = Math.max(1, Math.round(effective.hp));
+    const effectiveCurrentHp = Math.max(0, Math.round((unit.hp / Math.max(1, unit.maxHp)) * effectiveMaxHp));
     const stats = [
-      ["HP", `${Math.max(0, Math.round(unit.hp))} / ${unit.maxHp}`],
+      ["HP", `${effectiveCurrentHp} / ${effectiveMaxHp}`],
       ["공격", Math.round(effective.atk)],
       ["공속", effective.speed.toFixed(2)],
       ["사거리", `${unit.range || Math.max(1, unitRange(unit) + Math.round(effective.rangeBonus || 0))}칸`],
@@ -253,7 +272,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     if (effective.assassinRearmCritMultiplier > 1) stats.push(["재장전", `${Math.round(effective.assassinRearmCritMultiplier * 100)}% / ${(effective.assassinRearmCooldownMs / 1000).toFixed(1)}초`]);
     if (unit.role === "술법" && effective.skillTargets > 2) stats.push(["스킬타격", effective.skillTargets >= 99 ? "전체" : `${Math.round(effective.skillTargets)}명`]);
     if (unit.role === "지원" && effective.healTargets > 2) stats.push(["회복대상", effective.healTargets >= 99 ? "전체" : `${Math.round(effective.healTargets)}명`]);
-    refs.detailTier.textContent = `${"★".repeat(unit.tier)} · ${unit.cost}코`;
+    refs.detailTier.textContent = `${"★".repeat(unit.fourStarAscended ? 4 : unit.tier)} · ${unit.cost}코`;
     refs.sellUnit.disabled = state.busy;
     refs.sellUnit.textContent = `${sellValue(unit)}크레딧에 판매`;
     const displayedSkill = displayedSkillFor(unit);

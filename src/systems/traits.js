@@ -29,7 +29,7 @@ export function createTraitController({ state, traitRules, boardUnits }) {
     return rule?.tiers?.find((tier) => count < tier.need)?.need || rule?.tiers?.at(-1)?.need || 0;
   }
 
-  function applySynergy(unit, counts) {
+  function applySynergy(unit, counts, augmentState = state) {
     const stats = {
       hp: unit.maxHp,
       atk: unit.atk,
@@ -95,7 +95,7 @@ export function createTraitController({ state, traitRules, boardUnits }) {
         if (Number.isFinite(effect.add)) stats[effect.stat] += effect.add;
       }
     }
-    const overcap = augmentOvercapEffects(state, traitRules, counts);
+    const overcap = augmentOvercapEffects(augmentState, traitRules, counts);
     for (const trait of unitTraits(unit)) {
       if (overcap[trait]) applyStatPatch(stats, overcap[trait]);
     }

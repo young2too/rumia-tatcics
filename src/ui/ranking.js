@@ -159,6 +159,7 @@ export function createRankingController({ state, refs, rankingConfig, rankingSto
     return board.filter(Boolean).map((unit) => ({
       name: unit.name,
       tier: unit.tier,
+      fourStarAscended: Boolean(unit.fourStarAscended),
       art: unit.art,
       color: unit.color,
       cost: unit.cost,

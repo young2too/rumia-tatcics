@@ -1,4 +1,12 @@
-export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit, moveSelected, placeDebugDummy, previewBossEnemies, temporaryBoostConfig, temporaryBoostPercent }) {
+export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit, moveSelected, placeDebugDummy, previewBossEnemies, temporaryBoostConfig, temporaryBoostPercent, fourStarPromotionStatus }) {
+  function canTargetPendingAugment(unit) {
+    if (!state.pendingAugmentTarget || !unit) return false;
+    if (state.pendingAugmentTarget.effect?.type === "fourStarPromotionPurchase") {
+      return (unit.tier || 1) >= 3 && !unit.fourStarAscended;
+    }
+    return (unit.tier || 1) >= 3;
+  }
+
   function dualContractSlotType(index) {
     if (state.combatGrid) return "";
     const effects = (state.selectedAugments || []).map((augment) => augment?.effect).filter((effect) => effect?.type === "dualContractSlots");
@@ -24,7 +32,7 @@ export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit
     cell.className = "cell";
     cell.style.setProperty("--depth", String(10 + gridRow));
     if (unit) cell.classList.add("has-unit");
-    if (state.pendingAugmentTarget && interactive && unit?.tier >= 3) cell.classList.add("augment-target-slot");
+    if (interactive && canTargetPendingAugment(unit)) cell.classList.add("augment-target-slot");
     const contractType = interactive ? dualContractSlotType(index) : "";
     if (contractType) {
       cell.classList.add("dual-contract-slot", `dual-contract-${contractType}`);
@@ -81,11 +89,19 @@ export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit
     if (!refs.temporaryBoosts) return;
     const config = temporaryBoostConfig();
     const cost = config.cost ?? 20;
-    refs.temporaryBoosts.innerHTML = (config.stats || []).map((boost) => {
+    const buttons = (config.stats || []).map((boost) => {
       const current = temporaryBoostPercent(boost.id);
       const label = current ? `${boost.label}강화 ${current}% 활성화 중` : `${boost.label}강화 ${cost}코`;
       return `<button class="temporary-boost" data-boost="${boost.id}" ${state.busy || state.gold < cost ? "disabled" : ""}><strong>${label}</strong></button>`;
-    }).join("");
+    });
+    const promotion = fourStarPromotionStatus?.() || { unlocked: false };
+    if (promotion.unlocked) {
+      const multiplier = Number(promotion.multiplier || 1).toFixed(2);
+      const label = promotion.pending ? "★★★★ 대상 선택 중 · 취소" : `★★★★ 승급 ${promotion.cost}코 · x${multiplier}`;
+      const disabled = state.busy || !promotion.canModify || (!promotion.pending && (state.gold < promotion.cost || promotion.candidateCount < 1));
+      buttons.push(`<button class="temporary-boost four-star-promotion ${promotion.pending ? "active" : ""}" data-four-star-promotion ${disabled ? "disabled" : ""} title="3성 유닛을 선택해 4성으로 승급합니다"><strong>${label}</strong></button>`);
+    }
+    refs.temporaryBoosts.innerHTML = buttons.join("");
   }
 
   function renderBench() {
@@ -99,7 +115,7 @@ export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit
         slot.classList.add("pandora-bench-slot");
         slot.title = "판도라의 벤치: 전투 종료 시 같은 코스트/성급의 무작위 유닛으로 변환";
       }
-      if (state.pendingAugmentTarget && unit?.tier >= 3) slot.classList.add("augment-target-slot");
+      if (canTargetPendingAugment(unit)) slot.classList.add("augment-target-slot");
       slot.dataset.index = String(index);
       slot.addEventListener("dragover", (event) => {
         event.preventDefault();

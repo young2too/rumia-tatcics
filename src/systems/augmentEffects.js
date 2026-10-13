@@ -52,6 +52,18 @@ export function applyStatPatch(stats, patch = {}) {
   return stats;
 }
 
+export function fourStarAscensionStats(effect, unit) {
+  const stats = { ...(effect?.stats || {}) };
+  const promotionOrder = Math.max(1, Math.round(Number(unit?.fourStarPromotionOrder) || 1));
+  const increase = Math.max(0, Number(effect?.multiplierIncreasePerPromotion) || 0);
+  const bonus = (promotionOrder - 1) * increase;
+  if (!bonus) return stats;
+  for (const key of Object.keys(stats)) {
+    if (key.endsWith("Multiply") && Number.isFinite(stats[key])) stats[key] += bonus;
+  }
+  return stats;
+}
+
 function scaledStatPatch(patch = {}, ratio = 1) {
   if (ratio >= 0.999) return patch;
   const scaled = {};
@@ -158,13 +170,16 @@ export function augmentTraitCountAdditions(state) {
 }
 
 export function applyAugmentStatsToUnit(state, unit, stats, context = {}) {
-  if (!unit || unit.side !== "ally") return stats;
+  if (!unit || (unit.side !== "ally" && !context.playerControlled)) return stats;
   const traits = unitTraits(unit);
   for (const effect of augmentEffects(state, "traitStat")) {
     if (traits.includes(effect.trait)) applyStatPatch(stats, effect.stats);
   }
   for (const effect of augmentEffects(state, "threeStarStat")) {
     if ((unit.tier || 1) >= 3) applyStatPatch(stats, effect.stats);
+  }
+  for (const effect of augmentEffects(state, "fourStarAscension")) {
+    if (unit.fourStarAscended) applyStatPatch(stats, fourStarAscensionStats(effect, unit));
   }
   for (const effect of augmentEffects(state, "teamStat")) applyStatPatch(stats, effect.stats);
   for (const effect of augmentEffects(state, "goldHeldTeamStat")) {

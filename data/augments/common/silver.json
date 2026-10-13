@@ -250,6 +250,56 @@
     }
   },
   {
+    "active": true,
+    "id": "common_silver_backline_firepower",
+    "name": "후방 화력",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "backline"
+    ],
+    "summary": "뒤 2열 공/스증 +7%",
+    "description": "전투 시작 시 뒤 2열에 배치된 아군의 공격력과 스킬 증폭이 각각 7% 증가합니다.",
+    "effect": {
+      "type": "positionStat",
+      "rows": "back2",
+      "stats": {
+        "atkMultiply": 1.07,
+        "skillAmpMultiply": 1.07
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_combat_breathing",
+    "name": "전투 호흡",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "team",
+      "mana"
+    ],
+    "summary": "모든 아군 마나 획득 +12%",
+    "description": "모든 아군이 공격하거나 피해를 받을 때 얻는 마나가 12% 증가합니다.",
+    "effect": {
+      "type": "teamStat",
+      "stats": {
+        "manaGainMultiply": 1.12
+      }
+    }
+  },
+  {
     "active": false,
     "id": "common_silver_random_prismatic",
     "name": "찬란한 도박",

@@ -8,6 +8,10 @@
     <meta name="description" content="블토체스·이리체스로 불리는 이터널 리턴 팬 웹게임 루미아 택틱스. 캐릭터를 모아 배치하고 다양한 시너지와 히든 조합으로 보스와 무한 라운드에 도전하세요." />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#11191b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="루미아 택틱스" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./assets/characters/000_Dr.Nadja.png" />
     <link rel="canonical" href="https://rumia-tatcics.onrender.com/" />
     <link rel="icon" href="./assets/characters/000_Dr.Nadja.png" />
     <meta property="og:type" content="website" />
@@ -36,7 +40,7 @@
         "isAccessibleForFree": true
       }
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20260928-stat-icons" />
+    <link rel="stylesheet" href="./styles.css?v=20261012-pvp-flow-2" />
   </head>
   <body>
     <main class="app">
@@ -51,7 +55,11 @@
             <button id="bgmToggle" class="audio-button" title="배경음악 켜기">BGM</button>
             <button id="patchNotesToggle" class="patch-notes-button" title="패치노트 보기">패치노트</button>
             <button id="rankingToggle" class="ranking-button" title="랭킹 보기">랭킹</button>
-            <a class="pvp-rooms-button" href="./pvp.html" title="PvP 방 목록 보기" hidden aria-hidden="true" tabindex="-1">PvP</a>
+            <a class="pvp-rooms-button" href="./pvp.html" title="PvP 방 목록 보기">
+              <span class="pvp-rooms-label">PvP <small>베타</small></span>
+              <span class="pvp-rooms-new" aria-label="신규 콘텐츠">NEW</span>
+              <span class="pvp-rooms-alert" aria-label="진행이 필요한 PvP 게임" hidden>0</span>
+            </a>
             <a class="statistics-button" href="./stats.html" title="통계 보기">통계</a>
             <button id="communityBoardToggle" class="community-board-button" title="게시판 보기">게시판</button>
             <span id="onlinePresence" class="online-presence" title="최근 3분 접속자" hidden>접속 -</span>
@@ -87,16 +95,33 @@
         </aside>
 
         <section class="board-wrap">
+          <div id="pvpQueuePrepBanner" class="pvp-queue-prep-banner" hidden>
+            <div>
+              <span>비동기 PvP</span>
+              <strong>매칭용 덱 준비</strong>
+              <small>4라운드 PvE 후 첫 증강을 선택하면 덱이 자동 등록됩니다.</small>
+            </div>
+            <div>
+              <em id="pvpQueuePrepProgress">준비 1/4</em>
+              <button id="pvpQueueExit" type="button">로비로 돌아가기</button>
+            </div>
+          </div>
           <div class="arena-head">
             <div>
-              <h2>루미아 섬 전장</h2>
+              <h2 id="arenaTitle">루미아 섬 전장</h2>
               <p id="phase">준비 단계: 상점에서 영입하고 보드에 배치하세요.</p>
             </div>
             <div class="actions">
               <button id="levelUp">4XP 구매</button>
+              <button id="replayBattle" type="button" hidden>이전 전투 보기</button>
               <button id="battle" class="primary">전투 시작</button>
             </div>
           </div>
+          <div id="pvpRoundTracker" class="pvp-round-tracker" hidden>
+            <strong id="pvpRoundStage">1-1</strong>
+            <div id="pvpRoundTimeline" class="pvp-round-timeline" aria-label="PvP 라운드 구성"></div>
+          </div>
+          <div id="pvpVersusHud" class="pvp-versus-hud" hidden aria-label="현재 PvP 대전 상대"></div>
           <div class="battlefield" aria-label="auto chess board">
             <div id="boardCapacity" class="board-capacity" aria-hidden="true">
               <strong id="boardCapacityMain">0/1</strong>
@@ -105,7 +130,12 @@
             <button id="augmentResumeCenter" class="augment-resume-center" type="button" data-augment-reopen hidden>
               증강 선택
             </button>
+            <button id="lumiShopResumeCenter" class="lumi-shop-resume-center" type="button" hidden>
+              루미 상점
+            </button>
+            <div id="lumiShopBuff" class="lumi-shop-buff" hidden>얼음 방패 준비됨</div>
             <div id="activeAugments" class="active-augments" hidden></div>
+            <div id="pvpOpponentAugments" class="pvp-opponent-augments" hidden></div>
             <div id="enemyBoard" class="enemy-board"></div>
             <div id="board" class="board"></div>
             <div class="field-xp" aria-hidden="true"><i id="fieldXpBar"></i></div>
@@ -160,7 +190,9 @@
                 <div class="debug-round-presets" aria-label="라운드 빠른 이동">
                   <button type="button" data-debug-round="15">15R</button>
                   <button type="button" data-debug-round="30">30R</button>
+                  <button type="button" data-debug-round="45">45R</button>
                   <button type="button" data-debug-round="60">60R</button>
+                  <button type="button" data-debug-round="75">75R</button>
                   <button type="button" data-debug-round="90">90R</button>
                 </div>
               </div>
@@ -199,6 +231,48 @@
         </aside>
       </section>
 
+      <aside id="pvpSocial" class="pvp-social" hidden aria-label="PvP 상대 정찰">
+        <div class="pvp-social-rail" role="tablist" aria-label="PvP 도구">
+          <button type="button" data-pvp-social-tab="scout" role="tab" aria-selected="false">정찰</button>
+        </div>
+        <section id="pvpSocialPanel" class="pvp-social-panel" hidden>
+          <header>
+            <div>
+              <strong id="pvpSocialTitle">상대 정찰</strong>
+              <small id="pvpSocialMeta">제출된 최신 진영을 확인합니다.</small>
+            </div>
+            <button id="pvpSocialClose" type="button" title="패널 닫기" aria-label="패널 닫기">×</button>
+          </header>
+          <div id="pvpSocialBody" class="pvp-social-body"></div>
+        </section>
+      </aside>
+
+      <aside id="globalChat" class="global-chat" hidden aria-label="현재 접속자 광장 채팅">
+        <section id="globalChatPanel" class="global-chat-panel" hidden>
+          <header>
+            <div>
+              <strong>광장 채팅</strong>
+              <small>현재 접속자와 대화</small>
+            </div>
+            <button id="globalChatClose" type="button" title="채팅 닫기" aria-label="채팅 닫기">×</button>
+          </header>
+          <label class="global-chat-nickname">
+            <span>닉네임</span>
+            <input id="globalChatNickname" maxlength="12" autocomplete="nickname" aria-label="광장 채팅 닉네임" />
+            <i id="globalChatStatus">채팅 연결 중</i>
+          </label>
+          <div id="globalChatMessages" class="global-chat-messages" aria-live="polite"></div>
+          <form id="globalChatForm" class="global-chat-form">
+            <input id="globalChatInput" maxlength="120" autocomplete="off" placeholder="같이 할 사람을 찾아보세요" aria-label="광장 채팅 메시지" disabled />
+            <button type="submit">전송</button>
+          </form>
+        </section>
+        <button id="globalChatToggle" class="global-chat-toggle" type="button" title="현재 접속자 광장 채팅" aria-expanded="false">
+          광장
+          <span id="globalChatUnread" hidden>0</span>
+        </button>
+      </aside>
+
       <div id="rankingModal" class="ranking-modal" hidden>
         <section class="ranking-dialog" role="dialog" aria-modal="true" aria-labelledby="rankingTitle">
           <div class="panel-title">
@@ -223,6 +297,30 @@
             </div>
           </div>
           <div id="rankingPanel" class="ranking-panel"></div>
+        </section>
+      </div>
+
+      <div id="modeEntryModal" class="mode-entry-modal" hidden>
+        <section class="mode-entry-dialog" role="dialog" aria-modal="true" aria-labelledby="modeEntryTitle" aria-describedby="modeEntryDescription">
+          <header>
+            <span class="brand-mark"><img src="./assets/characters/000_Dr.Nadja.png" alt="" /></span>
+            <div>
+              <h2 id="modeEntryTitle">플레이 모드 선택</h2>
+              <p id="modeEntryDescription">처음 플레이할 모드를 선택하세요. 이후 상단 메뉴에서 자유롭게 이동할 수 있습니다.</p>
+            </div>
+          </header>
+          <div class="mode-entry-options">
+            <button id="modeEntryPve" class="mode-entry-option" type="button">
+              <strong>PvE 모드</strong>
+              <span>덱을 성장시키며 끝없는 라운드에 도전합니다.</span>
+              <b>시작</b>
+            </button>
+            <button id="modeEntryPvp" class="mode-entry-option pvp" type="button">
+              <strong>PvP 모드 <em>베타</em></strong>
+              <span>방을 만들거나 참가해 다른 플레이어와 대전합니다.</span>
+              <b>로비 입장</b>
+            </button>
+          </div>
         </section>
       </div>
 
@@ -256,6 +354,33 @@
           </div>
           <div id="augmentPanel" class="augment-panel"></div>
           <div id="selectedAugments" class="selected-augments"></div>
+        </section>
+      </div>
+
+      <div id="lumiShopModal" class="lumi-shop-modal" hidden>
+        <section class="lumi-shop-dialog" role="dialog" aria-modal="true" aria-labelledby="lumiShopTitle">
+          <header class="lumi-shop-header">
+            <div>
+              <h2 id="lumiShopTitle">루미 상점</h2>
+              <p id="lumiShopMeta"></p>
+            </div>
+            <button id="lumiShopClose" class="icon-button" type="button" title="잠시 닫기">잠시 닫기</button>
+          </header>
+          <div class="lumi-shop-stage">
+            <div class="lumi-shop-host">
+              <img src="./assets/ui/lumi-shop.png" alt="루미" />
+              <div>
+                <strong>필요한 걸 골라봐!</strong>
+                <span>한 번 방문할 때 상품 하나만 살 수 있어.</span>
+              </div>
+            </div>
+            <div id="lumiShopPanel" class="lumi-shop-panel"></div>
+          </div>
+          <footer class="lumi-shop-footer">
+            <span>보유 크레딧 <strong id="lumiShopGold">0</strong></span>
+            <span id="lumiShopTimer" class="lumi-shop-timer" hidden></span>
+            <button id="lumiShopSkip" type="button">이번 상점 건너뛰기</button>
+          </footer>
         </section>
       </div>
 
@@ -311,6 +436,6 @@
       </button>
     </template>
 
-    <script type="module" src="./app.js?v=20260625-shield-bar"></script>
+    <script type="module" src="./app.js?v=20261012-pvp-flow-2"></script>
   </body>
 </html>

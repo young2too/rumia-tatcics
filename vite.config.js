@@ -12,6 +12,7 @@ export default defineConfig({
         game: `${root}index.html`,
         statistics: `${root}stats.html`,
         pvp: `${root}pvp.html`,
+        pvpRoom: `${root}pvp-room.html`,
       },
     },
   },

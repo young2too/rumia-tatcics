@@ -1,4 +1,4 @@
-import { sellValue, unitCopyCount, stockLimit } from "../core/units.js";
+import { poolBackedCopyCount, preservePoolExemptCopies, sellValue, stockLimit, unitCopyCount } from "../core/units.js";
 import { augmentSellValue, augmentShopOddsLevel, augmentShopSize, augmentUnitCost, augmentCanSell, augmentEffects } from "./augmentEffects.js";
 
 export function createShopController({
@@ -11,6 +11,10 @@ export function createShopController({
   boardLimit,
   addLog,
   render,
+  reservePoolUnit = null,
+  releasePoolUnit = null,
+  syncPoolHoldings = null,
+  canModify = () => true,
 }) {
   function ownedThreeStarNames() {
     return new Set([...state.bench, ...state.board].filter((unit) => unit?.tier >= 3).map((unit) => unit.name));
@@ -99,10 +103,14 @@ export function createShopController({
     const slots = matchingUnitSlots(unit.name, unit.tier).slice(0, 2);
     const targetSlot = upgradeSlotFor(slots);
     if (slots.length < 2 || !targetSlot) return false;
+    const consumedUnits = [...slots.map((slot) => slot.arr[slot.index]), unit];
     slots.forEach((slot) => {
       slot.arr[slot.index] = null;
     });
-    targetSlot.arr[targetSlot.index] = makeUnit(roster.find((base) => base.name === unit.name), unit.tier + 1);
+    targetSlot.arr[targetSlot.index] = preservePoolExemptCopies(
+      makeUnit(roster.find((base) => base.name === unit.name), unit.tier + 1),
+      consumedUnits,
+    );
     addLog(`${unit.name} ${unit.tier + 1}성 합성!`);
     return true;
   }
@@ -118,11 +126,15 @@ export function createShopController({
       const targetSlot = upgradeSlotFor(slots);
       if (slots.length < 3 || !targetSlot) return changed;
 
+      const consumedUnits = slots.map((slot) => slot.arr[slot.index]);
       slots.forEach((slot) => {
         slot.arr[slot.index] = null;
       });
 
-      const upgraded = makeUnit(roster.find((unit) => unit.name === name), sameTier + 1);
+      const upgraded = preservePoolExemptCopies(
+        makeUnit(roster.find((unit) => unit.name === name), sameTier + 1),
+        consumedUnits,
+      );
       targetSlot.arr[targetSlot.index] = upgraded;
       changed = true;
       addLog(`${name} ${sameTier + 1}성 합성!`);
@@ -141,8 +153,8 @@ export function createShopController({
     pruneShopForOwnedThreeStars();
   }
 
-  function buyUnit(index) {
-    if (state.busy) return;
+  async function buyUnit(index) {
+    if (state.busy || state.shopTransactionPending || !canModify()) return;
     const unit = state.shop[index];
     const slot = state.bench.findIndex((x) => !x);
     const combinesImmediately = canBuyIntoImmediateCombine(unit);
@@ -151,21 +163,40 @@ export function createShopController({
     if ((state.pool[unit.name] || 0) <= 0) return addLog(`${unit.name} 재고가 없습니다.`);
     const cost = augmentUnitCost(state, unit);
     if (state.gold < cost) return addLog("크레딧이 부족합니다.");
-    state.gold -= cost;
-    state.pool[unit.name] -= 1;
-    if (slot >= 0) {
-      state.bench[slot] = unit;
-    } else {
-      forceCombinePurchasedUnit(unit);
-    }
-    state.shop.splice(index, 1);
-    addLog(`${unit.name} 영입 완료${cost !== unit.cost ? ` (${cost}크레딧)` : ""}.`);
-    combineAllUnits();
+    state.shopTransactionPending = true;
     render();
+    try {
+      if (reservePoolUnit) {
+        const remaining = await reservePoolUnit(unit, 1);
+        if (Number.isFinite(Number(remaining))) state.pool[unit.name] = Number(remaining);
+      } else {
+        state.pool[unit.name] -= 1;
+      }
+      state.gold -= cost;
+      if (slot >= 0) {
+        state.bench[slot] = unit;
+      } else {
+        forceCombinePurchasedUnit(unit);
+      }
+      state.shop.splice(index, 1);
+      addLog(`${unit.name} 영입 완료${cost !== unit.cost ? ` (${cost}크레딧)` : ""}.`);
+      combineAllUnits();
+    } catch (error) {
+      if (/out of stock|재고/i.test(String(error?.message || error))) {
+        state.pool[unit.name] = 0;
+        state.shop = state.shop.filter((candidate) => candidate?.name !== unit.name);
+        addLog(`${unit.name}의 공유 재고가 모두 소진되었습니다.`, { force: true });
+      } else {
+        addLog(`영입 처리 실패: ${String(error?.message || error)}`, { force: true });
+      }
+    } finally {
+      state.shopTransactionPending = false;
+      render();
+    }
   }
 
   function debugRecruitUnit(query) {
-    if (!state.debugMode || state.busy) return;
+    if (!state.debugMode || state.busy || !canModify()) return;
     const normalized = String(query || "").trim().toLocaleLowerCase("ko");
     if (!normalized) return addLog("영입할 캐릭터 이름을 입력하세요.");
     const base = roster.find((unit) => unit.name.toLocaleLowerCase("ko") === normalized)
@@ -174,35 +205,106 @@ export function createShopController({
     const slot = state.bench.findIndex((unit) => !unit);
     if (slot < 0) return addLog("벤치가 가득 찼습니다.");
     state.bench[slot] = makeUnit(base, 1);
+    state.bench[slot].poolExemptCopies = unitCopyCount(state.bench[slot]);
+    state.bench[slot].poolExemptSource = "debug-recruit";
     addLog(`[디버그] ${base.name} 즉시 영입.`);
     combineAllUnits();
     render();
   }
 
-  function sellSelectedUnit() {
-    if (state.busy || !state.selected) return;
+  async function grantBonusUnit(base, { source = "bonus", allowPoolExempt = true } = {}) {
+    if (!base || state.busy || state.shopTransactionPending || !canModify()) return false;
+    const unit = makeUnit(base, 1);
+    const slot = state.bench.findIndex((candidate) => !candidate);
+    const combinesImmediately = canBuyIntoImmediateCombine(unit);
+    if (slot < 0 && !combinesImmediately) {
+      addLog("벤치가 가득 차 기물을 받을 수 없습니다.");
+      return false;
+    }
+
+    state.shopTransactionPending = true;
+    render();
+    try {
+      const available = Math.max(0, Number(state.pool[base.name]) || 0);
+      if (available > 0) {
+        if (reservePoolUnit) {
+          const remaining = await reservePoolUnit(unit, 1);
+          if (Number.isFinite(Number(remaining))) state.pool[base.name] = Number(remaining);
+        } else {
+          state.pool[base.name] = available - 1;
+        }
+      } else if (allowPoolExempt) {
+        unit.poolExemptCopies = 1;
+        unit.poolExemptSource = source;
+      } else {
+        addLog(`${base.name} 재고가 없습니다.`);
+        return false;
+      }
+
+      if (slot >= 0) state.bench[slot] = unit;
+      else forceCombinePurchasedUnit(unit);
+      combineAllUnits();
+      addLog(`${base.name} 1성을 획득했습니다.`);
+      return true;
+    } catch (error) {
+      if (!allowPoolExempt || !/out of stock|재고/i.test(String(error?.message || error))) {
+        addLog(`기물 지급 실패: ${String(error?.message || error)}`, { force: true });
+        return false;
+      }
+      unit.poolExemptCopies = 1;
+      unit.poolExemptSource = source;
+      state.pool[base.name] = 0;
+      if (slot >= 0) state.bench[slot] = unit;
+      else forceCombinePurchasedUnit(unit);
+      combineAllUnits();
+      addLog(`${base.name} 1성을 공유 풀 외 보너스로 획득했습니다.`);
+      return true;
+    } finally {
+      state.shopTransactionPending = false;
+      render();
+    }
+  }
+
+  async function sellSelectedUnit() {
+    if (state.busy || state.shopTransactionPending || !state.selected || !canModify()) return;
     const arr = state[state.selected.source];
     const unit = arr?.[state.selected.index];
     if (!unit || state.selected.source === "enemy") return;
     const value = sellValue(unit);
     if (!augmentCanSell(state)) return addLog("현재 증강 효과로 유닛을 판매할 수 없습니다.");
     const adjustedValue = augmentSellValue(state, value);
-    const returned = unitCopyCount(unit);
-    state.gold += adjustedValue;
-    state.pool[unit.name] = Math.min(stockLimit(unit, balance), (state.pool[unit.name] || 0) + returned);
-    arr[state.selected.index] = null;
-    state.selected = null;
-    addLog(`${unit.name} 판매: ${adjustedValue} 크레딧 획득, 풀 ${returned}개 반환.`);
+    const returned = poolBackedCopyCount(unit);
+    state.shopTransactionPending = true;
     render();
+    try {
+      if (releasePoolUnit) {
+        if (syncPoolHoldings) await syncPoolHoldings();
+        if (returned > 0) {
+          const remaining = await releasePoolUnit(unit, returned);
+          if (Number.isFinite(Number(remaining))) state.pool[unit.name] = Number(remaining);
+        }
+      } else {
+        state.pool[unit.name] = Math.min(stockLimit(unit, balance), (state.pool[unit.name] || 0) + returned);
+      }
+      state.gold += adjustedValue;
+      arr[state.selected.index] = null;
+      state.selected = null;
+      addLog(`${unit.name} 판매: ${adjustedValue} 크레딧 획득${releasePoolUnit ? "." : `, 풀 ${returned}개 반환.`}`);
+    } catch (error) {
+      addLog(`판매 처리 실패: ${String(error?.message || error)}`, { force: true });
+    } finally {
+      state.shopTransactionPending = false;
+      render();
+    }
   }
 
   function moveUnit(target, targetIndex) {
-    if (!state.dragging || state.busy) return;
+    if (!state.dragging || state.busy || !canModify()) return;
     moveFrom(state.dragging, target, targetIndex);
   }
 
   function moveSelected(target, targetIndex) {
-    if (!state.selected || state.busy) return;
+    if (!state.selected || state.busy || !canModify()) return;
     moveFrom(state.selected, target, targetIndex);
   }
 
@@ -238,6 +340,7 @@ export function createShopController({
   return {
     buyUnit,
     combineAllUnits,
+    grantBonusUnit,
     debugRecruitUnit,
     moveSelected,
     moveUnit,

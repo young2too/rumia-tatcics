@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "루미아 택틱스",
+  "short_name": "루미아 택틱스",
+  "description": "이터널 리턴 캐릭터 팬 오토체스",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#101719",
+  "theme_color": "#11191b",
+  "icons": [
+    {
+      "src": "/assets/characters/000_Dr.Nadja.png",
+      "sizes": "1000x1000",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

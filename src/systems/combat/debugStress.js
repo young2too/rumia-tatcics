@@ -1,6 +1,24 @@
 // 전투 스트레스 테스트: 로컬 개발 환경에서 대규모 교전 부하를 자동 구성하고 프레임을 측정합니다.
 const localHostnames = new Set(["127.0.0.1", "localhost"]);
 
+function queryNames(searchParams, key) {
+  return String(searchParams.get(key) || "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+function traitCounts(units) {
+  const namesByTrait = new Map();
+  for (const unit of units.filter(Boolean)) {
+    for (const trait of unit.traits || [unit.trait].filter(Boolean)) {
+      if (!namesByTrait.has(trait)) namesByTrait.set(trait, new Set());
+      namesByTrait.get(trait).add(unit.name);
+    }
+  }
+  return Object.fromEntries([...namesByTrait].map(([trait, names]) => [trait, names.size]));
+}
+
 const PRESET_ALLIES = {
   default: [
     "유키",
@@ -113,11 +131,15 @@ export function installCombatStressTools({
     const enemyCount = Math.max(1, Math.min(balance.battle.enemySlots || 16, Math.round(options.enemyCount || Number(searchParams.get("enemy-count")) || 13)));
     const tier = Math.max(1, Math.min(3, Math.round(options.tier || Number(searchParams.get("tier")) || 3)));
     const round = Math.max(1, Math.round(options.round || Number(searchParams.get("round")) || 90));
+    const pvpMatchup = Boolean(options.pvpMatchup || searchParams.has("pvp-matchup"));
+    const enemyFormation = String(options.enemyFormation || searchParams.get("enemy-formation") || "backline");
     const runId = String(options.runId || searchParams.get("run-id") || Date.now());
     const preset = String(options.preset || searchParams.get("preset") || "default");
+    const queryAllyNames = queryNames(searchParams, "ally-names");
+    const queryEnemyNames = queryNames(searchParams, "enemy-names");
     const allyNames = Array.isArray(options.allyNames) && options.allyNames.length
       ? options.allyNames
-      : PRESET_ALLIES[preset] || PRESET_ALLIES.default;
+      : queryAllyNames.length ? queryAllyNames : PRESET_ALLIES[preset] || PRESET_ALLIES.default;
     const enemyArts = [
       "058_Haze.png",
       "013_Sissela.png",
@@ -139,10 +161,16 @@ export function installCombatStressTools({
     const stressAllyBases = Array.from({ length: allyCount }, (_, index) => (
       unitByName(allyNames[index % allyNames.length]) || activeRoster[index % activeRoster.length]
     )).filter(Boolean);
+    const enemyNames = Array.isArray(options.enemyNames) && options.enemyNames.length ? options.enemyNames : queryEnemyNames;
     const stressEnemyBases = Array.from({ length: enemyCount }, (_, index) => (
-      unitByArt(enemyArts[index % enemyArts.length]) || activeRoster[(index + allyCount) % activeRoster.length]
+      (enemyNames.length ? unitByName(enemyNames[index % enemyNames.length]) : unitByArt(enemyArts[index % enemyArts.length]))
+      || activeRoster[(index + allyCount) % activeRoster.length]
     )).filter(Boolean);
     const tuneStressUnit = (unit, side) => {
+      if (pvpMatchup) {
+        unit.hp = unit.maxHp;
+        return unit;
+      }
       unit.maxHp = Math.max(unit.maxHp, side === "ally" ? 1800 : 2100);
       unit.hp = unit.maxHp;
       unit.atk = Math.max(unit.atk, side === "ally" ? 65 : 70);
@@ -174,7 +202,10 @@ export function installCombatStressTools({
       }
     });
     stressEnemyBases.slice(0, enemyCount).forEach((base, index) => {
-      const slot = balance.battle.enemySpawnOrder[index] ?? index;
+      const matchupBacklineOrder = [3, 4, 2, 5, 1, 6, 0, 7, 11, 12, 10, 13, 9, 14, 8, 15];
+      const slot = pvpMatchup && enemyFormation === "backline"
+        ? (matchupBacklineOrder[index] ?? balance.battle.enemySpawnOrder[index] ?? index)
+        : (balance.battle.enemySpawnOrder[index] ?? index);
       if (base) {
         const unit = tuneStressUnit(makeUnit(base, tier), "enemy");
         unit.id = `stress-enemy-${index}`;
@@ -195,7 +226,21 @@ export function installCombatStressTools({
     const startedAt = performance.now();
     let result;
     try {
-      result = await combat.simulate();
+      const pvpEnemies = state.debugDummies.slice();
+      result = await combat.simulate(pvpMatchup ? {
+        mode: "pvp",
+        round,
+        seed: String(options.seed || searchParams.get("seed") || `rumia-matchup-${runId}`),
+        enemies: pvpEnemies,
+        enemyTraits: traitCounts(pvpEnemies),
+        enemyState: {
+          selectedAugments: [],
+          temporaryBoosts: { hp: 0, atk: 0, skillAmp: 0 },
+          board: pvpEnemies.filter(Boolean),
+          bench: [],
+        },
+        opponentName: "매치업 테스트",
+      } : {});
     } finally {
       state.shopLocked = previousShopLocked;
     }

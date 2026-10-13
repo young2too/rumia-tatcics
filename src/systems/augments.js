@@ -1,5 +1,6 @@
 // 증강 컨트롤러: 시드 기반 증강 후보 생성, 리롤, 선택 기록을 관리합니다.
 import { createDeterministicSeed, createSeededRng, createStableHash } from "../core/rng.js";
+import { poolBackedCopyCount, preservePoolExemptCopies, unitCopyCount } from "../core/units.js";
 import { applyImmediateAugmentEffect } from "./augmentEffects.js";
 
 const RARITIES = ["silver", "gold", "prismatic"];
@@ -13,9 +14,13 @@ export function createAugmentController({
   ownedUnits,
   render,
   addLog,
+  triggerRounds = augmentSettings.triggerRounds,
+  sharedRaritySeed = "",
+  canModify = () => true,
+  onSelectionComplete,
 }) {
   function triggerStageForRound(round) {
-    const entries = Object.entries(augmentSettings.triggerRounds || {});
+    const entries = Object.entries(triggerRounds || {});
     const match = entries.find(([, triggerRound]) => Number(triggerRound) === Number(round));
     return match ? Number(match[0]) : 0;
   }
@@ -119,10 +124,18 @@ export function createAugmentController({
   function generateChoices(stage, rerollIndex = state.augmentOfferRerollIndex || 0) {
     const seed = makeOfferSeed(stage, rerollIndex);
     const rng = createSeededRng(seed);
+    const rarityRng = sharedRaritySeed
+      ? createSeededRng(createDeterministicSeed("pvp-shared-augment-rarity", {
+        roomId: sharedRaritySeed,
+        stage,
+      }))
+      : rng;
     const pickedIds = new Set();
     const choices = [];
-    const choiceCount = augmentSettings.choiceCount || 3;
-    const offerRarity = rollRarity(rng, stage);
+    const choiceCount = Math.max(1, Number(augmentSettings.choiceCount) || 3)
+      + Math.max(0, Number(state.nextAugmentChoiceBonus) || 0);
+    const forcedRarity = RARITIES.includes(state.nextAugmentRarity) ? state.nextAugmentRarity : "";
+    const offerRarity = forcedRarity || rollRarity(rarityRng, stage);
     for (let index = 0; index < choiceCount; index += 1) {
       const fromRarity = takeChoice(poolFor(stage, offerRarity), pickedIds, rng);
       const fallback = fromRarity || takeChoice(allPoolFor(stage), pickedIds, rng);
@@ -151,6 +164,7 @@ export function createAugmentController({
     state.augmentOpen = true;
     state.augmentOfferRerollIndex = 0;
     state.augmentRerollsRemaining = augmentSettings.freeRerolls ?? 1;
+    state.augmentRerollsPerSlot = 1 + Math.max(0, Number(state.nextAugmentRerollPerCardBonus) || 0);
     state.augmentRerolledSlots = [];
     state.augmentSeenIds = [];
     state.augmentChoices = generateChoices(normalizedStage, 0);
@@ -167,14 +181,22 @@ export function createAugmentController({
   }
 
   function rerollAugments() {
-    const slotIndex = state.augmentChoices.findIndex((_, index) => !(state.augmentRerolledSlots || []).includes(index));
+    const slotIndex = state.augmentChoices.findIndex((_, index) => rerollCountForSlot(index) < rerollsPerSlot());
     if (slotIndex >= 0) rerollAugmentSlot(slotIndex);
+  }
+
+  function rerollsPerSlot() {
+    return Math.max(1, Number(state.augmentRerollsPerSlot) || 1);
+  }
+
+  function rerollCountForSlot(index) {
+    return (state.augmentRerolledSlots || []).filter((slot) => Number(slot) === index).length;
   }
 
   function canRerollAugmentSlot(slotIndex) {
     const index = Math.max(0, Math.min((state.augmentChoices || []).length - 1, Math.round(Number(slotIndex) || 0)));
     if (!state.augmentOpen) return false;
-    if ((state.augmentRerolledSlots || []).includes(index)) return false;
+    if (rerollCountForSlot(index) >= rerollsPerSlot()) return false;
     const current = state.augmentChoices?.[index];
     if (!current) return false;
     const rarity = state.augmentOfferRarity || current.rarity || "silver";
@@ -189,7 +211,7 @@ export function createAugmentController({
   function rerollAugmentSlot(slotIndex) {
     if (!state.augmentOpen) return;
     const index = Math.max(0, Math.min((state.augmentChoices || []).length - 1, Math.round(Number(slotIndex) || 0)));
-    if ((state.augmentRerolledSlots || []).includes(index)) return;
+    if (rerollCountForSlot(index) >= rerollsPerSlot()) return;
     const rarity = state.augmentOfferRarity || state.augmentChoices[index]?.rarity || "silver";
     const seed = createDeterministicSeed("augment-card-reroll", {
       offerSeed: state.augmentOfferSeed,
@@ -197,6 +219,7 @@ export function createAugmentController({
       slotIndex: index,
       selected: (state.selectedAugments || []).map((augment) => augment.id),
       currentChoices: (state.augmentChoices || []).map((augment) => augment.id),
+      rerollCount: rerollCountForSlot(index),
       board: boardSignature(),
     });
     const rng = createSeededRng(seed);
@@ -207,7 +230,11 @@ export function createAugmentController({
     const replacement = takeChoice(poolFor(state.augmentStage, rarity), blocked, rng)
       || takeChoice(allPoolFor(state.augmentStage).filter((augment) => augment.rarity === rarity), blocked, rng);
     if (!replacement) {
-      state.augmentRerolledSlots = [...new Set([...(state.augmentRerolledSlots || []), index])];
+      const remaining = rerollsPerSlot() - rerollCountForSlot(index);
+      state.augmentRerolledSlots = [
+        ...(state.augmentRerolledSlots || []),
+        ...Array(Math.max(0, remaining)).fill(index),
+      ];
       addLog?.(`[증강] ${index + 1}번 카드는 바꿀 수 있는 다른 후보가 없습니다.`);
       render();
       return;
@@ -240,6 +267,8 @@ export function createAugmentController({
     }
     const tier = Math.max(1, Math.min(3, Math.round(Number(spec.tier) || 1)));
     state.bench[slot] = makeUnit(base, tier);
+    state.bench[slot].poolExemptCopies = unitCopyCount(state.bench[slot]);
+    state.bench[slot].poolExemptSource = "signature-augment";
     addLog?.(`[증강] ${unitName} ${tier}성을 획득했습니다.`, { force: true });
     return true;
   }
@@ -291,6 +320,8 @@ export function createAugmentController({
       return "";
     }
     state.bench[slot] = makeUnit(base, 1);
+    state.bench[slot].poolExemptCopies = unitCopyCount(state.bench[slot]);
+    state.bench[slot].poolExemptSource = "trait-augment";
     addLog?.(`[증강] ${augment.name}: ${base.name} 1성을 지급했습니다.`, { force: true });
     return base.name;
   }
@@ -310,10 +341,6 @@ export function createAugmentController({
     return grantedNames;
   }
 
-  function unitCopyCount(unit) {
-    return unit?.tier >= 3 ? 9 : unit?.tier >= 2 ? 3 : 1;
-  }
-
   function ownedThreeStarNames() {
     return new Set(ownedUnits().filter((unit) => unit?.tier >= 3).map((unit) => unit.name));
   }
@@ -331,10 +358,13 @@ export function createAugmentController({
     });
     if (!candidates.length) return null;
     const base = candidates[rng.integer(candidates.length)];
-    const copies = unitCopyCount(unit);
-    if (state.pool?.[unit.name] !== undefined) state.pool[unit.name] += copies;
-    if (state.pool?.[base.name] !== undefined) state.pool[base.name] = Math.max(0, state.pool[base.name] - copies);
-    return makeUnit(base, unit.tier || 1);
+    const poolBackedCopies = poolBackedCopyCount(unit);
+    if (state.pool?.[unit.name] !== undefined) state.pool[unit.name] += poolBackedCopies;
+    if (state.pool?.[base.name] !== undefined) state.pool[base.name] = Math.max(0, state.pool[base.name] - poolBackedCopies);
+    const transformed = preservePoolExemptCopies(makeUnit(base, unit.tier || 1), [unit]);
+    transformed.fourStarAscended = Boolean(unit.fourStarAscended);
+    transformed.fourStarPromotionOrder = Math.max(0, Number(unit.fourStarPromotionOrder) || 0);
+    return transformed;
   }
 
   function applyCataclysmTransform(augment) {
@@ -371,6 +401,64 @@ export function createAugmentController({
     return ownedUnits().filter((unit) => unit?.tier >= 3);
   }
 
+  function fourStarAscensionEffect() {
+    return (state.selectedAugments || [])
+      .map((augment) => augment?.effect)
+      .find((effect) => effect?.type === "fourStarAscension") || null;
+  }
+
+  function fourStarPromotionCost(effect = fourStarAscensionEffect()) {
+    if (!effect) return 0;
+    const count = Math.max(0, Number(state.fourStarPromotionCount) || 0);
+    return Math.max(0, Math.round((Number(effect.baseCost) || 100) + (Number(effect.costIncrease) || 50) * count));
+  }
+
+  function fourStarPromotionStatus() {
+    const effect = fourStarAscensionEffect();
+    const candidates = targetableThreeStarUnits().filter((unit) => !unit.fourStarAscended);
+    const nextOrder = Math.max(0, Number(state.fourStarPromotionCount) || 0) + 1;
+    const multiplier = (Number(effect?.stats?.atkMultiply) || 1)
+      + (nextOrder - 1) * (Number(effect?.multiplierIncreasePerPromotion) || 0);
+    return {
+      unlocked: Boolean(effect),
+      cost: fourStarPromotionCost(effect),
+      multiplier,
+      candidateCount: candidates.length,
+      pending: state.pendingAugmentTarget?.effect?.type === "fourStarPromotionPurchase",
+      canModify: canModify(),
+    };
+  }
+
+  function beginFourStarPromotion() {
+    const effect = fourStarAscensionEffect();
+    if (!effect || state.busy || !canModify()) return false;
+    if (state.pendingAugmentTarget?.effect?.type === "fourStarPromotionPurchase") {
+      state.pendingAugmentTarget = null;
+      addLog?.("[세계 돌파] 4성 승급 대상 선택을 취소했습니다.", { force: true });
+      render();
+      return true;
+    }
+    const candidates = targetableThreeStarUnits().filter((unit) => !unit.fourStarAscended);
+    if (!candidates.length) {
+      addLog?.("[세계 돌파] 승급할 수 있는 3성 유닛이 없습니다.", { force: true });
+      return false;
+    }
+    const cost = fourStarPromotionCost(effect);
+    if (state.gold < cost) {
+      addLog?.(`[세계 돌파] 4성 승급에는 ${cost}크레딧이 필요합니다.`, { force: true });
+      return false;
+    }
+    state.pendingAugmentTarget = {
+      id: "four_star_promotion_purchase",
+      name: "세계 돌파",
+      effect: { type: "fourStarPromotionPurchase", cost },
+    };
+    state.selected = null;
+    addLog?.(`[세계 돌파] ${cost}크레딧으로 승급할 3성 유닛을 선택하세요.`, { force: true });
+    render();
+    return true;
+  }
+
   function isAbsorbedTranscendTarget(unit) {
     return Boolean(unit?.fusedSkillRole || unit?.fusedSkillName || unit?.hiddenAbsorbed);
   }
@@ -396,10 +484,39 @@ export function createAugmentController({
 
   function selectAugmentTarget(source, index) {
     const pending = state.pendingAugmentTarget;
-    if (!pending || pending.effect?.type !== "transcendThreeStar") return false;
+    if (!pending) return false;
     if (!["board", "bench"].includes(source)) return false;
     const unit = state[source]?.[index];
     if (!unit) return false;
+    if (pending.effect?.type === "fourStarPromotionPurchase") {
+      if ((unit.tier || 1) < 3 || unit.fourStarAscended) {
+        addLog?.("[세계 돌파] 아직 승급하지 않은 3성 유닛만 선택할 수 있습니다.", { force: true });
+        render();
+        return true;
+      }
+      const effect = fourStarAscensionEffect();
+      const cost = fourStarPromotionCost(effect);
+      if (!effect || state.gold < cost) {
+        state.pendingAugmentTarget = null;
+        addLog?.(`[세계 돌파] 승급 비용 ${cost}크레딧을 지불할 수 없습니다.`, { force: true });
+        render();
+        return true;
+      }
+      state.gold -= cost;
+      state.fourStarPromotionCount = Math.max(0, Number(state.fourStarPromotionCount) || 0) + 1;
+      unit.fourStarAscended = true;
+      unit.fourStarPromotionOrder = state.fourStarPromotionCount;
+      unit.hp = unit.maxHp;
+      state.pendingAugmentTarget = null;
+      state.selected = { source, index };
+      const nextCost = fourStarPromotionCost(effect);
+      const multiplier = (Number(effect.stats?.atkMultiply) || 1) + (unit.fourStarPromotionOrder - 1) * (Number(effect.multiplierIncreasePerPromotion) || 0);
+      addLog?.(`[세계 돌파] ${unit.name} 4성 승급 완료. ${cost}크레딧 사용 / 주요 능력치 x${multiplier.toFixed(2)} / 다음 승급 ${nextCost}크레딧.`, { force: true });
+      render();
+      onSelectionComplete?.();
+      return true;
+    }
+    if (pending.effect?.type !== "transcendThreeStar") return false;
     if ((unit.tier || 1) < 3) {
       addLog?.(`[증강] ${pending.name}: 3성 유닛만 초월 대상으로 선택할 수 있습니다.`, { force: true });
       render();
@@ -417,6 +534,7 @@ export function createAugmentController({
     state.selected = { source, index };
     addLog?.(`[증강] ${pending.name}: ${unit.name} 초월${reduced ? " (흡수/융합 대상 효율 50%)" : ""}.`, { force: true });
     render();
+    onSelectionComplete?.(state.selectedAugments.at(-1));
     return true;
   }
 
@@ -469,10 +587,12 @@ export function createAugmentController({
       if (!sameTier) return;
       let removed = 0;
       let firstRemoved = null;
+      const consumedUnits = [];
       for (const arr of [state.bench, state.board]) {
         for (let i = 0; i < arr.length; i += 1) {
           if (arr[i]?.name === name && arr[i].tier === sameTier && removed < 3) {
             firstRemoved ||= { arr, index: i };
+            consumedUnits.push(arr[i]);
             arr[i] = null;
             removed += 1;
           }
@@ -480,7 +600,10 @@ export function createAugmentController({
       }
       const base = roster.find((unit) => unit.name === name);
       if (base && firstRemoved) {
-        firstRemoved.arr[firstRemoved.index] = makeUnit(base, sameTier + 1);
+        firstRemoved.arr[firstRemoved.index] = preservePoolExemptCopies(
+          makeUnit(base, sameTier + 1),
+          consumedUnits,
+        );
         addLog?.(`${name} ${sameTier + 1}성 합성!`, { force: true });
       }
     }
@@ -491,7 +614,7 @@ export function createAugmentController({
     const augment = state.augmentChoices.find((choice) => choice.id === id);
     if (!augment) return;
     if (augment.effect?.type === "transcendThreeStar") {
-      beginTargetedAugmentSelection(augment);
+      if (beginTargetedAugmentSelection(augment)) consumeNextAugmentShopBonuses();
       render();
       return;
     }
@@ -505,10 +628,19 @@ export function createAugmentController({
       offerSeed: state.augmentOfferSeed,
     });
     grantRandomAugments(augment, new Set([augment.id]));
+    consumeNextAugmentShopBonuses();
     state.augmentOpen = false;
     state.augmentChoices = [];
     addLog?.(`[증강] ${augment.name} 선택.`);
     render();
+    onSelectionComplete?.(state.selectedAugments.at(-1));
+  }
+
+  function consumeNextAugmentShopBonuses() {
+    state.nextAugmentRarity = "";
+    state.nextAugmentChoiceBonus = 0;
+    state.nextAugmentRerollPerCardBonus = 0;
+    state.augmentRerollsPerSlot = 1;
   }
 
   function debugSelectAugment(query) {
@@ -576,6 +708,7 @@ export function createAugmentController({
   }
 
   return {
+    beginFourStarPromotion,
     closeAugments,
     closeAugmentDetail,
     canRerollAugmentSlot,
@@ -588,6 +721,7 @@ export function createAugmentController({
     debugSelectAugment,
     selectAugment,
     selectAugmentTarget,
+    fourStarPromotionStatus,
     triggerStageForRound,
   };
 }

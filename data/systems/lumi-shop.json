@@ -1,0 +1,108 @@
+{
+  "pveRounds": [45, 75],
+  "pvpFirstRound": 5,
+  "pvpInterval": 10,
+  "pvpRealtimeSelectionSeconds": 30,
+  "pvpRoundPriceMultipliers": {
+    "5": 0,
+    "15": 0.5,
+    "25": 1
+  },
+  "pveOfferCount": 6,
+  "products": [
+    {
+      "id": "attack-module",
+      "name": "캡슐 - 선혈",
+      "category": "강화",
+      "price": 22,
+      "summary": "유닛 1명의 공격력을 영구히 15% 올립니다.",
+      "effect": { "type": "unitStat", "stats": { "atk": 0.15 } }
+    },
+    {
+      "id": "amplification-module",
+      "name": "캡슐 - 우주",
+      "category": "강화",
+      "price": 22,
+      "summary": "유닛 1명의 스킬 증폭을 영구히 18% 올립니다.",
+      "effect": { "type": "unitStat", "stats": { "skillAmp": 0.18 } }
+    },
+    {
+      "id": "survival-module",
+      "name": "캡슐 - 생명",
+      "category": "강화",
+      "price": 24,
+      "summary": "유닛 1명의 체력을 15%, 방어력을 10% 영구히 올립니다.",
+      "effect": { "type": "unitStat", "stats": { "maxHp": 0.15, "defense": 0.1 } }
+    },
+    {
+      "id": "team-calibration",
+      "name": "전군 보정",
+      "category": "강화",
+      "price": 48,
+      "summary": "현재 보유한 모든 유닛의 공격력과 스킬 증폭을 영구히 6% 올립니다.",
+      "effect": { "type": "teamStat", "stats": { "atk": 0.06, "skillAmp": 0.06 } }
+    },
+    {
+      "id": "emergency-repair",
+      "name": "긴급 정비",
+      "category": "회복",
+      "price": 12,
+      "summary": "플레이어 체력을 20 회복합니다.",
+      "effect": { "type": "playerHeal", "amount": 20 }
+    },
+    {
+      "id": "ice-shield",
+      "name": "얼음 방패",
+      "category": "생존",
+      "price": 25,
+      "summary": "즉시 적용됩니다. 플레이어 체력이 처음 0이 될 때 한 번만 체력 1로 살아남고 소모됩니다.",
+      "effect": { "type": "playerDeathGuard" }
+    },
+    {
+      "id": "joker-unit",
+      "name": "조커 기물",
+      "category": "기물",
+      "price": 36,
+      "summary": "선택한 유닛의 1성 기물 1개를 획득합니다. 공유 풀이 비어 있어도 생성됩니다.",
+      "effect": { "type": "jokerUnit" }
+    },
+    {
+      "id": "five-cost-ticket",
+      "name": "5코스트 초대권",
+      "category": "기물",
+      "price": 7,
+      "summary": "무작위 5코스트 1성 유닛을 획득합니다.",
+      "effect": { "type": "randomUnit", "cost": 5 }
+    },
+    {
+      "id": "prismatic-ticket",
+      "name": "프리즘 예고권",
+      "category": "증강",
+      "price": 45,
+      "summary": "다음 증강 선택의 등급을 프리즘으로 확정합니다.",
+      "requiresFutureAugment": true,
+      "pvpEnabled": false,
+      "effect": { "type": "nextAugmentRarity", "rarity": "prismatic" }
+    },
+    {
+      "id": "augment-choice-expansion",
+      "name": "증강 선택 확장권",
+      "category": "증강",
+      "price": 36,
+      "summary": "다음 증강 선택에서 같은 등급의 후보가 1개 추가됩니다.",
+      "requiresFutureAugment": true,
+      "pveEnabled": false,
+      "effect": { "type": "nextAugmentChoiceBonus", "amount": 1 }
+    },
+    {
+      "id": "augment-reroll-expansion",
+      "name": "증강 재설계권",
+      "category": "증강",
+      "price": 28,
+      "summary": "다음 증강 선택에서 각 카드의 리롤 가능 횟수가 1회 증가합니다.",
+      "requiresFutureAugment": true,
+      "pveEnabled": false,
+      "effect": { "type": "nextAugmentRerollPerCardBonus", "amount": 1 }
+    }
+  ]
+}

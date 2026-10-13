@@ -16,13 +16,32 @@ const GAMEPLAY_FIELDS = [
   "board",
   "temporaryBoosts",
   "selectedAugments",
+  "nextAugmentRarity",
+  "nextAugmentChoiceBonus",
+  "nextAugmentRerollPerCardBonus",
+  "lumiShopRound",
+  "lumiShopOffers",
+  "lumiShopOfferSeed",
+  "lumiShopResolved",
+  "lumiShopPendingProductId",
+  "lumiShopDeadline",
+  "lumiShopHistory",
+  "lumiIceShieldReady",
   "pendingAugmentTarget",
+  "fourStarPromotionCount",
   "freeShopRerollsRemaining",
   "shopOddsMaxLevelRerollsRemaining",
   "augmentTranscendTargetId",
   "deathRecord",
   "rankingSubmitted",
   "showHiddenTraits",
+  "pvpSnapshotSubmitted",
+  "pvpStreakInitialized",
+  "pvpCurrentRound",
+  "pvpLastRewardedRound",
+  "pvpPendingResultWin",
+  "pvpFinished",
+  "pvpLastReplay",
 ];
 
 const UNIT_RUNTIME_FIELDS = new Set([
@@ -128,7 +147,10 @@ function normalizeSaveData(data, balance) {
     augmentOfferRarity: "",
     augmentOfferRerollIndex: 0,
     augmentRerolledSlots: [],
+    augmentRerollsPerSlot: 1,
     augmentSeenIds: [],
+    lumiShopOpen: false,
+    lumiShopPendingProductId: "",
     activeAugmentsCollapsed: Boolean(data.activeAugmentsCollapsed),
     dragging: null,
     selected: null,
@@ -159,9 +181,9 @@ function hasMeaningfulProgress(data) {
   );
 }
 
-export function createSaveController({ state, balance, storageKey, addLog, shouldOfferRestore = () => true }) {
+export function createSaveController({ state, balance, storageKey, addLog, shouldOfferRestore = () => true, autoRestore = () => false }) {
   function canSave() {
-    return !state.busy && !state.combatGrid && hasMeaningfulProgress(state);
+    return !state.busy && !state.combatGrid && !state.pvpReplaying && hasMeaningfulProgress(state);
   }
 
   function snapshot() {
@@ -211,13 +233,16 @@ export function createSaveController({ state, balance, storageKey, addLog, shoul
       clearSave();
       return false;
     }
-    const savedDate = new Date(saved.savedAt || Date.now()).toLocaleString("ko-KR", {
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const wantsRestore = window.confirm(`저장된 게임을 이어서 할까요?\n라운드 ${saved.data.round || 1} · 레벨 ${saved.data.level || 1} · ${savedDate}`);
+    let wantsRestore = autoRestore();
+    if (!wantsRestore) {
+      const savedDate = new Date(saved.savedAt || Date.now()).toLocaleString("ko-KR", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      wantsRestore = window.confirm(`저장된 게임을 이어서 할까요?\n라운드 ${saved.data.round || 1} · 레벨 ${saved.data.level || 1} · ${savedDate}`);
+    }
     if (!wantsRestore) {
       clearSave();
       return false;

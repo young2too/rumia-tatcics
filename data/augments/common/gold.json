@@ -349,5 +349,55 @@
       "rarity": "prismatic",
       "count": 1
     }
+  },
+  {
+    "active": true,
+    "id": "common_gold_loaded_chamber",
+    "name": "선제 장전",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "team",
+      "mana"
+    ],
+    "summary": "모든 아군 시작 마나 +20",
+    "description": "모든 아군이 전투 시작 시 마나를 20 추가로 얻습니다.",
+    "effect": {
+      "type": "teamStat",
+      "stats": {
+        "openingManaAdd": 20
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_star_blessing",
+    "name": "별의 축복",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "threeStar",
+      "stats"
+    ],
+    "summary": "3성 아군 체/공/스증 +12%",
+    "description": "모든 3성 아군의 체력, 공격력, 스킬 증폭이 각각 12% 증가합니다.",
+    "effect": {
+      "type": "threeStarStat",
+      "stats": {
+        "hpMultiply": 1.12,
+        "atkMultiply": 1.12,
+        "skillAmpMultiply": 1.12
+      }
+    }
   }
 ]
