@@ -179,6 +179,17 @@ export async function enqueueAsyncPvpMatch({ ticketId, nickname, gameVersion, sn
   return rows[0] || null;
 }
 
+export async function reserveAsyncPvpMatch({ ticketId, nickname, gameVersion }) {
+  const client = assertBackend();
+  await ensurePvpSession();
+  const rows = unwrap(await client.rpc("pvp_reserve_async_match", {
+    queue_ticket_id: ticketId,
+    player_nickname: nickname,
+    room_game_version: gameVersion,
+  })) || [];
+  return rows[0] || null;
+}
+
 export async function listOwnAsyncMatchQueue() {
   const client = assertBackend();
   const user = await ensurePvpSession();
@@ -374,6 +385,13 @@ export async function addPvpBot(roomId, difficulty = "normal") {
 export async function removePvpBot(playerId) {
   const client = assertBackend();
   return unwrap(await client.rpc("pvp_remove_bot", {
+    target_player_id: playerId,
+  }));
+}
+
+export async function kickPvpPlayer(playerId) {
+  const client = assertBackend();
+  return unwrap(await client.rpc("pvp_kick_player", {
     target_player_id: playerId,
   }));
 }

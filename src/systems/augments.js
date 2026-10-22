@@ -134,7 +134,10 @@ export function createAugmentController({
     const choices = [];
     const choiceCount = Math.max(1, Number(augmentSettings.choiceCount) || 3)
       + Math.max(0, Number(state.nextAugmentChoiceBonus) || 0);
-    const forcedRarity = RARITIES.includes(state.nextAugmentRarity) ? state.nextAugmentRarity : "";
+    const queueRarity = state.pvpQueuePreparation && stage === 1 && RARITIES.includes(state.pvpQueueAugmentRarity)
+      ? state.pvpQueueAugmentRarity
+      : "";
+    const forcedRarity = RARITIES.includes(state.nextAugmentRarity) ? state.nextAugmentRarity : queueRarity;
     const offerRarity = forcedRarity || rollRarity(rarityRng, stage);
     for (let index = 0; index < choiceCount; index += 1) {
       const fromRarity = takeChoice(poolFor(stage, offerRarity), pickedIds, rng);

@@ -23,9 +23,22 @@ create table if not exists public.pvp_matchmaking_queue (
   matched_at timestamptz
 );
 
+alter table public.pvp_matchmaking_queue
+  add column if not exists batch_id uuid;
+
+alter table public.pvp_matchmaking_queue
+  drop constraint if exists pvp_matchmaking_queue_status_check;
+alter table public.pvp_matchmaking_queue
+  add constraint pvp_matchmaking_queue_status_check
+  check (status in ('preparing', 'queued', 'matched', 'cancelled'));
+
 create index if not exists pvp_matchmaking_queue_match_idx
   on public.pvp_matchmaking_queue (game_version, augment_rarity, created_at)
   where status = 'queued';
+
+create index if not exists pvp_matchmaking_queue_batch_idx
+  on public.pvp_matchmaking_queue (game_version, batch_id, created_at)
+  where status in ('preparing', 'queued');
 
 create index if not exists pvp_matchmaking_queue_user_idx
   on public.pvp_matchmaking_queue (user_id, created_at desc);
@@ -61,6 +74,113 @@ on public.pvp_matchmaking_queue
 for select to authenticated
 using (user_id = (select auth.uid()));
 
+create or replace function public.pvp_reserve_async_match(
+  queue_ticket_id uuid,
+  player_nickname text,
+  room_game_version text
+)
+returns table (
+  queue_id uuid,
+  batch_id uuid,
+  augment_rarity text,
+  reserved_count bigint
+)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  current_user_id uuid := auth.uid();
+  assigned_batch_id uuid;
+  assigned_rarity text;
+  batch_number bigint;
+begin
+  if current_user_id is null then raise exception 'Authentication is required'; end if;
+  if queue_ticket_id is null then raise exception 'Queue ticket is required'; end if;
+  if char_length(trim(player_nickname)) not between 1 and 12 then
+    raise exception 'Nickname must be between 1 and 12 characters';
+  end if;
+  if char_length(trim(room_game_version)) not between 1 and 40 then
+    raise exception 'Invalid game version';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtext('pvp-async-batch:' || trim(room_game_version)));
+
+  select queued.batch_id, queued.augment_rarity
+  into assigned_batch_id, assigned_rarity
+  from public.pvp_matchmaking_queue queued
+  where queued.id = queue_ticket_id
+    and queued.user_id = current_user_id
+    and queued.status = 'preparing';
+
+  if assigned_batch_id is not null then
+    return query
+    select queue_ticket_id, assigned_batch_id, assigned_rarity,
+      (select count(*)
+       from public.pvp_matchmaking_queue waiting
+       where waiting.batch_id = assigned_batch_id
+         and waiting.status in ('preparing', 'queued'));
+    return;
+  end if;
+
+  update public.pvp_matchmaking_queue
+  set status = 'cancelled'
+  where status = 'preparing'
+    and updated_at < now() - interval '45 minutes';
+
+  select candidate.batch_id, candidate.augment_rarity
+  into assigned_batch_id, assigned_rarity
+  from (
+    select queued.batch_id, min(queued.augment_rarity) as augment_rarity, min(queued.created_at) as created_at
+    from public.pvp_matchmaking_queue queued
+    where queued.game_version = trim(room_game_version)
+      and queued.status in ('preparing', 'queued')
+      and queued.batch_id is not null
+      and not exists (
+        select 1
+        from public.pvp_matchmaking_queue mine
+        where mine.batch_id = queued.batch_id
+          and mine.user_id = current_user_id
+          and mine.status in ('preparing', 'queued')
+      )
+    group by queued.batch_id
+    having count(*) < 8
+    order by min(queued.created_at)
+    limit 1
+  ) candidate;
+
+  if assigned_batch_id is null then
+    assigned_batch_id := gen_random_uuid();
+    select count(distinct queued.batch_id)
+    into batch_number
+    from public.pvp_matchmaking_queue queued
+    where queued.game_version = trim(room_game_version)
+      and queued.batch_id is not null;
+    assigned_rarity := case mod(coalesce(batch_number, 0), 3)
+      when 0 then 'prismatic'
+      when 1 then 'gold'
+      else 'silver'
+    end;
+  end if;
+
+  insert into public.pvp_matchmaking_queue (
+    id, user_id, nickname, game_version, batch_id, augment_rarity, status,
+    board, bench, augments, traits, economy, holdings, initial_pool
+  ) values (
+    queue_ticket_id, current_user_id, trim(player_nickname), trim(room_game_version),
+    assigned_batch_id, assigned_rarity, 'preparing',
+    '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
+  );
+
+  return query
+  select queue_ticket_id, assigned_batch_id, assigned_rarity,
+    (select count(*)
+     from public.pvp_matchmaking_queue waiting
+     where waiting.batch_id = assigned_batch_id
+       and waiting.status in ('preparing', 'queued'));
+end;
+$$;
+
 create or replace function public.pvp_enqueue_async_match(
   queue_ticket_id uuid,
   player_nickname text,
@@ -86,6 +206,8 @@ as $$
 declare
   current_user_id uuid := auth.uid();
   selected_rarity text;
+  reserved_rarity text;
+  reserved_batch_id uuid;
   desired_counts jsonb;
   candidate_ids uuid[];
   candidate_count integer;
@@ -126,6 +248,18 @@ begin
     raise exception 'The first augment must be selected before matchmaking';
   end if;
 
+  select queued.augment_rarity, queued.batch_id
+  into reserved_rarity, reserved_batch_id
+  from public.pvp_matchmaking_queue queued
+  where queued.id = queue_ticket_id
+    and queued.user_id = current_user_id
+    and queued.status in ('preparing', 'queued')
+  for update;
+
+  if reserved_batch_id is not null and reserved_rarity <> selected_rarity then
+    raise exception 'The selected augment rarity does not match the reserved matchmaking batch';
+  end if;
+
   select coalesce(jsonb_object_agg(counted.unit_name, counted.copy_count), '{}'::jsonb)
   into desired_counts
   from (
@@ -141,14 +275,15 @@ begin
   ) counted;
 
   insert into public.pvp_matchmaking_queue (
-    id, user_id, nickname, game_version, augment_rarity, status,
+    id, user_id, nickname, game_version, batch_id, augment_rarity, status,
     board, bench, augments, traits, economy, holdings, initial_pool, checksum
   ) values (
-    queue_ticket_id, current_user_id, trim(player_nickname), trim(room_game_version), selected_rarity, 'queued',
+    queue_ticket_id, current_user_id, trim(player_nickname), trim(room_game_version), reserved_batch_id, selected_rarity, 'queued',
     board_data, bench_data, augments_data, traits_data, economy_data, desired_counts, pool_data, snapshot_checksum
   )
   on conflict (id) do update
   set nickname = excluded.nickname,
+      status = 'queued',
       board = excluded.board,
       bench = excluded.bench,
       augments = excluded.augments,
@@ -159,12 +294,13 @@ begin
       checksum = excluded.checksum,
       updated_at = now()
   where public.pvp_matchmaking_queue.user_id = current_user_id
-    and public.pvp_matchmaking_queue.status = 'queued';
+    and public.pvp_matchmaking_queue.status in ('preparing', 'queued');
 
   if not found then raise exception 'Queue ticket cannot be changed'; end if;
 
-  -- Serialize match creation for this version and augment rarity.
-  perform pg_advisory_xact_lock(hashtext(trim(room_game_version) || ':' || selected_rarity));
+  -- Serialize match creation for the reserved eight-player batch. Legacy rows
+  -- without a batch id still use the old version-and-rarity lane.
+  perform pg_advisory_xact_lock(hashtext(trim(room_game_version) || ':' || coalesce(reserved_batch_id::text, selected_rarity)));
 
   select array_agg(candidate.id order by candidate.created_at)
   into candidate_ids
@@ -173,13 +309,16 @@ begin
     from public.pvp_matchmaking_queue queued
     where queued.status = 'queued'
       and queued.game_version = trim(room_game_version)
-      and queued.augment_rarity = selected_rarity
+      and (
+        (reserved_batch_id is not null and queued.batch_id = reserved_batch_id)
+        or (reserved_batch_id is null and queued.batch_id is null and queued.augment_rarity = selected_rarity)
+      )
       and not exists (
         select 1
         from public.pvp_matchmaking_queue earlier
         where earlier.status = 'queued'
           and earlier.game_version = queued.game_version
-          and earlier.augment_rarity = queued.augment_rarity
+          and coalesce(earlier.batch_id::text, earlier.augment_rarity) = coalesce(queued.batch_id::text, queued.augment_rarity)
           and earlier.user_id = queued.user_id
           and (earlier.created_at, earlier.id) < (queued.created_at, queued.id)
       )
@@ -200,7 +339,7 @@ begin
       current_round, async_turn_minutes, planning_seconds, phase_deadline,
       game_version, started_at
     ) values (
-      created_room_code, first_user_id, '비동기 자동 매칭', 'async', 'invite',
+      created_room_code, first_user_id, '비실시간 자동 매칭', 'async', 'invite',
       'running', 'planning', 8, 1, 720, null, now() + interval '12 hours',
       trim(room_game_version), now()
     ) returning id into created_room_id;
@@ -261,7 +400,7 @@ begin
     select queued.user_id,
       'async-match:' || created_room_id::text || ':' || queued.user_id::text,
       'async_match_ready',
-      '비동기 PvP 매칭 완료',
+      '비실시간 PvP 매칭 완료',
       '8명의 덱이 모였습니다. 첫 PvP 라운드를 준비해주세요.',
       '/index.html?pvpRoom=' || created_room_id::text
     from public.pvp_matchmaking_queue queued
@@ -276,7 +415,7 @@ begin
      from public.pvp_matchmaking_queue waiting
      where waiting.status = 'queued'
        and waiting.game_version = queued.game_version
-       and waiting.augment_rarity = queued.augment_rarity)
+       and coalesce(waiting.batch_id::text, waiting.augment_rarity) = coalesce(queued.batch_id::text, queued.augment_rarity))
   from public.pvp_matchmaking_queue queued
   where queued.id = queue_ticket_id
     and queued.user_id = current_user_id;
@@ -321,18 +460,18 @@ begin
   from public.pvp_matchmaking_queue queued
   where queued.status = 'queued'
     and queued.game_version = source_entry.game_version
-    and queued.augment_rarity = source_entry.augment_rarity;
+    and coalesce(queued.batch_id::text, queued.augment_rarity) = coalesce(source_entry.batch_id::text, source_entry.augment_rarity);
 
   missing_count := greatest(0, 8 - compatible_count);
   if missing_count > 0 then
     for bot_index in 1..missing_count
     loop
       insert into public.pvp_matchmaking_queue (
-        id, user_id, nickname, game_version, augment_rarity, is_bot, status,
+        id, user_id, nickname, game_version, batch_id, augment_rarity, is_bot, status,
         board, bench, augments, traits, economy, holdings, initial_pool, checksum
       ) values (
         gen_random_uuid(), gen_random_uuid(), bot_names[1 + ((bot_index - 1) % array_length(bot_names, 1))],
-        source_entry.game_version, source_entry.augment_rarity, true, 'queued',
+        source_entry.game_version, source_entry.batch_id, source_entry.augment_rarity, true, 'queued',
         source_entry.board, source_entry.bench, source_entry.augments, source_entry.traits,
         source_entry.economy, source_entry.holdings, source_entry.initial_pool,
         'local-test-bot:' || bot_index::text || ':' || coalesce(source_entry.checksum, '')
@@ -367,7 +506,7 @@ begin
   set status = 'cancelled'
   where queued.id = queue_ticket_id
     and queued.user_id = auth.uid()
-    and queued.status = 'queued';
+    and queued.status in ('preparing', 'queued');
   return found;
 end;
 $$;
@@ -404,7 +543,7 @@ as $$
       from public.pvp_matchmaking_queue waiting
       where waiting.status = 'queued'
         and waiting.game_version = queued.game_version
-        and waiting.augment_rarity = queued.augment_rarity
+        and coalesce(waiting.batch_id::text, waiting.augment_rarity) = coalesce(queued.batch_id::text, queued.augment_rarity)
     ) as queued_count
   from public.pvp_matchmaking_queue queued
   where queued.user_id = auth.uid()
@@ -415,11 +554,13 @@ $$;
 revoke all on table public.pvp_matchmaking_queue from public;
 grant select on table public.pvp_matchmaking_queue to authenticated;
 revoke all on function public.pvp_reject_manual_async_room() from public;
+revoke all on function public.pvp_reserve_async_match(uuid, text, text) from public;
 revoke all on function public.pvp_enqueue_async_match(uuid, text, text, jsonb, jsonb, jsonb, jsonb, jsonb, jsonb, text) from public;
 revoke all on function public.pvp_cancel_async_match(uuid) from public;
 revoke all on function public.pvp_debug_fill_async_queue(uuid) from public;
 revoke all on function public.pvp_list_own_async_queue() from public;
 grant execute on function public.pvp_enqueue_async_match(uuid, text, text, jsonb, jsonb, jsonb, jsonb, jsonb, jsonb, text) to authenticated;
+grant execute on function public.pvp_reserve_async_match(uuid, text, text) to authenticated;
 grant execute on function public.pvp_cancel_async_match(uuid) to authenticated;
 grant execute on function public.pvp_debug_fill_async_queue(uuid) to authenticated;
 grant execute on function public.pvp_list_own_async_queue() to authenticated;

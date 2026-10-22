@@ -42,6 +42,6 @@ https://rumia-tatcics.onrender.com
 
 클라이언트의 VAPID 공개 키는 `config.js`의 `push.vapidPublicKey`와 같아야 합니다. 브라우저가 열려 있을 때의 PvP 배지와 게임 내 토스트는 Edge Function 없이도 동작하지만, 브라우저가 닫힌 상태의 OS 푸시는 위 설정이 모두 필요합니다.
 
-## 비동기 PvP 매칭 큐
+## 비실시간 PvP 매칭 큐
 
-기본 PvP 스키마와 로비 마이그레이션, 푸시 알림 SQL을 적용한 뒤 `supabase-pvp-matchmaking-queue.sql`을 실행합니다. 비동기 플레이어는 각자 4라운드 PvE와 첫 증강 선택을 마친 덱을 큐에 등록하며, 같은 버전과 증강 등급의 서로 다른 사용자 8명이 모이면 내부 진행 방이 자동 생성됩니다. 공개 방 만들기는 실시간 PvP에만 사용합니다.
+기본 PvP 스키마와 로비 마이그레이션, 푸시 알림 SQL을 적용한 뒤 `supabase-pvp-matchmaking-queue.sql`을 실행합니다. 비실시간 플레이어는 각자 4라운드 PvE와 첫 증강 선택을 마친 덱을 큐에 등록하며, 같은 버전과 증강 등급의 서로 다른 사용자 8명이 모이면 내부 진행 방이 자동 생성됩니다. 공개 방 만들기는 실시간 PvP에만 사용합니다.

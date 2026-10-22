@@ -28,7 +28,7 @@ import { createUnitView } from "./src/ui/views/unitView.js";
 import { createLumiShopView } from "./src/ui/views/lumiShopView.js";
 import { createSkillEffectRenderer } from "./src/ui/skillEffects.js";
 import { installCombatStressTools } from "./src/systems/combat/debugStress.js";
-import { claimPvpLumiShopProduct, enqueueAsyncPvpMatch, ensurePvpSession, getLatestPvpReplay, getOwnPvpRoomPlayer, getPvpLumiShopClaims, getPvpPlayerSnapshot, getPvpRoom, getPvpRoomPlayers, getPvpRoundMatch, getPvpUnitPool, preparePvpLumiShop, preparePvpRound, reportPvpMatch, reportPvpRealtimePveRound, returnPvpUnit, submitPvpPveSnapshot, submitPvpRoundSnapshot, syncPvpRealtimeSnapshot, syncPvpUnitHoldings, takePvpUnit, tickPvpRoom } from "./src/pvp/api.js";
+import { cancelAsyncPvpMatch, claimPvpLumiShopProduct, enqueueAsyncPvpMatch, ensurePvpSession, getLatestPvpReplay, getOwnPvpRoomPlayer, getPvpLumiShopClaims, getPvpPlayerSnapshot, getPvpRoom, getPvpRoomPlayers, getPvpRoundMatch, getPvpUnitPool, preparePvpLumiShop, preparePvpRound, reportPvpMatch, reportPvpRealtimePveRound, returnPvpUnit, submitPvpPveSnapshot, submitPvpRoundSnapshot, syncPvpRealtimeSnapshot, syncPvpUnitHoldings, takePvpUnit, tickPvpRoom } from "./src/pvp/api.js";
 import { createPvpSocialPanel } from "./src/pvp/socialPanel.js";
 import { createPvpNotificationController } from "./src/pvp/notifications.js";
 
@@ -36,6 +36,8 @@ const searchParams = new URLSearchParams(location.search);
 const pvpRoomId = searchParams.get("pvpRoom") || "";
 const pvpQueueId = searchParams.get("pvpQueue") || "";
 const pvpQueueNickname = (searchParams.get("nickname") || "").trim().slice(0, 12);
+const pvpQueueBatchId = searchParams.get("pvpBatch") || "";
+const pvpQueueAugmentRarity = searchParams.get("augmentRarity") || "";
 const lumiShopDebugRound = Number(searchParams.get("lumiShop")) || 0;
 const modeEntryStorageKey = "lumia-tactics-mode-entry-seen";
 const { state, syncLocalTestGold } = createGameState({
@@ -48,6 +50,8 @@ const { state, syncLocalTestGold } = createGameState({
   pvpRoomId,
   pvpQueueId,
   pvpQueueNickname,
+  pvpQueueBatchId,
+  pvpQueueAugmentRarity,
 });
 const refs = createRefs();
 document.body.classList.toggle("pvp-battlefield-theme", state.gameMode === "pvp");
@@ -344,8 +348,8 @@ async function submitPvpPreparation() {
       });
       state.pvpSnapshotSubmitted = true;
       refs.phase.textContent = result?.queue_status === "matched"
-        ? "비동기 매칭 완료. PvP 게임으로 이동합니다."
-        : `비동기 매칭 등록 완료. 같은 조건의 덱을 기다립니다. (${result?.queued_count || 1}/8)`;
+        ? "비실시간 매칭 완료. PvP 게임으로 이동합니다."
+        : `비실시간 매칭 등록 완료. 같은 조건의 덱을 기다립니다. (${result?.queued_count || 1}/8)`;
       addLog(refs.phase.textContent, { force: true });
       saveController?.clearSave();
       render();
@@ -974,7 +978,10 @@ function renderPvpQueuePreparation() {
   if (!state.pvpQueuePreparation || !pvpQueuePrepProgress) return;
   const stage = Math.max(1, Math.min(4, Number(state.round) || 1));
   const choosingAugment = Number(state.round) >= 5;
-  pvpQueuePrepProgress.textContent = choosingAugment ? "첫 증강 선택" : `준비 ${stage}/4`;
+  const rarityLabel = { silver: "실버", gold: "골드", prismatic: "프리즘" }[state.pvpQueueAugmentRarity] || "";
+  pvpQueuePrepProgress.textContent = choosingAugment
+    ? `${rarityLabel ? `${rarityLabel} · ` : ""}첫 증강 선택`
+    : `${rarityLabel ? `${rarityLabel} · ` : ""}준비 ${stage}/4`;
 }
 const render = () => {
   gameView?.render();
@@ -1008,11 +1015,19 @@ saveController = createSaveController({
     && !searchParams.has("combat-stress")
     && !searchParams.has("combat-determinism"),
 });
-pvpQueueExit?.addEventListener("click", () => {
+pvpQueueExit?.addEventListener("click", async () => {
+  pvpQueueExit.disabled = true;
+  try {
+    await cancelAsyncPvpMatch(state.pvpQueueId);
+  } catch (error) {
+    addLog(`비실시간 매칭 예약 취소 실패: ${String(error?.message || error)}`, { force: true });
+    pvpQueueExit.disabled = false;
+    return;
+  }
   try {
     localStorage.removeItem(`${gameSaveStorageKey}:pvp-queue:${state.pvpQueueId}`);
   } catch {
-    // Returning to the lobby must still work when local storage is unavailable.
+    // The server reservation is already gone, so leaving should still succeed.
   }
   location.href = "./pvp.html?tab=joined";
 });
@@ -1070,7 +1085,7 @@ const augments = createAugmentController({
   render,
   addLog,
   triggerRounds: state.gameMode === "pvp" ? { 1: 4, 2: 14, 3: 24 } : augmentSettings.triggerRounds,
-  sharedRaritySeed: state.gameMode === "pvp" ? (state.pvpRoomId || state.pvpQueueId) : "",
+  sharedRaritySeed: state.gameMode === "pvp" ? (state.pvpRoomId || state.pvpQueueBatchId || state.pvpQueueId) : "",
   canModify: canModifyPvpLineup,
   onSelectionComplete: async () => {
     try {
@@ -1200,7 +1215,7 @@ const shopView = createShopView({
   canModify: canModifyPvpLineup,
 });
 const traitView = createTraitView({ state, refs, roster, traitRules, hiddenTraitRules, ownedUnits, activeTraits, activeHiddenTraits, activeTraitTier, nextTraitNeed, displayNameFor });
-overlayView = createOverlayView({ state, refs, rankingConfig, patchNotesConfig, augmentSettings });
+overlayView = createOverlayView({ state, refs, rankingConfig, patchNotesConfig, augmentSettings, augmentPools });
 const battlefieldView = createBattlefieldView({
   state,
   refs,
@@ -1360,6 +1375,22 @@ function toggleActiveAugments() {
   render();
 }
 
+function openAugmentCatalog() {
+  state.augmentCatalogOpen = true;
+  render();
+}
+
+function closeAugmentCatalog() {
+  state.augmentCatalogOpen = false;
+  render();
+}
+
+function setAugmentCatalogFilter(stage, rarity) {
+  if (Number.isFinite(stage)) state.augmentCatalogStage = Math.max(1, Math.min(3, Math.round(stage)));
+  if (["silver", "gold", "prismatic"].includes(rarity)) state.augmentCatalogRarity = rarity;
+  render();
+}
+
 bindUiEvents({
   $,
   refs,
@@ -1377,6 +1408,9 @@ bindUiEvents({
     openAugments: augments.openAugments,
     openAugmentDetail: augments.openAugmentDetail,
     toggleActiveAugments,
+    openAugmentCatalog,
+    closeAugmentCatalog,
+    setAugmentCatalogFilter,
     reopenAugments: augments.reopenAugments,
     closeAugments: augments.closeAugments,
     rerollAugments: augments.rerollAugments,
@@ -1526,7 +1560,7 @@ if (state.gameMode !== "pvp" && !lumiShopDebugRound && !initializeModeEntry()) i
 if (state.gameMode === "pvp") {
   refs.phase.textContent = state.pvpSnapshotSubmitted
     ? "PvP 준비 덱 제출 완료."
-    : state.pvpQueuePreparation ? "비동기 PvP 준비: 4라운드 후 첫 증강을 선택하세요." : "PvP 방 정보를 불러오는 중입니다.";
+    : state.pvpQueuePreparation ? "비실시간 PvP 준비: 4라운드 후 첫 증강을 선택하세요." : "PvP 방 정보를 불러오는 중입니다.";
 }
 if (state.gameMode === "pvp" && state.pvpRoomId) pollPvpProgress();
 async function runPvpInitStep(label, task) {
@@ -1547,7 +1581,7 @@ async function initializeGameShop() {
   if (state.gameMode === "pvp") state.shopTransactionPending = true;
   try {
     if (state.pvpQueuePreparation) {
-      await runPvpInitStep("비동기 매칭 인증 실패", ensurePvpSession);
+      await runPvpInitStep("비실시간 매칭 인증 실패", ensurePvpSession);
       state.pvpMode = "async";
       state.pvpRoomPhase = "pve";
       state.pvpCurrentRound = 0;

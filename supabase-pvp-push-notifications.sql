@@ -61,13 +61,13 @@ security definer
 set search_path = public, pg_temp
 as $$
 begin
-  if new.status = 'running' and old.status is distinct from new.status then
+  if new.mode = 'async' and new.status = 'running' and old.status is distinct from new.status then
     insert into public.pvp_push_events (user_id, room_id, event_key, event_type, title, body, target_url)
     select player.user_id,
            new.id,
            'room:' || new.id || ':matched',
            'match_ready',
-           '비동기 PvP 매칭 완료',
+           '비실시간 PvP 매칭 완료',
            coalesce(new.name, 'PvP 게임') || '의 참가자가 모두 모였습니다.',
            '/index.html?pvpRoom=' || new.id
     from public.pvp_room_players player
@@ -111,14 +111,60 @@ set search_path = public, pg_temp
 as $$
 declare
   target_room public.pvp_rooms%rowtype;
+  active_count integer := 0;
+  ready_count integer := 0;
+  roster_key text := '';
+  became_ready boolean := false;
 begin
-  if new.is_bot or new.user_id is null or new.status <> 'active' then return new; end if;
-  if not (old.ready = true and new.ready = false) then return new; end if;
-
   select room.* into target_room
-  from public.pvp_rooms room
-  where room.id = new.room_id and room.status = 'running';
-  if not found or target_room.phase <> 'planning' then return new; end if;
+  from public.pvp_rooms room where room.id = new.room_id;
+  if not found then return new; end if;
+
+  if tg_op = 'INSERT' then
+    became_ready := new.ready;
+  else
+    became_ready := new.ready and old.ready is distinct from new.ready;
+  end if;
+
+  if target_room.mode = 'realtime'
+    and target_room.status = 'waiting'
+    and target_room.phase = 'lobby'
+    and new.status = 'active'
+    and became_ready then
+    select count(*), count(*) filter (where player.ready),
+           md5(string_agg(player.id::text, ',' order by player.id))
+      into active_count, ready_count, roster_key
+    from public.pvp_room_players player
+    where player.room_id = new.room_id and player.status = 'active';
+
+    if active_count >= 2 and ready_count = active_count then
+      insert into public.pvp_push_events (user_id, room_id, event_key, event_type, title, body, target_url)
+      select player.user_id,
+             new.room_id,
+             'room:' || new.room_id || ':all-ready:' || roster_key,
+             'realtime_all_ready',
+             '실시간 PvP 준비 완료',
+             coalesce(target_room.name, '실시간 PvP 방') || '의 모든 플레이어가 준비를 마쳤습니다.',
+             '/pvp-room.html?room=' || new.room_id
+      from public.pvp_room_players player
+      where player.room_id = new.room_id
+        and player.status = 'active'
+        and not player.is_bot
+        and player.user_id is not null
+      on conflict (user_id, event_key) do nothing;
+    end if;
+  end if;
+
+  if tg_op <> 'UPDATE' then return new; end if;
+  if target_room.mode <> 'async'
+    or target_room.status <> 'running'
+    or target_room.phase <> 'planning'
+    or new.is_bot
+    or new.user_id is null
+    or new.status <> 'active'
+    or not (old.ready = true and new.ready = false) then
+    return new;
+  end if;
 
   insert into public.pvp_push_events (user_id, room_id, event_key, event_type, title, body, target_url)
   values (
@@ -138,6 +184,11 @@ $$;
 drop trigger if exists pvp_player_action_push_trigger on public.pvp_room_players;
 create trigger pvp_player_action_push_trigger
 after update of ready, status on public.pvp_room_players
+for each row execute function public.pvp_enqueue_player_action_push();
+
+drop trigger if exists pvp_player_ready_insert_push_trigger on public.pvp_room_players;
+create trigger pvp_player_ready_insert_push_trigger
+after insert on public.pvp_room_players
 for each row execute function public.pvp_enqueue_player_action_push();
 
 revoke all on function public.pvp_enqueue_room_push_events() from public;

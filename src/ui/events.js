@@ -96,6 +96,17 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
   });
   refs.augmentReroll?.addEventListener("click", actions.rerollAugments);
   refs.augmentClose?.addEventListener("click", actions.closeAugments);
+  refs.augmentCatalogOpen?.addEventListener("click", actions.openAugmentCatalog);
+  refs.augmentCatalogClose?.addEventListener("click", actions.closeAugmentCatalog);
+  refs.augmentCatalogModal?.addEventListener("click", (event) => {
+    if (event.target === refs.augmentCatalogModal) actions.closeAugmentCatalog();
+  });
+  refs.augmentCatalogPanel?.addEventListener("click", (event) => {
+    const stage = event.target.closest("[data-augment-catalog-stage]")?.dataset.augmentCatalogStage;
+    if (stage) return actions.setAugmentCatalogFilter(Number(stage));
+    const rarity = event.target.closest("[data-augment-catalog-rarity]")?.dataset.augmentCatalogRarity;
+    if (rarity) actions.setAugmentCatalogFilter(undefined, rarity);
+  });
   refs.augmentResumeCenter?.addEventListener("click", actions.reopenAugments);
   refs.lumiShopResumeCenter?.addEventListener("click", () => {
     if (state.lumiShopPendingProductId) actions.cancelLumiShopTarget?.();
@@ -111,6 +122,10 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     const target = event.target instanceof Element ? event.target : event.target?.parentElement;
     if (target?.closest("[data-active-augments-toggle]")) {
       actions.toggleActiveAugments?.();
+      return;
+    }
+    if (target?.closest("[data-augment-catalog-open]")) {
+      actions.openAugmentCatalog?.();
       return;
     }
     if (target?.closest("[data-augment-reopen]")) {

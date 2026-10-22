@@ -220,6 +220,7 @@ export function createGameView({ state, refs, balance, audio, combat, boardUnits
     views.overlays.renderPatchNotes();
     views.overlays.renderAugments();
     views.overlays.renderActiveAugments();
+    views.overlays.renderAugmentCatalog();
     views.traits.renderTraitRosterModal();
     views.traits.renderTraitTableModal();
     renderCommunityBoard();

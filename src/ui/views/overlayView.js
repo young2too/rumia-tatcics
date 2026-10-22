@@ -1,4 +1,4 @@
-export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig, augmentSettings }) {
+export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig, augmentSettings, augmentPools }) {
   const rarityLabels = {
     silver: "실버",
     gold: "골드",
@@ -457,6 +457,7 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
     refs.activeAugments.innerHTML = `
       <div class="active-augments-title">
         <strong>선택 증강</strong>
+        <button type="button" data-augment-catalog-open>증강표</button>
         <button type="button" data-active-augments-toggle aria-expanded="${state.activeAugmentsCollapsed ? "false" : "true"}">
           ${state.activeAugmentsCollapsed ? "펼치기" : "접기"}
         </button>
@@ -488,5 +489,50 @@ export function createOverlayView({ state, refs, rankingConfig, patchNotesConfig
     `;
   }
 
-  return { renderActiveAugments, renderAugments, renderPatchNotes, renderRanking };
+  function renderAugmentCatalog() {
+    if (!refs.augmentCatalogModal || !refs.augmentCatalogPanel) return;
+    refs.augmentCatalogModal.hidden = !state.augmentCatalogOpen;
+    if (!state.augmentCatalogOpen) return;
+    const stage = Math.max(1, Math.min(3, Number(state.augmentCatalogStage) || 1));
+    const rarity = ["silver", "gold", "prismatic"].includes(state.augmentCatalogRarity)
+      ? state.augmentCatalogRarity
+      : "silver";
+    const odds = augmentSettings.rarityOddsByStage?.[stage] || augmentSettings.rarityOddsByStage?.[String(stage)] || {};
+    const seen = new Set();
+    const entries = [
+      ...(augmentPools?.common?.[rarity] || []).map((augment) => ({ augment, source: "공용" })),
+      ...(augmentPools?.[`stage${stage}`]?.[rarity] || []).map((augment) => ({ augment, source: `${stage}단계` })),
+    ].filter(({ augment }) => {
+      if (!augment || augment.active === false || seen.has(augment.id)) return false;
+      if (Array.isArray(augment.stages) && !augment.stages.includes(stage)) return false;
+      seen.add(augment.id);
+      return true;
+    }).sort((a, b) => a.augment.name.localeCompare(b.augment.name, "ko"));
+
+    refs.augmentCatalogPanel.innerHTML = `
+      <nav class="augment-catalog-stages" aria-label="증강 단계">
+        ${[1, 2, 3].map((value) => `<button type="button" class="${stage === value ? "active" : ""}" data-augment-catalog-stage="${value}">${value}단계</button>`).join("")}
+      </nav>
+      <div class="augment-catalog-odds">
+        ${["silver", "gold", "prismatic"].map((value) => `
+          <button type="button" class="${value} ${rarity === value ? "active" : ""}" data-augment-catalog-rarity="${value}">
+            <span>${escapeHtml(rarityLabels[value])}</span><strong>${Math.round(Number(odds[value]) || 0)}%</strong>
+          </button>
+        `).join("")}
+      </div>
+      <p class="augment-catalog-note">리롤은 같은 단계·등급 안에서 이미 확인한 증강을 제외하고 다시 뽑습니다. 무작위 ${escapeHtml(rarityLabels[rarity])} 증강도 아래 활성 목록을 사용합니다.</p>
+      <div class="augment-catalog-summary"><strong>${escapeHtml(rarityLabels[rarity])} ${entries.length}개</strong><span>공용 + ${stage}단계 전용</span></div>
+      <div class="augment-catalog-list">
+        ${entries.map(({ augment, source }) => `
+          <article class="augment-catalog-entry ${escapeHtml(rarity)}">
+            <header><strong>${escapeHtml(augment.name)}</strong><span>${source}</span></header>
+            <em>${escapeHtml(augment.summary || "")}</em>
+            ${renderAugmentDescription(augment)}
+          </article>
+        `).join("") || `<p class="augment-empty">현재 활성화된 증강이 없습니다.</p>`}
+      </div>
+    `;
+  }
+
+  return { renderActiveAugments, renderAugmentCatalog, renderAugments, renderPatchNotes, renderRanking };
 }

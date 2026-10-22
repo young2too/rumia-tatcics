@@ -1,6 +1,6 @@
 const LOCAL_TEST_GOLD = 999999;
 
-export function createGameState({ balance, roster, createUnitPool, communityBoardConfig, pvpRoomsConfig = {}, gameMode = "pve", pvpRoomId = "", pvpQueueId = "", pvpQueueNickname = "" }) {
+export function createGameState({ balance, roster, createUnitPool, communityBoardConfig, pvpRoomsConfig = {}, gameMode = "pve", pvpRoomId = "", pvpQueueId = "", pvpQueueNickname = "", pvpQueueBatchId = "", pvpQueueAugmentRarity = "" }) {
   const localTest = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
   const pvpMode = gameMode === "pvp" && Boolean(pvpRoomId || pvpQueueId);
   const state = {
@@ -9,6 +9,8 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
     pvpRoomId: pvpMode ? pvpRoomId : "",
     pvpQueueId: pvpMode ? pvpQueueId : "",
     pvpQueueNickname: pvpMode ? pvpQueueNickname : "",
+    pvpQueueBatchId: pvpMode ? pvpQueueBatchId : "",
+    pvpQueueAugmentRarity: pvpMode ? pvpQueueAugmentRarity : "",
     pvpQueuePreparation: pvpMode && Boolean(pvpQueueId) && !pvpRoomId,
     pvpMode: pvpMode && pvpQueueId && !pvpRoomId ? "async" : "",
     pvpRoomPhase: pvpMode ? "pve" : "",
@@ -58,6 +60,9 @@ export function createGameState({ balance, roster, createUnitPool, communityBoar
     augmentChoices: [],
     augmentDetailOpen: false,
     augmentDetailIndex: -1,
+    augmentCatalogOpen: false,
+    augmentCatalogStage: 1,
+    augmentCatalogRarity: "silver",
     augmentRerollsRemaining: 0,
     augmentOfferSeed: "",
     augmentOfferRarity: "",

@@ -11,11 +11,12 @@ function decodeApplicationServerKey(value) {
 
 function roomAttention(room) {
   if (!room || room.status !== "running") return null;
+  if (room.mode === "realtime") return null;
   const round = Math.max(0, Number(room.current_round) || 0);
   if (room.phase === "pve") {
     return {
       key: `${room.id}:pve:${round}`,
-      title: "비동기 PvP 매칭 완료",
+      title: "비실시간 PvP 매칭 완료",
       body: `${room.name || "PvP 게임"}에서 초기 덱을 준비해 주세요.`,
     };
   }
@@ -125,7 +126,7 @@ export function createPvpNotificationController({
     button.textContent = Notification.permission === "denied"
       ? "알림 차단됨"
       : subscription ? "알림 켜짐" : "알림 받기";
-    button.title = subscription ? "PvP 푸시 알림 끄기" : "매칭 완료와 진행 필요 알림 받기";
+    button.title = subscription ? "PvP 푸시 알림 끄기" : "매칭 완료, 전원 준비, 진행 필요 알림 받기";
   }
 
   async function toggle() {
@@ -163,7 +164,7 @@ export function createPvpNotificationController({
       throw error;
     }
     await updateButton();
-    showToast({ title: "PvP 알림 켜짐", body: "매칭 완료와 진행 필요 상태를 이 기기로 알려드립니다.", url: "./pvp.html?tab=joined" });
+    showToast({ title: "PvP 알림 켜짐", body: "매칭 완료, 실시간 방 전원 준비, 진행 필요 상태를 이 기기로 알려드립니다.", url: "./pvp.html?tab=joined" });
   }
 
   async function notifyAttention(attention, room) {

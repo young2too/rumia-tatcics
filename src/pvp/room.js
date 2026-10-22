@@ -5,6 +5,7 @@ import {
   getPvpRoom,
   getPvpRoomPlayers,
   getPvpUnitPool,
+  kickPvpPlayer,
   leavePvpRoom,
   removePvpBot,
   setPvpReady,
@@ -47,7 +48,7 @@ function escapeHtml(value) {
 }
 
 function modeLabel(mode) {
-  return mode === "realtime" ? "실시간" : "비동기";
+  return mode === "realtime" ? "실시간" : "비실시간";
 }
 
 function timingLabel(room) {
@@ -86,8 +87,9 @@ function friendlyError(error) {
   if (/pvp_start_room.*target_room_id.*schema cache/i.test(message)) {
     return "구버전 PvP 페이지가 열려 있습니다. 페이지를 강력 새로고침한 뒤 다시 시작해주세요.";
   }
-  if (/pvp_start_room|pvp_leave_room|function.*does not exist/i.test(message)) return "PvP 로비 마이그레이션 SQL을 먼저 적용해주세요.";
+  if (/pvp_start_room|pvp_leave_room|pvp_kick_player|function.*does not exist/i.test(message)) return "PvP 로비 마이그레이션 SQL을 먼저 적용해주세요.";
   if (/only the room host/i.test(message)) return "방장만 게임을 시작할 수 있습니다.";
+  if (/Only the realtime room host can kick players/i.test(message)) return "실시간 방의 방장만 참가자를 강퇴할 수 있습니다.";
   if (/at least 2 players/i.test(message)) return "2명 이상 참가해야 시작할 수 있습니다.";
   if (/every player must be ready/i.test(message)) return "모든 참가자가 준비해야 시작할 수 있습니다.";
   return message;
@@ -102,6 +104,12 @@ function renderPlayer(player) {
   const isHost = player.user_id === state.room?.host_user_id;
   const eliminated = player.status === "eliminated";
   const isBot = Boolean(player.is_bot);
+  const canKick = state.room?.mode === "realtime"
+    && state.room?.status === "waiting"
+    && state.room?.phase === "lobby"
+    && state.room?.host_user_id === state.user?.id
+    && !isMe
+    && !isBot;
   return `
     <article class="pvp-lobby-player ${player.ready ? "ready" : ""} ${isMe ? "me" : ""} ${eliminated ? "eliminated" : ""}">
       <span class="pvp-player-seat">${Number(player.seat)}</span>
@@ -111,6 +119,7 @@ function renderPlayer(player) {
       </div>
       ${isBot ? `<em class="pvp-bot-badge">BOT</em>` : ""}
       ${isHost ? `<em class="pvp-host-badge">HOST</em>` : ""}
+      ${canKick ? `<button class="pvp-kick-player" type="button" data-kick-player="${escapeHtml(player.id)}" data-player-name="${escapeHtml(player.nickname)}" title="${escapeHtml(player.nickname)} 강퇴">강퇴</button>` : ""}
       ${isBot && state.room?.status === "waiting" && state.room?.host_user_id === state.user?.id ? `<button class="pvp-remove-bot" type="button" data-remove-bot="${escapeHtml(player.id)}" title="봇 제거" aria-label="${escapeHtml(player.nickname)} 제거">×</button>` : ""}
       <i class="pvp-ready-light" aria-label="${player.ready ? "준비 완료" : "준비 중"}"></i>
     </article>
@@ -135,7 +144,7 @@ function renderStarted() {
       <h1>${escapeHtml(room.name)}</h1>
       <p>${room.mode === "realtime"
         ? "실시간 방이 시작되었습니다. 서버 타이머에 맞춰 PvE와 전투가 자동 진행됩니다."
-        : "비동기 방이 시작되었습니다. 각자 4라운드 PvE와 첫 증강을 마친 뒤 덱을 제출하세요."}</p>
+        : "비실시간 방이 시작되었습니다. 각자 4라운드 PvE와 첫 증강을 마친 뒤 덱을 제출하세요."}</p>
       <dl>
         <div><dt>진행 방식</dt><dd>${escapeHtml(modeLabel(room.mode))}</dd></div>
         <div><dt>현재 라운드</dt><dd>${Number(room.current_round) || 0}</dd></div>
@@ -383,6 +392,24 @@ async function removeBot(playerId) {
   }
 }
 
+async function kickPlayer(playerId, playerName) {
+  if (!playerId || state.working) return;
+  if (!confirm(`${playerName || "이 참가자"}님을 현재 대기실에서 강퇴할까요?`)) return;
+  state.working = true;
+  state.notice = `${playerName || "참가자"}님을 강퇴하는 중입니다.`;
+  render();
+  try {
+    await kickPvpPlayer(playerId);
+    state.notice = `${playerName || "참가자"}님을 강퇴했습니다.`;
+    await loadRoom({ quiet: true });
+  } catch (error) {
+    state.error = friendlyError(error);
+  } finally {
+    state.working = false;
+    render();
+  }
+}
+
 async function copyRoomCode(code) {
   try {
     await navigator.clipboard.writeText(code);
@@ -407,6 +434,8 @@ refs.panel.addEventListener("click", (event) => {
   if (fillBotsButton) return addBot(true);
   const removeBotButton = event.target.closest("[data-remove-bot]");
   if (removeBotButton) return removeBot(removeBotButton.dataset.removeBot);
+  const kickPlayerButton = event.target.closest("[data-kick-player]");
+  if (kickPlayerButton) return kickPlayer(kickPlayerButton.dataset.kickPlayer, kickPlayerButton.dataset.playerName);
   const codeButton = event.target.closest("[data-copy-code]");
   if (codeButton) copyRoomCode(codeButton.dataset.copyCode || "");
 });

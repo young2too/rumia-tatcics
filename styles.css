@@ -2117,7 +2117,7 @@ h2 {
   position: absolute;
   left: 50%;
   top: 56%;
-  z-index: 14;
+  z-index: 60;
   translate: -50% -50%;
   min-width: 150px;
   padding: 12px 18px;
@@ -4260,9 +4260,9 @@ h2 {
 }
 
 .active-augments-title {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
 }
 
@@ -4272,9 +4272,180 @@ h2 {
 }
 
 .active-augments-title span {
+  grid-column: 1 / -1;
   color: var(--muted);
   font-size: 10px;
   font-weight: 800;
+}
+
+.augment-catalog-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(2, 8, 11, 0.86);
+  backdrop-filter: blur(5px);
+}
+
+.augment-catalog-modal[hidden] {
+  display: none;
+}
+
+.augment-catalog-dialog {
+  display: grid;
+  width: min(900px, calc(100vw - 24px));
+  max-height: min(780px, calc(100dvh - 24px));
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(185, 140, 255, 0.45);
+  border-radius: 8px;
+  background: #141a1e;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.66);
+}
+
+.augment-catalog-dialog > .panel-title {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.augment-catalog-dialog > .panel-title span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.augment-catalog-panel {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.augment-catalog-stages,
+.augment-catalog-odds {
+  display: grid;
+  gap: 7px;
+}
+
+.augment-catalog-stages {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.augment-catalog-odds {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.augment-catalog-stages button,
+.augment-catalog-odds button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.augment-catalog-stages button.active {
+  border-color: rgba(52, 197, 183, 0.72);
+  background: rgba(52, 197, 183, 0.14);
+  color: #d7fffb;
+}
+
+.augment-catalog-odds button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+}
+
+.augment-catalog-odds button.silver.active { border-color: rgba(200, 216, 232, 0.72); color: #dfeaf4; }
+.augment-catalog-odds button.gold.active { border-color: rgba(255, 211, 106, 0.76); color: #ffe3a0; }
+.augment-catalog-odds button.prismatic.active { border-color: rgba(185, 140, 255, 0.8); color: #e2d3ff; }
+
+.augment-catalog-note {
+  padding: 9px 10px;
+  border-left: 3px solid rgba(185, 140, 255, 0.62);
+  background: rgba(185, 140, 255, 0.07);
+  color: #d9dfe3;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.augment-catalog-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.augment-catalog-summary strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.augment-catalog-list {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.augment-catalog-entry {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.augment-catalog-entry.gold { border-color: rgba(255, 211, 106, 0.3); }
+.augment-catalog-entry.prismatic { border-color: rgba(185, 140, 255, 0.38); }
+.augment-catalog-entry.silver { border-color: rgba(200, 216, 232, 0.25); }
+
+.augment-catalog-entry header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.augment-catalog-entry header span {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.augment-catalog-entry > em {
+  color: #f0c96c;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.augment-catalog-entry .augment-description {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .augment-catalog-modal { padding: 8px; }
+  .augment-catalog-dialog { width: 100%; max-height: calc(100dvh - 16px); }
+  .augment-catalog-list { grid-template-columns: 1fr; }
+  .augment-catalog-panel { padding: 10px; }
 }
 
 .active-augments-title button {
@@ -5139,10 +5310,58 @@ h2 {
 }
 
 .pvp-hero-actions {
+  display: grid;
+  min-width: min(390px, 100%);
+  gap: 8px;
+}
+
+.pvp-async-start {
+  display: grid;
+  width: 100%;
+  height: 64px;
+  min-height: 64px !important;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: start;
+  gap: 3px;
+  text-align: left;
+}
+
+.pvp-async-start strong {
+  display: block;
+  font-size: 15px;
+}
+
+.pvp-async-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pvp-async-heading em {
+  padding: 2px 6px;
+  border: 1px solid rgba(215, 255, 251, 0.3);
+  border-radius: 999px;
+  background: rgba(215, 255, 251, 0.09);
+  color: #d7fffb;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pvp-async-start small {
+  display: block;
+  color: rgba(215, 255, 251, 0.7);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pvp-secondary-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
   justify-content: flex-end;
+  gap: 8px;
 }
 
 .pvp-hero button,
@@ -5700,6 +5919,59 @@ h2 {
   color: #d7fffb;
 }
 
+.pvp-hero .pvp-async-start.primary {
+  border-color: rgba(52, 197, 183, 0.68);
+  background: rgba(52, 197, 183, 0.18);
+  color: #d7fffb;
+  box-shadow:
+    inset 0 1px 0 rgba(220, 255, 251, 0.16),
+    inset 0 -2px 0 rgba(2, 30, 28, 0.5),
+    0 4px 0 #0a2926,
+    0 9px 18px rgba(0, 0, 0, 0.24);
+}
+
+.pvp-hero .pvp-async-start.primary small {
+  color: rgba(215, 255, 251, 0.7);
+}
+
+.pvp-hero .pvp-async-start.primary .pvp-async-heading em {
+  border-color: rgba(215, 255, 251, 0.3);
+  background: rgba(215, 255, 251, 0.09);
+  color: #d7fffb;
+}
+
+.pvp-hero .pvp-async-start.primary:hover:not(:disabled),
+.pvp-hero .pvp-async-start.primary:focus-visible:not(:disabled) {
+  border-color: rgba(85, 224, 211, 0.84);
+  background: rgba(52, 197, 183, 0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(220, 255, 251, 0.2),
+    inset 0 -2px 0 rgba(2, 30, 28, 0.5),
+    0 5px 0 #0a2926,
+    0 12px 22px rgba(0, 0, 0, 0.26);
+  transform: translateY(-1px);
+}
+
+.pvp-hero .pvp-async-start.primary:active:not(:disabled) {
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.24),
+    0 1px 0 #0a2926,
+    0 4px 10px rgba(0, 0, 0, 0.2);
+  transform: translateY(3px);
+}
+
+.pvp-hero .pvp-async-start.primary:disabled {
+  border-color: rgba(52, 197, 183, 0.26);
+  background: rgba(52, 197, 183, 0.1);
+  color: rgba(215, 255, 251, 0.48);
+  box-shadow: none;
+}
+
+.pvp-hero .pvp-async-start.primary:disabled small,
+.pvp-hero .pvp-async-start.primary:disabled .pvp-async-heading em {
+  color: rgba(215, 255, 251, 0.42);
+}
+
 .pvp-room-main {
   display: flex;
   align-items: center;
@@ -6185,6 +6457,23 @@ body.pvp-modal-open {
   background: rgba(239, 90, 86, 0.08);
   color: #ffaaa7;
   font-size: 15px;
+}
+
+.pvp-kick-player {
+  min-width: 38px;
+  min-height: 28px;
+  padding: 0 7px;
+  border: 1px solid rgba(239, 90, 86, 0.34);
+  border-radius: 6px;
+  background: rgba(239, 90, 86, 0.1);
+  color: #ffaaa7;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.pvp-kick-player:hover {
+  border-color: rgba(239, 90, 86, 0.72);
+  background: rgba(239, 90, 86, 0.2);
 }
 
 .pvp-ready-light {
@@ -6691,8 +6980,9 @@ body.pvp-modal-open {
 @media (max-width: 640px) {
   .pvp-social {
     top: auto;
-    right: 8px;
+    right: auto;
     bottom: 8px;
+    left: 8px;
     max-height: calc(100vh - 16px);
   }
 
@@ -6717,11 +7007,15 @@ body.pvp-modal-open {
   }
 
   .pvp-hero-actions {
+    min-width: 0;
+  }
+
+  .pvp-secondary-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .pvp-hero-actions button {
+  .pvp-secondary-actions button {
     padding-inline: 8px;
   }
 
@@ -6786,6 +7080,15 @@ body.pvp-modal-open {
 
   .pvp-lobby-actions small {
     grid-column: 1 / -1;
+  }
+
+  .pvp-room-app {
+    padding-bottom: 72px;
+  }
+
+  .pvp-lobby-actions button {
+    min-height: 46px;
+    touch-action: manipulation;
   }
 
   .pvp-room-started dl {

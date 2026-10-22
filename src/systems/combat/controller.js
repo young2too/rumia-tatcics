@@ -1266,13 +1266,6 @@ function applyOpeningTeamUtilities(allies, enemies) {
   const frontlineShielded = applyOpeningShield(allies, "frontlineShieldTargets", "frontlineShieldRatio", false);
   const pullResult = pullBacklineEnemies(allies, enemies);
   const focusTarget = pullResult.units[0] || null;
-  if (focusTarget) {
-    for (const ally of living(allies)) {
-      ally.forcedFocusTargetId = focusTarget.id;
-      ally.focusTargetId = focusTarget.id;
-      ally.hasPickedOpeningTarget = true;
-    }
-  }
   return {
     backlineShielded,
     frontlineShielded,
@@ -5153,10 +5146,10 @@ async function simulate(options = {}) {
   if (enemyOpeningUtilities.backlineShielded) addLog(`상대 중장비 발동: 후열 ${enemyOpeningUtilities.backlineShielded}명 보호막.`);
   if (enemyOpeningUtilities.frontlineShielded) addLog(`상대 예술 발동: 전열 ${enemyOpeningUtilities.frontlineShielded}명 보호막.`);
   if (openingUtilities.pulledUnits) {
-    addLog(`전술 발동: 적 후열 ${openingUtilities.pulledUnits}명 아군 진영으로 배달 / ${openingUtilities.focusTarget.name} 집중 공격.`);
+    addLog(`전술 발동: 적 후열 ${openingUtilities.pulledUnits}명 아군 진영으로 배달.`);
   }
   if (enemyOpeningUtilities.pulledUnits) {
-    addLog(`상대 전술 발동: 아군 후열 ${enemyOpeningUtilities.pulledUnits}명 상대 진영으로 배달 / ${enemyOpeningUtilities.focusTarget.name} 집중 공격.`);
+    addLog(`상대 전술 발동: 아군 후열 ${enemyOpeningUtilities.pulledUnits}명 상대 진영으로 배달.`);
   }
   if (huntMarkedUnits.length) addLog(`추적 발동: ${huntMarkedUnits.map((unit) => unit.name).join(", ")} 표식.`);
   if (enemyHuntMarkedUnits.length) addLog(`상대 추적 발동: ${enemyHuntMarkedUnits.map((unit) => unit.name).join(", ")} 표식.`);

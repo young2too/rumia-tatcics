@@ -5,12 +5,12 @@
   "rooms": [
     {
       "id": "async-demo-1",
-      "name": "비동기 PvP 테스트 방",
+      "name": "비실시간 PvP 테스트 방",
       "status": "waiting",
       "players": 3,
       "maxPlayers": 8,
       "round": 0,
-      "description": "15라 보스 격파 후 덱을 등록하는 비동기 PvP 규칙 초안입니다."
+      "description": "15라 보스 격파 후 덱을 등록하는 비실시간 PvP 규칙 초안입니다."
     },
     {
       "id": "async-demo-2",

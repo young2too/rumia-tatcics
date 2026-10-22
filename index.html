@@ -40,7 +40,7 @@
         "isAccessibleForFree": true
       }
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20261012-pvp-flow-2" />
+    <link rel="stylesheet" href="./styles.css?v=20261022-augment-catalog" />
   </head>
   <body>
     <main class="app">
@@ -97,7 +97,7 @@
         <section class="board-wrap">
           <div id="pvpQueuePrepBanner" class="pvp-queue-prep-banner" hidden>
             <div>
-              <span>비동기 PvP</span>
+              <span>비실시간 PvP</span>
               <strong>매칭용 덱 준비</strong>
               <small>4라운드 PvE 후 첫 증강을 선택하면 덱이 자동 등록됩니다.</small>
             </div>
@@ -349,11 +349,25 @@
               <span id="augmentMeta"></span>
             </div>
             <div class="augment-actions">
+              <button id="augmentCatalogOpen" type="button" title="증강 확률과 목록 보기">증강표</button>
               <button id="augmentClose" class="icon-button" title="잠시 닫기">잠시 닫기</button>
             </div>
           </div>
           <div id="augmentPanel" class="augment-panel"></div>
           <div id="selectedAugments" class="selected-augments"></div>
+        </section>
+      </div>
+
+      <div id="augmentCatalogModal" class="augment-catalog-modal" hidden>
+        <section class="augment-catalog-dialog" role="dialog" aria-modal="true" aria-labelledby="augmentCatalogTitle">
+          <div class="panel-title">
+            <div>
+              <h2 id="augmentCatalogTitle">증강표</h2>
+              <span>단계별 등장 확률과 리롤·무작위 증강 후보를 확인합니다.</span>
+            </div>
+            <button id="augmentCatalogClose" class="icon-button" type="button" title="닫기">닫기</button>
+          </div>
+          <div id="augmentCatalogPanel" class="augment-catalog-panel"></div>
         </section>
       </div>
 
@@ -436,6 +450,6 @@
       </button>
     </template>
 
-    <script type="module" src="./app.js?v=20261012-pvp-flow-2"></script>
+    <script type="module" src="./app.js?v=20261022-augment-catalog"></script>
   </body>
 </html>

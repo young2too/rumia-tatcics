@@ -13,6 +13,7 @@ import {
   listJoinedPvpRooms,
   listPvpRooms,
   pvpBackendAvailable,
+  reserveAsyncPvpMatch,
 } from "./api.js";
 
 const nicknameStorageKey = "lumia-tactics-pvp-nickname";
@@ -83,7 +84,7 @@ function statusLabel(status) {
 }
 
 function modeLabel(mode) {
-  return mode === "realtime" ? "실시간" : "비동기";
+  return mode === "realtime" ? "실시간" : "비실시간";
 }
 
 function timingLabel(room) {
@@ -293,10 +294,10 @@ function renderQueueCard(entry) {
     <article class="pvp-room-card joined state-${matched ? "running" : "waiting"}">
       <div class="pvp-room-main">
         <div>
-          <span class="pvp-mode-badge async">비동기</span>
+          <span class="pvp-mode-badge async">비실시간</span>
           <strong>${escapeHtml(entry.nickname)}의 준비 덱</strong>
         </div>
-        <span class="pvp-room-state-badge status-${matched ? "running" : "waiting"}">${matched ? "매칭 완료" : `비동기 매칭 중 ${queuedCount}/8`}</span>
+        <span class="pvp-room-state-badge status-${matched ? "running" : "waiting"}">${matched ? "매칭 완료" : `비실시간 매칭 중 ${queuedCount}/8`}</span>
       </div>
       <p>${escapeHtml(rarityLabel(entry.augment_rarity))} 증강 · ${escapeHtml(entry.game_version || "버전 미상")}</p>
       ${renderGameSummary(entry, entry.economy?.gold)}
@@ -464,19 +465,37 @@ async function submitCreate(event) {
   }
 }
 
-function submitAsyncPreparation(event) {
+async function submitAsyncPreparation(event) {
   event.preventDefault();
   setFormError(refs.asyncError);
   const form = new FormData(refs.asyncForm);
+  const submit = refs.asyncForm.querySelector('[type="submit"]');
   const nickname = String(form.get("nickname") || "").trim();
   if (!nickname || nickname.length > 12) {
     setFormError(refs.asyncError, "닉네임은 1~12자로 입력해주세요.");
     return;
   }
-  rememberNickname(nickname);
-  const ticketId = crypto.randomUUID();
-  const params = new URLSearchParams({ pvpQueue: ticketId, nickname });
-  location.href = `./index.html?${params}`;
+  submit.disabled = true;
+  try {
+    rememberNickname(nickname);
+    const ticketId = crypto.randomUUID();
+    const gameVersion = `${String(rankingConfig.majorVersion || "dev")}${debugMode ? "-local-test" : ""}`;
+    const reservation = await reserveAsyncPvpMatch({ ticketId, nickname, gameVersion });
+    if (!reservation?.queue_id || !reservation?.augment_rarity || !reservation?.batch_id) {
+      throw new Error("비실시간 매칭 자리를 예약하지 못했습니다.");
+    }
+    const params = new URLSearchParams({
+      pvpQueue: reservation.queue_id,
+      pvpBatch: reservation.batch_id,
+      augmentRarity: reservation.augment_rarity,
+      nickname,
+    });
+    location.href = `./index.html?${params}`;
+  } catch (error) {
+    setFormError(refs.asyncError, friendlyError(error));
+  } finally {
+    submit.disabled = false;
+  }
 }
 
 async function submitJoin(event) {
@@ -563,7 +582,7 @@ refs.panel.addEventListener("click", (event) => {
       } catch {
         // Queue cancellation still succeeds when local storage is unavailable.
       }
-      state.notice = "비동기 매칭을 취소했습니다.";
+      state.notice = "비실시간 매칭을 취소했습니다.";
       return loadRooms({ keepNotice: true });
     })
     .catch((error) => {
