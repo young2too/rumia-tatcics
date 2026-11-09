@@ -218,8 +218,23 @@ export function applyAugmentStatsToUnit(state, unit, stats, context = {}) {
   }
   for (const effect of augmentEffects(state, "isolatedAllyStat")) {
     if ((context.adjacentAllyCount?.(unit, effect.range || 1) || 0) === 0) {
-      applyStatPatch(stats, { atkMultiply: effect.atkMultiply, skillAmpMultiply: effect.skillAmpMultiply });
+      applyStatPatch(stats, effect.stats || { atkMultiply: effect.atkMultiply, skillAmpMultiply: effect.skillAmpMultiply });
     }
+  }
+  for (const effect of augmentEffects(state, "splitPositionStat")) {
+    const patch = isInRows(unit, "front2", context) ? effect.frontStats : effect.backStats;
+    applyStatPatch(stats, patch);
+  }
+  for (const effect of augmentEffects(state, "activeTraitPairStat")) {
+    const counts = context.traitCounts || {};
+    const rules = context.traitRules || {};
+    const active = traits.filter((trait) => {
+      const firstNeed = rules[trait]?.tiers?.[0]?.need;
+      return Number.isFinite(firstNeed) && (counts[trait] || 0) >= firstNeed;
+    });
+    const hasMajor = active.some((trait) => rules[trait]?.category === "major");
+    const hasMinor = active.some((trait) => rules[trait]?.category === "minor");
+    if (hasMajor && hasMinor) applyStatPatch(stats, effect.stats);
   }
   for (const augment of state.selectedAugments || []) {
     const effect = augment?.effect;

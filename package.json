@@ -7,6 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build && node scripts/copy-static.mjs",
     "preview": "vite preview --host 127.0.0.1",
+    "test:synergies": "node scripts/synergy-smoke.mjs",
     "test:pvp-flow": "node scripts/pvp-flow-smoke.mjs"
   },
   "devDependencies": {

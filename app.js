@@ -1,7 +1,7 @@
 import { allAugments, augmentPools, augmentSettings, balance, bgmConfig, bossPatterns, bossRoster, communityBoardConfig, communityBoardStorageKey, gameSaveStorageKey, hiddenTraitRules, lumiShopConfig, patchNotesConfig, patchNotesStorageKey, presenceConfig, pushConfig, pvpRoomsConfig, rankingConfig, rankingStorageKey, roster, traitRules } from "./src/core/data.js";
 import { createGameState } from "./src/core/state.js";
 import { createStableHash } from "./src/core/rng.js";
-import { createSaveController } from "./src/core/save.js";
+import { createSaveController, resetGameSavesForCurrentSeason } from "./src/core/save.js";
 import { createUnitPool, makeUnit as createUnit, poolBackedCopyCount, poolExemptCopyCount, sample, sellValue, sleep } from "./src/core/units.js";
 import { createCombatController } from "./src/systems/combat.js";
 import { createProgressionController } from "./src/systems/progression.js";
@@ -24,6 +24,8 @@ import { createGameView } from "./src/ui/views/gameView.js";
 import { createOverlayView } from "./src/ui/views/overlayView.js";
 import { createShopView } from "./src/ui/views/shopView.js";
 import { createTraitView } from "./src/ui/views/traitView.js";
+import './src/ui/boardViewToggle.js';
+import './src/ui/mobileShell.js';
 import { createUnitView } from "./src/ui/views/unitView.js";
 import { createLumiShopView } from "./src/ui/views/lumiShopView.js";
 import { createSkillEffectRenderer } from "./src/ui/skillEffects.js";
@@ -40,9 +42,11 @@ const pvpQueueBatchId = searchParams.get("pvpBatch") || "";
 const pvpQueueAugmentRarity = searchParams.get("augmentRarity") || "";
 const lumiShopDebugRound = Number(searchParams.get("lumiShop")) || 0;
 const modeEntryStorageKey = "lumia-tactics-mode-entry-seen";
+resetGameSavesForCurrentSeason(gameSaveStorageKey);
 const { state, syncLocalTestGold } = createGameState({
   balance,
   roster,
+  traitRules,
   createUnitPool,
   communityBoardConfig,
   pvpRoomsConfig,
@@ -207,8 +211,8 @@ function trainingDummy() {
     cost: 1,
     tier: 1,
     role: "방패",
-    trait: "수호",
-    traits: ["수호"],
+    trait: "",
+    traits: [],
     weapon: "훈련",
     color: "#82909a",
     maxHp: 10000,
@@ -549,7 +553,8 @@ function hydratePvpUnit(snapshot) {
   }
   unit.hp = unit.maxHp;
   unit.pvpBaseStats = currentBase;
-  unit.traits = Array.isArray(snapshot.traits) ? snapshot.traits.slice() : [snapshot.trait].filter(Boolean);
+  unit.trait = base.trait;
+  unit.traits = [...(base.traits || [base.trait])];
   unit.poolExemptCopies = poolExemptCopyCount({ ...unit, poolExemptCopies: snapshot.poolExemptCopies });
   unit.fourStarAscended = Boolean(snapshot.fourStarAscended);
   unit.fourStarPromotionOrder = Math.max(0, Number(snapshot.fourStarPromotionOrder) || 0);
@@ -560,10 +565,11 @@ function hydratePvpAugments(snapshot, units) {
   return (snapshot?.augments || []).map((saved) => {
     const definition = augmentById.get(saved.id) || {};
     const target = units.find((unit) => unit.name === saved.targetUnitName);
+    const effect = structuredClone(definition.effect || saved.effect || {});
     return {
       ...structuredClone(definition),
       ...saved,
-      effect: structuredClone(definition.effect || saved.effect || {}),
+      effect,
       targetUnitId: target?.id || null,
     };
   });
@@ -1006,6 +1012,7 @@ function addLog(text, options = {}) {
 saveController = createSaveController({
   state,
   balance,
+  roster,
   storageKey: state.pvpQueuePreparation
     ? `${gameSaveStorageKey}:pvp-queue:${state.pvpQueueId}`
     : state.gameMode === "pvp" ? `${gameSaveStorageKey}:pvp:${state.pvpRoomId}` : gameSaveStorageKey,
@@ -1176,7 +1183,7 @@ const shop = createShopController({
   syncPoolHoldings: state.pvpRoomId ? syncOwnedUnitsToSharedPool : null,
   canModify: canModifyPvpLineup,
 });
-const { buyUnit, debugRecruitUnit, grantBonusUnit, moveSelected, moveUnit, rollShop, sellSelectedUnit } = shop;
+const { buyUnit, debugRecruitUnit, grantBonusUnit, moveSelected, moveUnit, rollShop, sellUnitAt, sellSelectedUnit } = shop;
 
 const lumiShop = createLumiShopController({
   state,
@@ -1475,6 +1482,7 @@ bindUiEvents({
       if (canModifyPvpLineup()) buyXp();
     },
     sellSelectedUnit,
+    sellUnitAt,
     toggleBgm: audio.toggleBgm,
     loadRankings,
     submitRanking,

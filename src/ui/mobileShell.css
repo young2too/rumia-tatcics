@@ -1,0 +1,251 @@
+/* Mobile battlefield layout and expandable floating information panels. */
+.mobile-floating-menu, .mobile-drawer, .mobile-shop-tray-toggle { display: none; }
+@media (max-width: 640px) {
+  body { margin: 0; overflow-x: hidden; }
+  .app { padding: 4px 0 max(4px, env(safe-area-inset-bottom)); }
+  .topbar { padding: 4px; gap: 4px; }
+  .topbar .brand, .topbar nav { display: none; }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+  .stats > div { padding: 4px 6px; min-width: 0; }
+  .stats strong { font-size: 17px; }
+  .main-grid { gap: 4px; }
+  .main-grid > .left-panel, .shop-panel > .unit-detail,
+  .battlefield > .active-augments, .shop-content > .debug-shop { display: none; }
+  .board-wrap { padding: 0; }
+  .arena-head { padding: 4px; gap: 4px; }
+  .arena-head h2, .bench-head h2 { display: none; }
+  .arena-head p { font-size: 10px; }
+  .arena-head button { min-height: 32px; padding: 4px 8px; }
+  .arena-head .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+  .arena-head .actions button { min-width: 0; font-size: 11px; white-space: normal; }
+  .battlefield { width: 100vw; max-width: 100vw; padding: 0 0 4px; }
+  .sell-drop-zone { width: 50px; height: 44px; }
+  .board, .enemy-board { --hex-w: clamp(50px, 14vw, 58px); padding-left: 0; padding-right: calc(var(--hex-w) * 0.25); }
+  body.ally-board-only:not(.fighting) .board {
+    --hex-w: 64px;
+    left: 50%;
+    width: max-content;
+    min-width: max-content;
+    justify-content: start;
+    translate: -50% 0;
+    padding-top: 56px;
+  }
+  body.ally-board-only:not(.fighting) .cell .unit:not(.boss-unit) { width: 72px; height: 63px; grid-template-rows: 57px auto; }
+  body.ally-board-only:not(.fighting) .cell .unit:not(.boss-unit) .portrait { width: 64px; height: 64px; }
+  body.ally-board-only:not(.fighting) .cell .unit:not(.boss-unit) .name { top: 59px; max-width: 72px; }
+  body.ally-board-only:not(.fighting) .cell .unit:not(.boss-unit) .hpbar,
+  body.ally-board-only:not(.fighting) .cell .unit:not(.boss-unit) .manabar { width: 62px; }
+  body.ally-board-only:not(.fighting) .cell .unit:not(.boss-unit) .status-badges { width: 68px; }
+  .cell { touch-action: none; }
+  .cell .unit, .bench-slot .unit { touch-action: none; }
+  .bench-wrap { padding: 3px; }
+  .bench-head { margin-bottom: 2px; }
+  .bench { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 3px; }
+  .bench-slot, .bench-slot .unit { min-width: 0; min-height: 58px; }
+  .shop-panel {
+    position: fixed;
+    right: 4px;
+    bottom: max(4px, env(safe-area-inset-bottom));
+    left: 4px;
+    z-index: 1260;
+    max-height: min(44dvh, 310px);
+    padding: 4px 5px 5px;
+    overflow: auto;
+    border-color: #40545d;
+    background: rgba(21, 29, 33, 0.98);
+    box-shadow: 0 -12px 30px #000a;
+    overscroll-behavior: contain;
+  }
+  .mobile-shop-tray-toggle {
+    display: flex;
+    width: 100%;
+    min-height: 25px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #dce8eb;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  .mobile-shop-tray-toggle { order: -3; }
+  .shop-panel-tabs { order: -2; }
+  .shop-panel > .panel-title { order: -1; }
+  .mobile-shop-tray-toggle i {
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid currentColor;
+    border-left: 2px solid currentColor;
+    rotate: 45deg;
+    transition: rotate 140ms ease;
+  }
+  .shop-panel:not(.mobile-shop-tray-collapsed) .mobile-shop-tray-toggle i { rotate: 225deg; }
+  .shop-panel.mobile-shop-tray-collapsed > :not(.mobile-shop-tray-toggle) { display: none !important; }
+  .shop-panel.mobile-shop-tray-collapsed {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    max-height: none;
+    margin: 0 4px 4px;
+    overflow: hidden;
+    padding-bottom: 4px;
+    box-shadow: none;
+  }
+  .shop-panel > .panel-title { gap: 3px; }
+  .shop-panel > .panel-title h2 { display: none; }
+  .shop-tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; gap: 4px; }
+  .shop-tools button { padding: 4px 7px; min-height: 30px; }
+  .shop-tools .shop-wallet {
+    min-width: 0;
+    min-height: 30px;
+    margin: 0;
+    padding: 3px 6px;
+    gap: 4px;
+    border-radius: 7px;
+  }
+  .shop-tools .shop-wallet span { font-size: 9px; white-space: nowrap; }
+  .shop-tools .shop-wallet strong { min-width: 0; overflow: hidden; font-size: 15px; text-overflow: ellipsis; }
+  .shop-panel-tabs { margin: 3px 0; }
+  .shop-panel-tabs button { min-height: 28px; padding: 3px; }
+  .shop { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+  .shop-card { display: flex; flex-direction: column; padding: 4px 2px; min-width: 0; gap: 2px; }
+  .shop-card small, .shop-card-tags { display: none; }
+  .shop-card strong { font-size: 11px; overflow-wrap: anywhere; }
+
+  .mobile-floating-menu {
+    position: fixed;
+    z-index: 1380;
+    left: 8px;
+    bottom: calc(var(--mobile-shop-tray-clearance, 54px) + env(safe-area-inset-bottom));
+    display: grid;
+    justify-items: start;
+    gap: 7px;
+  }
+  .mobile-floating-toggle {
+    position: relative;
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid #62cfc3;
+    border-radius: 8px;
+    background: #173f3d;
+    box-shadow: 0 8px 24px #0009;
+  }
+  .mobile-floating-toggle span,
+  .mobile-floating-toggle span::before,
+  .mobile-floating-toggle span::after {
+    display: block;
+    width: 19px;
+    height: 2px;
+    border-radius: 1px;
+    background: #e5fffb;
+    content: "";
+  }
+  .mobile-floating-toggle span::before { translate: 0 -6px; }
+  .mobile-floating-toggle span::after { translate: 0 4px; }
+  .mobile-floating-toggle[aria-expanded="true"] span { background: transparent; }
+  .mobile-floating-toggle[aria-expanded="true"] span::before { rotate: 45deg; translate: 0 1px; }
+  .mobile-floating-toggle[aria-expanded="true"] span::after { rotate: -45deg; translate: 0 -1px; }
+  .mobile-floating-toggle.has-unread::after {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    display: grid;
+    width: 18px;
+    height: 18px;
+    place-items: center;
+    border: 2px solid #17191c;
+    border-radius: 50%;
+    background: #f5c84b;
+    color: #17130a;
+    content: "!";
+    font-size: 10px;
+    font-weight: 1000;
+  }
+  .mobile-floating-actions { display: grid; gap: 5px; justify-items: start; }
+  .mobile-floating-actions[hidden] { display: none; }
+  .mobile-floating-actions button {
+    position: relative;
+    min-width: 82px;
+    min-height: 34px;
+    padding: 5px 11px;
+    border-color: #486069;
+    border-radius: 6px;
+    background: rgba(23, 33, 37, 0.98);
+    box-shadow: 0 5px 16px #0008;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  .mobile-floating-actions button.active,
+  .mobile-floating-actions button[aria-expanded="true"] { border-color: #53c6b9; background: #254b48; }
+  .mobile-floating-actions button.has-unread { border-color: #f0bd54; color: #ffe7a3; }
+  .mobile-floating-actions button.has-unread::after {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    display: grid;
+    width: 17px;
+    height: 17px;
+    place-items: center;
+    border: 2px solid #17191c;
+    border-radius: 50%;
+    background: #f5c84b;
+    color: #17130a;
+    content: "!";
+    font-size: 10px;
+  }
+  .mobile-drawer:not([hidden]) {
+    display: flex;
+    position: fixed;
+    z-index: 1379;
+    right: 8px;
+    bottom: calc(62px + env(safe-area-inset-bottom));
+    left: 8px;
+    max-height: 66dvh;
+    flex-direction: column;
+    border: 1px solid #486069;
+    border-radius: 8px;
+    background: #172125;
+    box-shadow: 0 -12px 36px #0008;
+  }
+  .mobile-drawer > header {
+    display: flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 8px 7px 12px;
+    border-bottom: 1px solid #34454d;
+  }
+  .mobile-drawer > header strong { font-size: 15px; }
+  .mobile-drawer .mobile-drawer-close {
+    display: grid;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid #465a63;
+    border-radius: 6px;
+    background: #202d32;
+    color: #dce7ea;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1;
+  }
+  .mobile-drawer .mobile-drawer-close:hover,
+  .mobile-drawer .mobile-drawer-close:focus-visible { border-color: #65d5c8; background: #294b49; color: #fff; }
+  .mobile-drawer-body { overflow: auto; min-height: 0; padding: 8px; }
+  .mobile-drawer .active-augments { position: static; width: auto; }
+  .mobile-drawer nav { display: flex; flex-wrap: wrap; gap: 6px; }
+  .global-chat > .global-chat-toggle, .pvp-social-rail { display: none; }
+  .global-chat { right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); }
+  .pvp-social { right: 8px; }
+}

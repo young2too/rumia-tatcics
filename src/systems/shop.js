@@ -265,11 +265,11 @@ export function createShopController({
     }
   }
 
-  async function sellSelectedUnit() {
-    if (state.busy || state.shopTransactionPending || !state.selected || !canModify()) return;
-    const arr = state[state.selected.source];
-    const unit = arr?.[state.selected.index];
-    if (!unit || state.selected.source === "enemy") return;
+  async function sellUnitAt(source, index) {
+    if (state.busy || state.shopTransactionPending || !canModify() || !["board", "bench"].includes(source)) return;
+    const arr = state[source];
+    const unit = arr?.[index];
+    if (!unit) return;
     const value = sellValue(unit);
     if (!augmentCanSell(state)) return addLog("현재 증강 효과로 유닛을 판매할 수 없습니다.");
     const adjustedValue = augmentSellValue(state, value);
@@ -287,8 +287,8 @@ export function createShopController({
         state.pool[unit.name] = Math.min(stockLimit(unit, balance), (state.pool[unit.name] || 0) + returned);
       }
       state.gold += adjustedValue;
-      arr[state.selected.index] = null;
-      state.selected = null;
+      arr[index] = null;
+      if (state.selected?.source === source && state.selected?.index === index) state.selected = null;
       addLog(`${unit.name} 판매: ${adjustedValue} 크레딧 획득${releasePoolUnit ? "." : `, 풀 ${returned}개 반환.`}`);
     } catch (error) {
       addLog(`판매 처리 실패: ${String(error?.message || error)}`, { force: true });
@@ -296,6 +296,11 @@ export function createShopController({
       state.shopTransactionPending = false;
       render();
     }
+  }
+
+  async function sellSelectedUnit() {
+    if (!state.selected) return;
+    await sellUnitAt(state.selected.source, state.selected.index);
   }
 
   function moveUnit(target, targetIndex) {
@@ -345,6 +350,7 @@ export function createShopController({
     moveSelected,
     moveUnit,
     rollShop,
+    sellUnitAt,
     sellSelectedUnit,
   };
 }

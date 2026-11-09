@@ -115,9 +115,9 @@ export function createHiddenTraitController({ hiddenTraitRules, boardUnits }) {
         }
         activated.push(rule);
       }
-      if (rule.effect?.type === "tacticalGrowth") {
+      if (rule.effect?.type === "lenoxPullGrowth") {
         const killer = units.find((unit) => unit.name === rule.effect.killer);
-        if (killer) killer.hiddenTacticalGrowth = rule;
+        if (killer) killer.hiddenLenoxPullGrowth = rule;
         activated.push(rule);
       }
       if (rule.effect?.type === "killGrowth") {
@@ -190,8 +190,8 @@ export function createHiddenTraitController({ hiddenTraitRules, boardUnits }) {
     const participants = Array.from(new Map([killer, ...contributors]
       .filter((unit) => unit?.hp > 0)
       .map((unit) => [unit.id, unit])).values());
-    for (const unit of participants.filter((candidate) => candidate.hiddenTacticalGrowth && defeated?.tacticalTarget)) {
-      const rule = unit.hiddenTacticalGrowth;
+    for (const unit of participants.filter((candidate) => candidate.hiddenLenoxPullGrowth && defeated?.lenoxPulledTarget)) {
+      const rule = unit.hiddenLenoxPullGrowth;
       const atk = Number(rule.effect.atk) || 0;
       const skillAmp = Number(rule.effect.skillAmp) || 0;
       const maxHp = Number(rule.effect.maxHp) || 0;
@@ -204,7 +204,7 @@ export function createHiddenTraitController({ hiddenTraitRules, boardUnits }) {
         unit.combatBase.skillAmp += skillAmp;
         unit.combatBase.maxHp += maxHp;
       }
-      results.push({ type: "tacticalGrowth", rule, unit, atk, skillAmp, maxHp });
+      results.push({ type: "lenoxPullGrowth", rule, unit, atk, skillAmp, maxHp });
     }
     for (const unit of [killer].filter((candidate) => candidate?.hp > 0 && candidate.hiddenKillGrowth)) {
       const rule = unit.hiddenKillGrowth;

@@ -1520,6 +1520,115 @@ h2 {
     repeating-linear-gradient(90deg, transparent 0 58px, rgba(255, 255, 255, 0.025) 58px 60px);
 }
 
+.sell-drop-zone {
+  position: relative;
+  z-index: 720;
+  display: grid;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 46px;
+  place-content: center;
+  gap: 1px;
+  clip-path: polygon(25% 2%, 75% 2%, 100% 50%, 75% 98%, 25% 98%, 0 50%);
+  background: #d84f4c;
+  color: #fff2f1;
+  cursor: grab;
+  opacity: 1;
+  text-align: center;
+  filter: drop-shadow(0 0 5px rgba(239, 90, 86, 0.48));
+  transition: background 120ms ease, filter 120ms ease, opacity 120ms ease, scale 120ms ease;
+}
+
+.sell-drop-zone::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  clip-path: inherit;
+  background: #51282b;
+}
+
+.sell-drop-zone span {
+  font-size: 17px;
+  line-height: 1;
+  filter: grayscale(1) brightness(2.5);
+}
+
+.sell-drop-zone b {
+  font-size: 9px;
+  line-height: 1;
+  text-shadow: 0 1px 2px #000;
+}
+
+.dragging-unit .sell-drop-zone {
+  background: #ef5a56;
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(239, 90, 86, 0.5));
+}
+
+.sell-drop-zone.drag-over {
+  background: #ff7975;
+  color: #fff;
+  filter: drop-shadow(0 0 16px rgba(255, 92, 87, 0.9));
+  scale: 1.12;
+}
+
+body.fighting .sell-drop-zone {
+  pointer-events: none;
+  opacity: 0.24;
+  filter: grayscale(1);
+}
+
+.touch-drag-ghost {
+  position: fixed;
+  z-index: 3000;
+  width: 68px;
+  height: 68px;
+  min-height: 0;
+  translate: -50% -70%;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  pointer-events: none;
+  opacity: 0.86;
+  filter: drop-shadow(0 8px 7px rgba(0, 0, 0, 0.6));
+}
+
+.touch-drag-ghost > :not(.portrait) {
+  display: none;
+}
+
+.touch-drag-ghost .portrait,
+.touch-drag-ghost .portrait img {
+  width: 68px;
+  height: 68px;
+}
+
+.touch-drag-ghost .portrait {
+  overflow: visible;
+  background: transparent;
+}
+
+.touch-drag-ghost .portrait img {
+  object-fit: contain;
+}
+
+.board-view-toggle[aria-pressed="true"] {
+  border-color: rgba(83, 198, 185, 0.78);
+  background: rgba(83, 198, 185, 0.18);
+  color: #cffff8;
+  box-shadow: inset 0 0 0 1px rgba(83, 198, 185, 0.12);
+}
+
+body.ally-board-only:not(.fighting) .enemy-board {
+  display: none;
+}
+
+body.ally-board-only:not(.fighting) .board {
+  padding-top: 8px;
+}
+
 .ranking-button,
 .statistics-button,
 .community-board-button,
@@ -2541,6 +2650,15 @@ h2 {
   background: transparent;
   margin-top: 0;
   overflow: visible;
+  pointer-events: none;
+}
+
+.cell-hit-area {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%);
+  pointer-events: auto;
 }
 
 .cell.has-unit {
@@ -3894,9 +4012,10 @@ h2 {
 .cell .unit {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: auto;
+  bottom: 50%;
   z-index: calc(var(--depth, 1) + 20);
-  translate: -50% -100%;
+  translate: -50% 0;
   width: 64px;
   height: 56px;
   min-height: 0;
@@ -3910,6 +4029,7 @@ h2 {
   padding: 0;
   text-align: center;
   overflow: visible;
+  pointer-events: auto;
 }
 
 .cell .unit .portrait {
@@ -3961,8 +4081,9 @@ h2 {
 
 .cell .unit.boss-unit {
   z-index: 560;
-  top: 50%;
-  translate: -50% -100%;
+  top: auto;
+  bottom: 50%;
+  translate: -50% 0;
   width: 168px;
   height: 214px;
   display: block;
@@ -5116,6 +5237,33 @@ h2 {
   color: #f7ead0;
   font-size: 13px;
   line-height: 1.55;
+}
+
+.trait-detail-tiers {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.trait-detail-tier {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 8px 10px;
+  border: 1px solid #344550;
+  border-radius: 6px;
+  background: #121b20;
+}
+
+.trait-detail-tier > b {
+  color: #ffd66b;
+}
+
+.trait-detail-tier > p {
+  margin: 0;
+  color: #d8e1e5;
+  line-height: 1.45;
 }
 
 .trait-roster-tags {

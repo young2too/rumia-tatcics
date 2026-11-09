@@ -63,6 +63,82 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     if (button) actions.buyTemporaryBoost(button.dataset.boost);
   });
   refs.sellUnit.addEventListener("click", actions.sellSelectedUnit);
+  const clearSellDropState = () => {
+    refs.sellDropZone?.classList.remove("drag-over");
+    document.body.classList.remove("dragging-to-sell");
+  };
+  refs.sellDropZone?.addEventListener("dragover", (event) => {
+    if (!state.dragging || state.busy) return;
+    event.preventDefault();
+    refs.sellDropZone.classList.add("drag-over");
+  });
+  refs.sellDropZone?.addEventListener("dragleave", () => refs.sellDropZone.classList.remove("drag-over"));
+  refs.sellDropZone?.addEventListener("drop", (event) => {
+    event.preventDefault();
+    const dragging = state.dragging ? { ...state.dragging } : null;
+    state.dragging = null;
+    document.body.classList.remove("dragging-unit");
+    clearSellDropState();
+    if (dragging) actions.sellUnitAt?.(dragging.source, dragging.index);
+  });
+
+  let touchDrag = null;
+  const pointInSellZone = (x, y) => {
+    const rect = refs.sellDropZone?.getBoundingClientRect();
+    return Boolean(rect && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+  };
+  const finishTouchDrag = (event, cancelled = false) => {
+    if (!touchDrag || event.pointerId !== touchDrag.pointerId) return;
+    const drag = touchDrag;
+    touchDrag = null;
+    drag.ghost?.remove();
+    drag.node.classList.remove("dragging");
+    state.dragging = null;
+    document.body.classList.remove("dragging-unit");
+    clearSellDropState();
+    if (!drag.started) return;
+    state.suppressUnitClick = `${drag.source}:${drag.index}`;
+    window.setTimeout(() => {
+      if (state.suppressUnitClick === `${drag.source}:${drag.index}`) state.suppressUnitClick = null;
+    }, 0);
+    if (!cancelled && pointInSellZone(event.clientX, event.clientY)) actions.sellUnitAt?.(drag.source, drag.index);
+  };
+  document.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" || state.busy || touchDrag) return;
+    const node = event.target.closest?.(".unit.board, .unit.bench");
+    if (!node) return;
+    touchDrag = {
+      pointerId: event.pointerId,
+      node,
+      source: node.dataset.source,
+      index: Number(node.dataset.index),
+      startX: event.clientX,
+      startY: event.clientY,
+      started: false,
+      ghost: null,
+    };
+  }, { passive: true });
+  document.addEventListener("pointermove", (event) => {
+    if (!touchDrag || event.pointerId !== touchDrag.pointerId) return;
+    const distance = Math.hypot(event.clientX - touchDrag.startX, event.clientY - touchDrag.startY);
+    if (!touchDrag.started && distance < 10) return;
+    if (!touchDrag.started) {
+      touchDrag.started = true;
+      state.dragging = { source: touchDrag.source, index: touchDrag.index };
+      document.body.classList.add("dragging-unit", "dragging-to-sell");
+      touchDrag.node.classList.add("dragging");
+      touchDrag.ghost = touchDrag.node.cloneNode(true);
+      touchDrag.ghost.className = "touch-drag-ghost";
+      touchDrag.ghost.removeAttribute("draggable");
+      document.body.append(touchDrag.ghost);
+    }
+    event.preventDefault();
+    touchDrag.ghost.style.left = `${event.clientX}px`;
+    touchDrag.ghost.style.top = `${event.clientY}px`;
+    refs.sellDropZone?.classList.toggle("drag-over", pointInSellZone(event.clientX, event.clientY));
+  }, { passive: false });
+  document.addEventListener("pointerup", (event) => finishTouchDrag(event));
+  document.addEventListener("pointercancel", (event) => finishTouchDrag(event, true));
   refs.bgmToggle.addEventListener("click", actions.toggleBgm);
   refs.patchNotesToggle.addEventListener("click", actions.openPatchNotes);
   refs.rankingToggle.addEventListener("click", () => {
