@@ -7,9 +7,13 @@ export function createPatchNotesController({ state, patchNotesConfig, patchNotes
     return `${year}-${month}-${day}`;
   }
 
+  function hiddenMarker() {
+    return `${patchNotesConfig.version || "legacy"}:${todayKey()}`;
+  }
+
   function hiddenToday() {
     try {
-      return localStorage.getItem(patchNotesStorageKey) === todayKey();
+      return localStorage.getItem(patchNotesStorageKey) === hiddenMarker();
     } catch {
       return false;
     }
@@ -23,7 +27,7 @@ export function createPatchNotesController({ state, patchNotesConfig, patchNotes
   function closePatchNotes() {
     if (state.patchNotesSkipToday) {
       try {
-        localStorage.setItem(patchNotesStorageKey, todayKey());
+        localStorage.setItem(patchNotesStorageKey, hiddenMarker());
       } catch {
         // localStorage can be unavailable in some embedded contexts.
       }
