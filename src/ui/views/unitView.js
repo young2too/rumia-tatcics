@@ -252,6 +252,11 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       refs.unitDetail.innerHTML = `<div class="detail-empty">벤치나 보드의 내 유닛을 선택하면 상세 정보가 표시됩니다.</div>`;
       refs.sellUnit.disabled = true;
       refs.sellUnit.textContent = "판매";
+      refs.sellDropZone?.classList.remove("selection-ready");
+      refs.sellDropZone?.setAttribute("aria-disabled", "true");
+      if (refs.sellDropZone) refs.sellDropZone.title = "유닛을 선택하거나 끌어다 놓아 판매";
+      const dropLabel = refs.sellDropZone?.querySelector("b");
+      if (dropLabel) dropLabel.textContent = "판매";
       return;
     }
     const effective = detailStats(unit);
@@ -292,6 +297,11 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     refs.detailTier.textContent = `${"★".repeat(unit.fourStarAscended ? 4 : unit.tier)} · ${unit.cost}코`;
     refs.sellUnit.disabled = state.busy;
     refs.sellUnit.textContent = `${sellValue(unit)}크레딧에 판매`;
+    refs.sellDropZone?.classList.toggle("selection-ready", !state.busy);
+    refs.sellDropZone?.setAttribute("aria-disabled", state.busy ? "true" : "false");
+    if (refs.sellDropZone) refs.sellDropZone.title = `${displayNameFor(unit)} 선택됨 · 눌러서 ${sellValue(unit)}크레딧에 판매`;
+    const dropLabel = refs.sellDropZone?.querySelector("b");
+    if (dropLabel) dropLabel.textContent = state.busy ? "판매" : `${sellValue(unit)}코 판매`;
     const displayedSkill = displayedSkillFor(unit);
     refs.unitDetail.innerHTML = `
       <div class="detail-head" style="--accent: ${unit.color}">

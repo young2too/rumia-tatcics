@@ -63,6 +63,16 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     if (button) actions.buyTemporaryBoost(button.dataset.boost);
   });
   refs.sellUnit.addEventListener("click", actions.sellSelectedUnit);
+  const sellSelectedFromDropZone = () => {
+    if (!state.selected || state.busy) return;
+    actions.sellSelectedUnit?.();
+  };
+  refs.sellDropZone?.addEventListener("click", sellSelectedFromDropZone);
+  refs.sellDropZone?.addEventListener("keydown", (event) => {
+    if (!["Enter", " "].includes(event.key)) return;
+    event.preventDefault();
+    sellSelectedFromDropZone();
+  });
   const clearSellDropState = () => {
     refs.sellDropZone?.classList.remove("drag-over");
     document.body.classList.remove("dragging-to-sell");
@@ -87,21 +97,39 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     const rect = refs.sellDropZone?.getBoundingClientRect();
     return Boolean(rect && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
   };
+  const dropTargetAt = (x, y) => {
+    const node = document.elementFromPoint(x, y);
+    const boardCell = node?.closest?.(".cell[data-index]");
+    if (boardCell && refs.board?.contains(boardCell)) return { source: "board", index: Number(boardCell.dataset.index), node: boardCell };
+    const benchSlot = node?.closest?.(".bench-slot[data-index]");
+    if (benchSlot && refs.bench?.contains(benchSlot)) return { source: "bench", index: Number(benchSlot.dataset.index), node: benchSlot };
+    return null;
+  };
   const finishTouchDrag = (event, cancelled = false) => {
     if (!touchDrag || event.pointerId !== touchDrag.pointerId) return;
     const drag = touchDrag;
+    const overSellZone = pointInSellZone(event.clientX, event.clientY);
+    const dropTarget = overSellZone ? null : dropTargetAt(event.clientX, event.clientY);
     touchDrag = null;
+    drag.dropNode?.classList.remove("can-drop");
     drag.ghost?.remove();
     drag.node.classList.remove("dragging");
-    state.dragging = null;
     document.body.classList.remove("dragging-unit");
     clearSellDropState();
-    if (!drag.started) return;
+    if (!drag.started) {
+      state.dragging = null;
+      return;
+    }
     state.suppressUnitClick = `${drag.source}:${drag.index}`;
     window.setTimeout(() => {
       if (state.suppressUnitClick === `${drag.source}:${drag.index}`) state.suppressUnitClick = null;
     }, 0);
-    if (!cancelled && pointInSellZone(event.clientX, event.clientY)) actions.sellUnitAt?.(drag.source, drag.index);
+    if (!cancelled && overSellZone) actions.sellUnitAt?.(drag.source, drag.index);
+    else if (!cancelled && dropTarget) {
+      state.dragging = { source: drag.source, index: drag.index };
+      actions.moveUnit?.(dropTarget.source, dropTarget.index);
+    }
+    state.dragging = null;
   };
   document.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" || state.busy || touchDrag) return;
@@ -116,6 +144,7 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
       startY: event.clientY,
       started: false,
       ghost: null,
+      dropNode: null,
     };
   }, { passive: true });
   document.addEventListener("pointermove", (event) => {
@@ -135,7 +164,14 @@ export function bindUiEvents({ $, refs, state, balance, actions }) {
     event.preventDefault();
     touchDrag.ghost.style.left = `${event.clientX}px`;
     touchDrag.ghost.style.top = `${event.clientY}px`;
-    refs.sellDropZone?.classList.toggle("drag-over", pointInSellZone(event.clientX, event.clientY));
+    const overSellZone = pointInSellZone(event.clientX, event.clientY);
+    refs.sellDropZone?.classList.toggle("drag-over", overSellZone);
+    const dropTarget = overSellZone ? null : dropTargetAt(event.clientX, event.clientY);
+    if (touchDrag.dropNode !== dropTarget?.node) {
+      touchDrag.dropNode?.classList.remove("can-drop");
+      touchDrag.dropNode = dropTarget?.node || null;
+      touchDrag.dropNode?.classList.add("can-drop");
+    }
   }, { passive: false });
   document.addEventListener("pointerup", (event) => finishTouchDrag(event));
   document.addEventListener("pointercancel", (event) => finishTouchDrag(event, true));
