@@ -2,7 +2,7 @@
 import { augmentPools, augmentSettings, roster } from "../core/data.js";
 import { createDeterministicSeed, createSeededRng, createStableHash } from "../core/rng.js";
 
-const preferredTraits = ["맹공", "결투", "정밀", "주술", "기습", "추적", "수호", "지원"];
+const preferredTraits = ["격전", "정조준", "철벽", "술식", "암습", "진형", "투혼", "연대"];
 const rarities = ["silver", "gold", "prismatic"];
 
 function unitTraits(unit) {
@@ -16,7 +16,7 @@ function eligibleRoster() {
 function chooseTheme(rng) {
   const units = eligibleRoster();
   const available = preferredTraits.filter((trait) => units.filter((unit) => unitTraits(unit).includes(trait)).length >= 3);
-  return rng.choice(available.length ? available : preferredTraits) || "맹공";
+  return rng.choice(available.length ? available : preferredTraits) || "격전";
 }
 
 function scoreCandidate(unit, theme, rng) {

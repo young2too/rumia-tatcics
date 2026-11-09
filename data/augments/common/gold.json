@@ -399,5 +399,250 @@
         "skillAmpMultiply": 1.12
       }
     }
+  },
+  {
+    "active": true,
+    "id": "common_gold_trait_1",
+    "name": "격전 문장",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "gold",
+      "격전"
+    ],
+    "summary": "격전 시너지 카운트가 1 증가합니다.",
+    "description": "격전 시너지 카운트가 1 증가합니다. 3코스트 격전 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCount",
+      "trait": "격전",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_trait_2",
+    "name": "정조준 문장",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "gold",
+      "정조준"
+    ],
+    "summary": "정조준 시너지 카운트가 1 증가합니다.",
+    "description": "정조준 시너지 카운트가 1 증가합니다. 3코스트 정조준 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCount",
+      "trait": "정조준",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_trait_3",
+    "name": "철벽 문장",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "gold",
+      "철벽"
+    ],
+    "summary": "철벽 시너지 카운트가 1 증가합니다.",
+    "description": "철벽 시너지 카운트가 1 증가합니다. 3코스트 철벽 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCount",
+      "trait": "철벽",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_trait_4",
+    "name": "술식 문장",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "gold",
+      "술식"
+    ],
+    "summary": "술식 시너지 카운트가 1 증가합니다.",
+    "description": "술식 시너지 카운트가 1 증가합니다. 3코스트 술식 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCount",
+      "trait": "술식",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_trait_5",
+    "name": "암습 문장",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "gold",
+      "암습"
+    ],
+    "summary": "암습 시너지 카운트가 1 증가합니다.",
+    "description": "암습 시너지 카운트가 1 증가합니다. 3코스트 암습 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCount",
+      "trait": "암습",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_trait_6",
+    "name": "진형 문장",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "gold",
+      "진형"
+    ],
+    "summary": "진형 시너지 카운트가 1 증가합니다.",
+    "description": "진형 시너지 카운트가 1 증가합니다. 3코스트 진형 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCount",
+      "trait": "진형",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_trait_7",
+    "name": "투혼 문장",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "gold",
+      "투혼"
+    ],
+    "summary": "투혼 시너지 카운트가 1 증가합니다.",
+    "description": "투혼 시너지 카운트가 1 증가합니다. 3코스트 투혼 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCount",
+      "trait": "투혼",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_trait_8",
+    "name": "연대 문장",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "gold",
+      "연대"
+    ],
+    "summary": "연대 시너지 카운트가 1 증가합니다.",
+    "description": "연대 시너지 카운트가 1 증가합니다. 3코스트 연대 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCount",
+      "trait": "연대",
+      "add": 1
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_two_front_tactics",
+    "name": "양면 전술",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "frontline",
+      "backline"
+    ],
+    "summary": "전열은 생존, 후열은 화력 증가",
+    "description": "앞 2열 아군의 체력과 방어력이 각각 15% 증가합니다. 뒤 2열 아군의 공격력과 스킬 증폭이 각각 15% 증가합니다.",
+    "effect": {
+      "type": "splitPositionStat",
+      "frontStats": {
+        "hpMultiply": 1.15,
+        "defenseMultiply": 1.15
+      },
+      "backStats": {
+        "atkMultiply": 1.15,
+        "skillAmpMultiply": 1.15
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_gold_tactical_armor",
+    "name": "택티컬 아머",
+    "rarity": "gold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "execute"
+    ],
+    "summary": "체력 8% 이하 일반 적 처형",
+    "description": "모든 아군이 피해를 입혀 일반 적의 남은 체력이 8% 이하가 되면 즉시 처형합니다. 보스에게는 적용되지 않습니다.",
+    "effect": {
+      "type": "executeLowHpEnemy",
+      "thresholdHpRatio": 0.08,
+      "bossDamageMaxHpRatio": 0
+    }
   }
 ]

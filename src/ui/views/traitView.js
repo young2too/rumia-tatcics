@@ -42,6 +42,7 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
         const row = document.createElement("div");
         row.className = "trait active hidden-trait";
         row.dataset.trait = hidden.name;
+        row.title = hidden.text || "";
         row.innerHTML = `
           <strong><span>${hidden.name}</span><span><i>상세</i></span></strong>
           <p>효과는 상세 확인</p>
@@ -53,15 +54,9 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
       const row = document.createElement("div");
       row.className = `trait ${activeTier ? "active" : ""}`;
       row.dataset.trait = trait;
-      const precisionRequired = trait === "정밀"
-        ? Number(activeTier?.effects?.find((effect) => effect.stat === "precisionCritRequired")?.set) || 0
-        : 0;
-      const precisionProgress = precisionRequired && state.busy
-        ? `<small class="trait-combat-progress" data-required="${precisionRequired}">집중 사격 ${Math.min(state.precisionCritCounters?.ally || 0, precisionRequired)}/${precisionRequired}</small>`
-        : "";
       row.innerHTML = `
         <strong><span>${trait}</span><span>${Math.min(activeCount, nextNeed)}/${nextNeed}<b>보유 ${count}</b><i>상세</i></span></strong>
-        <p class="trait-effect">${traitTierMarkup(trait, activeTier || rule.tiers[0], !activeTier)}${precisionProgress}</p>
+        <p class="trait-effect">${traitTierMarkup(trait, activeTier || rule.tiers[0], !activeTier)}</p>
         <div class="trait-roster" aria-label="${trait} 유닛 보유 현황">
           ${unitsFor(trait).map((unit) => {
             const ownership = ownershipState(unit, boardNames, benchNames);
@@ -74,12 +69,7 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
     }
   }
 
-  function renderCombatProgress() {
-    const progress = refs.traits.querySelector('[data-trait="정밀"] .trait-combat-progress');
-    if (!progress) return;
-    const required = Number(progress.dataset.required) || 0;
-    progress.textContent = `집중 사격 ${Math.min(state.precisionCritCounters?.ally || 0, required)}/${required}`;
-  }
+  function renderCombatProgress() {}
 
   function renderTraitTableModal() {
     refs.traitTableModal.hidden = !state.traitTableOpen;
@@ -88,7 +78,7 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
     const benchNames = new Set(state.bench.filter(Boolean).map((unit) => unit.name));
     refs.traitTablePanel.innerHTML = Object.entries(traitRules).map(([trait, rule]) => `
       <section class="trait-table-group">
-        <header><strong>${trait}</strong><p>${traitSummary(trait)}</p><span>${(rule.tiers || []).map((tier) => tier.need).join("/")}</span></header>
+        <header><strong>${trait}</strong><p>${traitSummary(rule)}</p><span>${(rule.tiers || []).map((tier) => tier.need).join("/")}</span></header>
         <div class="trait-table-units">
           ${unitsFor(trait).map((unit) => {
             const ownership = ownershipState(unit, boardNames, benchNames);
@@ -119,7 +109,16 @@ export function createTraitView({ state, refs, roster, traitRules, hiddenTraitRu
       : unitsFor(trait);
     refs.traitRosterTitle.textContent = trait ? `${trait} 유닛` : "시너지 유닛";
     refs.traitRosterMeta.textContent = hiddenRule ? "히든 시너지 활성" : trait ? `전장 ${Math.min(activeCount, nextNeed)}/${nextNeed} · 보유 ${count} · 초록: 전장 / 노랑: 벤치 / 빨강: 미보유` : "";
-    const description = hiddenRule ? `<p class="hidden-trait-description">${hiddenRule.text}</p>` : "";
+    const description = hiddenRule
+      ? `<p class="hidden-trait-description">${hiddenRule.text}</p>`
+      : rule
+        ? `<div class="trait-detail-tiers">${(rule.tiers || []).map((tier) => `
+            <section class="trait-detail-tier">
+              <b>${tier.need}명</b>
+              <p>${traitTierMarkup(trait, tier)}</p>
+            </section>
+          `).join("")}</div>`
+        : "";
     refs.traitRosterPanel.innerHTML = description + (traitUnits.length ? traitUnits.map((unit) => {
       const ownership = ownershipState(unit, boardNames, benchNames);
       const label = ownership === "fielded" ? "전장" : ownership === "benched" ? "벤치" : "미보유";

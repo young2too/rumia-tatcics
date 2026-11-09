@@ -298,13 +298,13 @@
       "scaling"
     ],
     "summary": "이렘 처치 관여 시 변신 스탯 성장",
-    "description": "이렘이 적 처치에 관여할수록 공격력과 스킬 증폭이 영구히 오르고, 전술 표적 처치에 관여하면 성장량이 증가합니다. 선택 시 이렘 1성과 레녹스 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
+    "description": "이렘이 적 처치에 관여할수록 공격력과 스킬 증폭이 영구히 오르고, 레녹스의 날카로운 독니로 끌어온 적 처치에 관여하면 성장량이 2배가 됩니다. 선택 시 이렘 1성과 레녹스 1성을 지급합니다. 이미 3성을 보유 중이면 지급하지 않습니다.",
     "effect": {
       "type": "iremCatfishMayhem",
       "unit": "이렘",
       "killAtkAdd": 1,
       "killSkillAmpAdd": 2,
-      "tacticalTargetBonusMultiply": 2,
+      "lenoxPulledBonusMultiply": 2,
       "grantUnitCopies": [
         {
           "unit": "이렘",

@@ -1,1125 +1,671 @@
 {
-  "맹공": {
+  "격전": {
+    "category": "major",
+    "summary": "공격과 시전으로 열기를 쌓아 과부하",
     "tiers": [
       {
         "need": 2,
-        "text": "맹공형 공격력 +24%, 체력 +16%, 방어 +12%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.24
-          },
-          {
-            "stat": "hp",
-            "multiply": 1.16
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.12
-          }
-        ]
+        "text": "열기 6 도달 시 최대 체력의 3% 회복. 3초간 과부하: 공격 속도 +20%, 스킬 피해 +10%",
+        "effects": [],
+        "mechanics": {
+          "heatRequired": 6,
+          "overloadMs": 3000,
+          "overloadSpeedAdd": 0.2,
+          "overloadSkillDamageAdd": 0.1,
+          "overloadHealRatio": 0.03
+        }
       },
       {
         "need": 4,
-        "text": "맹공형 공격력 +62%, 체력 +34%, 방어 +25%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.62
-          },
-          {
-            "stat": "hp",
-            "multiply": 1.34
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.25
-          }
-        ]
+        "text": "열기 6 도달 시 최대 체력의 4.5% 회복. 3초간 과부하: 공격 속도 +30%, 스킬 피해 +15%",
+        "effects": [],
+        "mechanics": {
+          "heatRequired": 6,
+          "overloadMs": 3000,
+          "overloadSpeedAdd": 0.3,
+          "overloadSkillDamageAdd": 0.15,
+          "overloadHealRatio": 0.045
+        }
       },
       {
         "need": 6,
-        "text": "맹공형 공격력 +110%, 체력 +56%, 방어 +38%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 2.1
-          },
-          {
-            "stat": "hp",
-            "multiply": 1.56
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.38
-          }
-        ]
+        "text": "열기 6 도달 시 최대 체력의 6.5% 회복. 3초간 과부하: 공격 속도 +45%, 스킬 피해 +25%",
+        "effects": [],
+        "mechanics": {
+          "heatRequired": 6,
+          "overloadMs": 3000,
+          "overloadSpeedAdd": 0.45,
+          "overloadSkillDamageAdd": 0.25,
+          "overloadHealRatio": 0.065
+        }
       },
       {
         "need": 8,
-        "text": "맹공형 공격력 +165%, 체력 +85%, 방어 +55%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 2.65
-          },
-          {
-            "stat": "hp",
-            "multiply": 1.85
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.55
-          }
-        ]
+        "text": "열기 6 도달 시 최대 체력의 9% 회복. 3초간 과부하: 공격 속도 +65%, 스킬 피해 +35%",
+        "effects": [],
+        "mechanics": {
+          "heatRequired": 6,
+          "overloadMs": 3000,
+          "overloadSpeedAdd": 0.65,
+          "overloadSkillDamageAdd": 0.35,
+          "overloadHealRatio": 0.09
+        }
       }
     ]
   },
-  "정밀": {
+  "정조준": {
+    "category": "major",
+    "summary": "공격 속도를 높이고 집중 타격으로 균열 폭발",
     "tiers": [
       {
         "need": 2,
-        "text": "정밀형 공격력 +26%, 치명 확률 +12%",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.26
-          },
-          {
-            "stat": "critChance",
-            "add": 0.12
-          }
-        ]
+        "text": "공격 속도 +6%. 같은 대상을 5회 타격하면 공격력의 60% 추가 물리 피해와 0.1초 기절",
+        "effects": [{ "stat": "speed", "multiply": 1.06 }],
+        "mechanics": {
+          "ruptureAtkRatio": 0.6,
+          "ruptureStunMs": 100
+        }
       },
       {
         "need": 4,
-        "text": "정밀형 공격력 +62%, 치명 확률 +22%. 정밀형 전체 치명타 5회마다 대상 0.35초 기절",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 1.62
-          },
-          {
-            "stat": "critChance",
-            "add": 0.22
-          },
-          {
-            "stat": "precisionCritRequired",
-            "set": 5
-          },
-          {
-            "stat": "precisionStunMs",
-            "set": 350
-          },
-          {
-            "stat": "precisionStunCooldownMs",
-            "set": 2000
-          }
-        ]
+        "text": "공격 속도 +10%. 같은 대상을 5회 타격하면 공격력의 90% 추가 물리 피해와 0.18초 기절",
+        "effects": [{ "stat": "speed", "multiply": 1.1 }],
+        "mechanics": {
+          "ruptureAtkRatio": 0.9,
+          "ruptureStunMs": 180
+        }
       },
       {
         "need": 6,
-        "text": "정밀형 공격력 +105%, 치명 확률 +35%. 정밀형 전체 치명타 5회마다 대상 0.5초 기절",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 2.05
-          },
-          {
-            "stat": "critChance",
-            "add": 0.35
-          },
-          {
-            "stat": "precisionCritRequired",
-            "set": 5
-          },
-          {
-            "stat": "precisionStunMs",
-            "set": 500
-          },
-          {
-            "stat": "precisionStunCooldownMs",
-            "set": 2000
-          }
-        ]
+        "text": "공격 속도 +16%. 같은 대상을 5회 타격하면 공격력의 130% 추가 물리 피해와 0.28초 기절",
+        "effects": [{ "stat": "speed", "multiply": 1.16 }],
+        "mechanics": {
+          "ruptureAtkRatio": 1.3,
+          "ruptureStunMs": 280
+        }
       },
       {
         "need": 8,
-        "text": "정밀형 공격력 +160%, 치명 확률 +50%. 정밀형 전체 치명타 4회마다 대상 0.7초 기절",
-        "effects": [
-          {
-            "stat": "atk",
-            "multiply": 2.6
-          },
-          {
-            "stat": "critChance",
-            "add": 0.5
-          },
-          {
-            "stat": "precisionCritRequired",
-            "set": 4
-          },
-          {
-            "stat": "precisionStunMs",
-            "set": 700
-          },
-          {
-            "stat": "precisionStunCooldownMs",
-            "set": 2000
-          }
-        ]
+        "text": "공격 속도 +24%. 같은 대상을 5회 타격하면 공격력의 180% 추가 물리 피해와 0.4초 기절",
+        "effects": [{ "stat": "speed", "multiply": 1.24 }],
+        "mechanics": {
+          "ruptureAtkRatio": 1.8,
+          "ruptureStunMs": 400
+        }
       }
     ]
   },
-  "수호": {
+  "철벽": {
+    "category": "major",
+    "summary": "가까운 아군을 반복 보호",
     "tiers": [
       {
         "need": 2,
-        "text": "수호형 체력 +32%, 방어 +14%, 받는 피해 -12%",
-        "effects": [
-          {
-            "stat": "hp",
-            "multiply": 1.32
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.14
-          },
-          {
-            "stat": "damageReduction",
-            "add": 0.12
-          }
-        ]
+        "text": "전투 시작 시 가장 가까운 아군에게 최대 체력의 8% 보호막을 부여하고 가장 가까운 적에게 방어력의 120% 피해. 6초 후 1회 반복",
+        "effects": [],
+        "mechanics": {
+          "sanctuaryShieldRatio": 0.08,
+          "sanctuaryRetaliationDefenseRatio": 1.2
+        }
       },
       {
         "need": 4,
-        "text": "수호형 체력 +85%, 방어 +32%, 받는 피해 -24%. 3번째 평타마다 자신의 최대 체력 2% 고정 피해",
-        "effects": [
-          {
-            "stat": "hp",
-            "multiply": 1.85
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.32
-          },
-          {
-            "stat": "damageReduction",
-            "add": 0.24
-          },
-          {
-            "stat": "guardianStrikeEvery",
-            "set": 3
-          },
-          {
-            "stat": "guardianStrikeHpRatio",
-            "set": 0.02
-          }
-        ]
+        "text": "전투 시작 시 가장 가까운 아군에게 최대 체력의 12% 보호막을 부여하고 가장 가까운 적에게 방어력의 180% 피해. 6초 후 1회 반복",
+        "effects": [],
+        "mechanics": {
+          "sanctuaryShieldRatio": 0.12,
+          "sanctuaryRetaliationDefenseRatio": 1.8
+        }
       },
       {
         "need": 6,
-        "text": "수호형 체력 +145%, 방어 +56%, 받는 피해 -36%. 3번째 평타마다 자신의 최대 체력 3.5% 고정 피해",
-        "effects": [
-          {
-            "stat": "hp",
-            "multiply": 2.45
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.56
-          },
-          {
-            "stat": "damageReduction",
-            "add": 0.36
-          },
-          {
-            "stat": "guardianStrikeEvery",
-            "set": 3
-          },
-          {
-            "stat": "guardianStrikeHpRatio",
-            "set": 0.035
-          }
-        ]
+        "text": "전투 시작 시 가장 가까운 아군에게 최대 체력의 18% 보호막을 부여하고 가장 가까운 적에게 방어력의 260% 피해. 6초 후 1회 반복",
+        "effects": [],
+        "mechanics": {
+          "sanctuaryShieldRatio": 0.18,
+          "sanctuaryRetaliationDefenseRatio": 2.6
+        }
       },
       {
         "need": 8,
-        "text": "수호형 체력 +220%, 방어 +85%, 받는 피해 -50%. 3번째 평타마다 자신의 최대 체력 5% 고정 피해",
-        "effects": [
-          {
-            "stat": "hp",
-            "multiply": 3.2
-          },
-          {
-            "stat": "defense",
-            "multiply": 1.85
-          },
-          {
-            "stat": "damageReduction",
-            "add": 0.5
-          },
-          {
-            "stat": "guardianStrikeEvery",
-            "set": 3
-          },
-          {
-            "stat": "guardianStrikeHpRatio",
-            "set": 0.05
-          }
-        ]
+        "text": "전투 시작 시 가장 가까운 아군에게 최대 체력의 25% 보호막을 부여하고 가장 가까운 적에게 방어력의 380% 피해. 6초 후 1회 반복",
+        "effects": [],
+        "mechanics": {
+          "sanctuaryShieldRatio": 0.25,
+          "sanctuaryRetaliationDefenseRatio": 3.8
+        }
       }
     ]
   },
-  "주술": {
+  "술식": {
+    "category": "major",
+    "summary": "스킬 피해와 순환을 강화하고 다음 평타에 잔향 부여",
     "tiers": [
       {
         "need": 2,
-        "text": "주술형 스킬 피해 +38%, 마나 획득량 +15%, 요구 마나 -5, 스킬 치명 확률 +8%, 스킬 치명 배율 160%. 스킬 사용 시 최대 체력 5% 보호막",
+        "text": "스킬 피해 +10%. 시전 시 2초간 최대 체력의 6% 보호막과 마나 6 획득. 다음 평타에 스킬 증폭의 50% 추가 마법 피해",
         "effects": [
-          {
-            "stat": "skillAmp",
-            "multiply": 1.38
-          },
-          {
-            "stat": "manaGain",
-            "multiply": 1.15
-          },
-          {
-            "stat": "maxManaReduction",
-            "add": 5
-          },
-          {
-            "stat": "skillCritChance",
-            "add": 0.08
-          },
-          {
-            "stat": "skillCritDamage",
-            "add": 0.1
-          },
-          {
-            "stat": "spellCastShieldRatio",
-            "set": 0.05
-          },
-          {
-            "stat": "spellCastShieldDurationMs",
-            "set": 1500
-          }
-        ]
+          { "stat": "spellCastShieldRatio", "set": 0.06 },
+          { "stat": "spellCastShieldDurationMs", "set": 2000 }
+        ],
+        "mechanics": {
+          "spellDamageAdd": 0.1,
+          "echoSkillAmpRatio": 0.5,
+          "echoMana": 6
+        }
       },
       {
         "need": 4,
-        "text": "주술형 스킬 피해 +88%, 마나 획득량 +30%, 요구 마나 -10, 스킬 치명 확률 +18%, 스킬 치명 배율 165%. 스킬 사용 시 최대 체력 8% 보호막",
+        "text": "스킬 피해 +18%. 시전 시 2초간 최대 체력의 9% 보호막과 마나 9 획득. 다음 평타에 스킬 증폭의 80% 추가 마법 피해",
         "effects": [
-          {
-            "stat": "skillAmp",
-            "multiply": 1.88
-          },
-          {
-            "stat": "manaGain",
-            "multiply": 1.3
-          },
-          {
-            "stat": "maxManaReduction",
-            "add": 10
-          },
-          {
-            "stat": "skillCritChance",
-            "add": 0.18
-          },
-          {
-            "stat": "skillCritDamage",
-            "add": 0.15
-          },
-          {
-            "stat": "spellCastShieldRatio",
-            "set": 0.08
-          },
-          {
-            "stat": "spellCastShieldDurationMs",
-            "set": 1500
-          }
-        ]
+          { "stat": "spellCastShieldRatio", "set": 0.09 },
+          { "stat": "spellCastShieldDurationMs", "set": 2000 }
+        ],
+        "mechanics": {
+          "spellDamageAdd": 0.18,
+          "echoSkillAmpRatio": 0.8,
+          "echoMana": 9
+        }
       },
       {
         "need": 6,
-        "text": "주술형 스킬 피해 +150%, 마나 획득량 +45%, 요구 마나 -15, 스킬 치명 확률 +30%, 스킬 치명 배율 170%. 스킬 사용 시 최대 체력 12% 보호막",
+        "text": "스킬 피해 +30%. 시전 시 2초간 최대 체력의 13% 보호막과 마나 12 획득. 다음 평타에 스킬 증폭의 120% 추가 마법 피해",
         "effects": [
-          {
-            "stat": "skillAmp",
-            "multiply": 2.5
-          },
-          {
-            "stat": "manaGain",
-            "multiply": 1.45
-          },
-          {
-            "stat": "maxManaReduction",
-            "add": 15
-          },
-          {
-            "stat": "skillCritChance",
-            "add": 0.3
-          },
-          {
-            "stat": "skillCritDamage",
-            "add": 0.2
-          },
-          {
-            "stat": "spellCastShieldRatio",
-            "set": 0.12
-          },
-          {
-            "stat": "spellCastShieldDurationMs",
-            "set": 1500
-          }
-        ]
+          { "stat": "spellCastShieldRatio", "set": 0.13 },
+          { "stat": "spellCastShieldDurationMs", "set": 2000 }
+        ],
+        "mechanics": {
+          "spellDamageAdd": 0.3,
+          "echoSkillAmpRatio": 1.2,
+          "echoMana": 12
+        }
       },
       {
         "need": 8,
-        "text": "주술형 스킬 피해 +240%, 마나 획득량 +60%, 요구 마나 -20, 스킬 치명 확률 +42%, 스킬 치명 배율 180%. 스킬 사용 시 최대 체력 16% 보호막",
+        "text": "스킬 피해 +45%. 시전 시 2초간 최대 체력의 18% 보호막과 마나 16 획득. 다음 평타에 스킬 증폭의 170% 추가 마법 피해",
         "effects": [
-          {
-            "stat": "skillAmp",
-            "multiply": 3.4
-          },
-          {
-            "stat": "manaGain",
-            "multiply": 1.6
-          },
-          {
-            "stat": "maxManaReduction",
-            "add": 20
-          },
-          {
-            "stat": "skillCritChance",
-            "add": 0.42
-          },
-          {
-            "stat": "skillCritDamage",
-            "add": 0.3
-          },
-          {
-            "stat": "spellCastShieldRatio",
-            "set": 0.16
-          },
-          {
-            "stat": "spellCastShieldDurationMs",
-            "set": 1500
-          }
-        ]
+          { "stat": "spellCastShieldRatio", "set": 0.18 },
+          { "stat": "spellCastShieldDurationMs", "set": 2000 }
+        ],
+        "mechanics": {
+          "spellDamageAdd": 0.45,
+          "echoSkillAmpRatio": 1.7,
+          "echoMana": 16
+        }
       }
     ]
   },
-  "결투": {
+  "암습": {
+    "category": "major",
+    "summary": "후열에 침투하고 한 대상을 추적해 단일 화력 증폭",
     "tiers": [
       {
         "need": 2,
-        "text": "결투형 공격 속도 +20%, 흡혈 +6%, 같은 대상 재공격 시 피해 +2%(최대 3중첩)",
-        "effects": [
-          {
-            "stat": "speed",
-            "multiply": 1.2
-          },
-          {
-            "stat": "lifeSteal",
-            "add": 0.06
-          },
-          {
-            "stat": "duelSameTargetDamageAdd",
-            "add": 0.02
-          },
-          {
-            "stat": "duelSameTargetMaxStacks",
-            "set": 3
-          }
-        ]
+        "text": "적 후열로 침투. 처음 받는 피해 1회 회피. 각 적에게 가하는 첫 피해 +20%. 같은 대상을 공격할 때 0.4초마다 추적 중첩: 중첩당 피해 +4%, 최대 5중첩. 직접 처치 시 완전 회피 1회 추가",
+        "effects": [],
+        "mechanics": {
+          "ambushDodgeCharges": 1,
+          "ambushFirstHitDamageAdd": 0.2,
+          "ambushFocusDamageAddPerStack": 0.04,
+          "ambushFocusMaxStacks": 5,
+          "ambushFocusStackIntervalMs": 400,
+          "ambushDodgeOnKill": 1
+        }
       },
       {
         "need": 4,
-        "text": "결투형 공격 속도 +50%, 흡혈 +10%, 같은 대상 재공격 시 피해 +3%(최대 3중첩)",
-        "effects": [
-          {
-            "stat": "speed",
-            "multiply": 1.5
-          },
-          {
-            "stat": "lifeSteal",
-            "add": 0.1
-          },
-          {
-            "stat": "duelSameTargetDamageAdd",
-            "add": 0.03
-          },
-          {
-            "stat": "duelSameTargetMaxStacks",
-            "set": 3
-          }
-        ]
+        "text": "적 후열로 침투. 처음 받는 피해 1회 회피. 각 적에게 가하는 첫 피해 +35%. 같은 대상을 공격할 때 0.4초마다 추적 중첩: 중첩당 피해 +6%, 최대 5중첩. 직접 처치 시 완전 회피 1회 추가",
+        "effects": [],
+        "mechanics": {
+          "ambushDodgeCharges": 1,
+          "ambushFirstHitDamageAdd": 0.35,
+          "ambushFocusDamageAddPerStack": 0.06,
+          "ambushFocusMaxStacks": 5,
+          "ambushFocusStackIntervalMs": 400,
+          "ambushDodgeOnKill": 1
+        }
       },
       {
         "need": 6,
-        "text": "결투형 공격 속도 +85%, 흡혈 +15%, 같은 대상 재공격 시 피해 +4%(최대 3중첩)",
-        "effects": [
-          {
-            "stat": "speed",
-            "multiply": 1.85
-          },
-          {
-            "stat": "lifeSteal",
-            "add": 0.15
-          },
-          {
-            "stat": "duelSameTargetDamageAdd",
-            "add": 0.04
-          },
-          {
-            "stat": "duelSameTargetMaxStacks",
-            "set": 3
-          }
-        ]
+        "text": "적 후열로 침투. 처음 받는 피해 2회 회피. 각 적에게 가하는 첫 피해 +50%. 같은 대상을 공격할 때 0.4초마다 추적 중첩: 중첩당 피해 +8%, 최대 5중첩. 직접 처치 시 완전 회피 1회 추가",
+        "effects": [],
+        "mechanics": {
+          "ambushDodgeCharges": 2,
+          "ambushFirstHitDamageAdd": 0.5,
+          "ambushFocusDamageAddPerStack": 0.08,
+          "ambushFocusMaxStacks": 5,
+          "ambushFocusStackIntervalMs": 400,
+          "ambushDodgeOnKill": 1
+        }
       },
       {
         "need": 8,
-        "text": "결투형 공격 속도 +120%, 흡혈 +22%, 같은 대상 재공격 시 피해 +5%(최대 3중첩)",
-        "effects": [
-          {
-            "stat": "speed",
-            "multiply": 2.2
-          },
-          {
-            "stat": "lifeSteal",
-            "add": 0.22
-          },
-          {
-            "stat": "duelSameTargetDamageAdd",
-            "add": 0.05
-          },
-          {
-            "stat": "duelSameTargetMaxStacks",
-            "set": 3
-          }
-        ]
+        "text": "적 후열로 침투. 처음 받는 피해 3회 회피. 각 적에게 가하는 첫 피해 +70%. 같은 대상을 공격할 때 0.4초마다 추적 중첩: 중첩당 피해 +12%, 최대 5중첩. 직접 처치 시 완전 회피 1회 추가",
+        "effects": [],
+        "mechanics": {
+          "ambushDodgeCharges": 3,
+          "ambushFirstHitDamageAdd": 0.7,
+          "ambushFocusDamageAddPerStack": 0.12,
+          "ambushFocusMaxStacks": 5,
+          "ambushFocusStackIntervalMs": 400,
+          "ambushDodgeOnKill": 1
+        }
       }
     ]
   },
-  "기습": {
+  "진형": {
+    "category": "major",
+    "summary": "배치에 따라 전진 또는 포격 태세",
     "tiers": [
       {
         "need": 2,
-          "text": "기습형이 같은 후열 표적을 노립니다. 첫 평타 및 4.5초마다 다음 평타 180% 치명, 치명 확률 +15%, 치명 배율 158%. 전투 시작 후 1.5초간 받는 피해 -30%, 처치 관여 시 즉시 재장전",
-        "effects": [
-          {
-            "stat": "openingCritMultiplier",
-            "add": 0.8
-          },
-          {
-            "stat": "critChance",
-            "add": 0.15
-          },
-          {
-            "stat": "critDamage",
-            "add": 0.08
-          },
-          {
-            "stat": "assassinOpeningDamageReduction",
-            "set": 0.3
-          },
-          {
-            "stat": "assassinOpeningProtectionMs",
-            "set": 1500
-          },
-          {
-            "stat": "assassinRearmCritMultiplier",
-            "set": 1.8
-          },
-          {
-            "stat": "assassinRearmCooldownMs",
-            "set": 4500
-          }
-        ]
+        "text": "앞 2열은 최대 체력 +10%. 뒤 2열은 매 4번째 평타가 뒤쪽 1칸에 25% 확산",
+        "effects": [],
+        "mechanics": {
+          "frontHpMultiply": 1.1,
+          "backSplashRatio": 0.25
+        }
       },
       {
         "need": 4,
-          "text": "기습형이 같은 후열 표적을 노립니다. 첫 평타 및 4초마다 다음 평타 230% 치명, 치명 확률 +28%, 치명 배율 164%, 공격 속도 +22%. 전투 시작 후 1.5초간 받는 피해 -30%, 처치 관여 시 즉시 재장전",
-        "effects": [
-          {
-            "stat": "openingCritMultiplier",
-            "add": 1.3
-          },
-          {
-            "stat": "critChance",
-            "add": 0.28
-          },
-          {
-            "stat": "critDamage",
-            "add": 0.14
-          },
-          {
-            "stat": "speed",
-            "multiply": 1.22
-          },
-          {
-            "stat": "assassinOpeningDamageReduction",
-            "set": 0.3
-          },
-          {
-            "stat": "assassinOpeningProtectionMs",
-            "set": 1500
-          },
-          {
-            "stat": "assassinRearmCritMultiplier",
-            "set": 2.3
-          },
-          {
-            "stat": "assassinRearmCooldownMs",
-            "set": 4000
-          }
-        ]
+        "text": "앞 2열은 최대 체력 +15%. 뒤 2열은 매 4번째 평타가 뒤쪽 1칸에 40% 확산",
+        "effects": [],
+        "mechanics": {
+          "frontHpMultiply": 1.15,
+          "backSplashRatio": 0.4
+        }
       },
       {
         "need": 6,
-          "text": "기습형이 같은 후열 표적을 노립니다. 첫 평타 및 3.5초마다 다음 평타 290% 치명, 치명 확률 +42%, 치명 배율 172%, 공격 속도 +42%. 전투 시작 후 1.5초간 받는 피해 -30%, 처치 관여 시 즉시 재장전",
-        "effects": [
-          {
-            "stat": "openingCritMultiplier",
-            "add": 1.9
-          },
-          {
-            "stat": "critChance",
-            "add": 0.42
-          },
-          {
-            "stat": "critDamage",
-            "add": 0.22
-          },
-          {
-            "stat": "speed",
-            "multiply": 1.42
-          },
-          {
-            "stat": "assassinOpeningDamageReduction",
-            "set": 0.3
-          },
-          {
-            "stat": "assassinOpeningProtectionMs",
-            "set": 1500
-          },
-          {
-            "stat": "assassinRearmCritMultiplier",
-            "set": 2.9
-          },
-          {
-            "stat": "assassinRearmCooldownMs",
-            "set": 3500
-          }
-        ]
+        "text": "앞 2열은 최대 체력 +22%. 뒤 2열은 매 4번째 평타가 뒤쪽 1칸에 60% 확산",
+        "effects": [],
+        "mechanics": {
+          "frontHpMultiply": 1.22,
+          "backSplashRatio": 0.6
+        }
       },
       {
         "need": 8,
-          "text": "기습형이 같은 후열 표적을 노립니다. 첫 평타 및 3초마다 다음 평타 360% 치명, 치명 확률 +60%, 치명 배율 185%, 공격 속도 +65%. 전투 시작 후 1.5초간 받는 피해 -30%, 처치 관여 시 즉시 재장전",
-        "effects": [
-          {
-            "stat": "openingCritMultiplier",
-            "add": 2.6
-          },
-          {
-            "stat": "critChance",
-            "add": 0.6
-          },
-          {
-            "stat": "critDamage",
-            "add": 0.35
-          },
-          {
-            "stat": "speed",
-            "multiply": 1.65
-          },
-          {
-            "stat": "assassinOpeningDamageReduction",
-            "set": 0.3
-          },
-          {
-            "stat": "assassinOpeningProtectionMs",
-            "set": 1500
-          },
-          {
-            "stat": "assassinRearmCritMultiplier",
-            "set": 3.6
-          },
-          {
-            "stat": "assassinRearmCooldownMs",
-            "set": 3000
-          }
-        ]
+        "text": "앞 2열은 최대 체력 +30%. 뒤 2열은 매 4번째 평타가 뒤쪽 1칸에 85% 확산",
+        "effects": [],
+        "mechanics": {
+          "frontHpMultiply": 1.3,
+          "backSplashRatio": 0.85
+        }
       }
     ]
   },
-  "중장비": {
-    "tiers": [
-      {
-        "need": 3,
-        "text": "후열 2명에게 보호막 12%",
-        "effects": [
-          {
-            "stat": "backlineShieldTargets",
-            "set": 2
-          },
-          {
-            "stat": "backlineShieldRatio",
-            "set": 0.12
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "후열 4명에게 보호막 18%",
-        "effects": [
-          {
-            "stat": "backlineShieldTargets",
-            "set": 4
-          },
-          {
-            "stat": "backlineShieldRatio",
-            "set": 0.18
-          }
-        ]
-      }
-    ]
-  },
-  "원격": {
-    "tiers": [
-      {
-        "need": 3,
-        "text": "스킬 요구 마나 -5",
-        "effects": [
-          {
-            "stat": "maxManaReduction",
-            "add": 5
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "스킬 요구 마나 -10",
-        "effects": [
-          {
-            "stat": "maxManaReduction",
-            "add": 10
-          }
-        ]
-      },
-      {
-        "need": 9,
-        "text": "스킬 요구 마나 -20",
-        "effects": [
-          {
-            "stat": "maxManaReduction",
-            "add": 20
-          }
-        ]
-      }
-    ]
-  },
-  "장악": {
-    "tiers": [
-      {
-        "need": 3,
-        "text": "피해를 입힌 적 치유 감소 30%",
-        "effects": [
-          {
-            "stat": "healReductionOnHit",
-            "set": 0.3
-          },
-          {
-            "stat": "healReductionTicks",
-            "set": 3
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "피해를 입힌 적 치유 감소 55%",
-        "effects": [
-          {
-            "stat": "healReductionOnHit",
-            "set": 0.55
-          },
-          {
-            "stat": "healReductionTicks",
-            "set": 4
-          }
-        ]
-      }
-    ]
-  },
-  "궁술": {
+  "투혼": {
+    "category": "major",
+    "summary": "위기에서 보호막과 화력 획득",
     "tiers": [
       {
         "need": 2,
-        "text": "사거리 +1칸",
-        "effects": [
-          {
-            "stat": "rangeBonus",
-            "set": 1
-          }
-        ]
+        "text": "처음 체력 50% 이하가 되면 최대 체력의 10% 보호막과 4초간 공격력·스킬 증폭 +15%",
+        "effects": [],
+        "mechanics": {
+          "comebackShieldRatio": 0.1,
+          "comebackPowerAdd": 0.15
+        }
       },
       {
         "need": 4,
-        "text": "사거리 +2칸",
-        "effects": [
-          {
-            "stat": "rangeBonus",
-            "set": 2
-          }
-        ]
-      }
-    ]
-  },
-  "신속": {
-    "tiers": [
-      {
-        "need": 2,
-        "text": "4회마다 추가 공격",
-        "effects": [
-          {
-            "stat": "extraAttackEvery",
-            "set": 4
-          },
-          {
-            "stat": "extraAttackDamageRatio",
-            "set": 0.75
-          }
-        ]
-      },
-      {
-        "need": 4,
-        "text": "3회마다 추가 공격",
-        "effects": [
-          {
-            "stat": "extraAttackEvery",
-            "set": 3
-          },
-          {
-            "stat": "extraAttackDamageRatio",
-            "set": 0.8
-          }
-        ]
-      }
-    ]
-  },
-  "예술": {
-    "tiers": [
-      {
-        "need": 3,
-        "text": "전열 2명에게 보호막 14%",
-        "effects": [
-          {
-            "stat": "frontlineShieldTargets",
-            "set": 2
-          },
-          {
-            "stat": "frontlineShieldRatio",
-            "set": 0.14
-          }
-        ]
+        "text": "처음 체력 50% 이하가 되면 최대 체력의 15% 보호막과 4초간 공격력·스킬 증폭 +25%",
+        "effects": [],
+        "mechanics": {
+          "comebackShieldRatio": 0.15,
+          "comebackPowerAdd": 0.25
+        }
       },
       {
         "need": 6,
-        "text": "전열 4명에게 보호막 22%",
-        "effects": [
-          {
-            "stat": "frontlineShieldTargets",
-            "set": 4
-          },
-          {
-            "stat": "frontlineShieldRatio",
-            "set": 0.22
-          }
-        ]
-      }
-    ]
-  },
-  "전술": {
-    "tiers": [
-      {
-        "need": 3,
-        "text": "적 후열 1명을 아군 진영으로 배달하고 아군이 집중 공격",
-        "effects": [
-          {
-            "stat": "pullBacklineTargets",
-            "set": 1
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "적 후열 2명을 아군 진영으로 배달하고 첫 대상을 집중 공격",
-        "effects": [
-          {
-            "stat": "pullBacklineTargets",
-            "set": 2
-          }
-        ]
-      }
-    ]
-  },
-  "돌파": {
-    "tiers": [
-      {
-        "need": 3,
-        "text": "기본 공격이 사거리 내 추가 적 1명 타격",
-        "effects": [
-          {
-            "stat": "basicAttackExtraTargets",
-            "set": 1
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "기본 공격이 사거리 내 추가 적 2명 타격",
-        "effects": [
-          {
-            "stat": "basicAttackExtraTargets",
-            "set": 2
-          }
-        ]
-      },
-      {
-        "need": 9,
-        "text": "기본 공격이 사거리 내 추가 적 3명 타격",
-        "effects": [
-          {
-            "stat": "basicAttackExtraTargets",
-            "set": 3
-          }
-        ]
-      }
-    ]
-  },
-  "반격": {
-    "tiers": [
-      {
-        "need": 3,
-        "text": "피격 시 마나 획득 +35%",
-        "effects": [
-          {
-            "stat": "manaOnHitBonus",
-            "set": 0.35
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "피격 시 마나 획득 +75%",
-        "effects": [
-          {
-            "stat": "manaOnHitBonus",
-            "set": 0.75
-          }
-        ]
-      }
-    ]
-  },
-  "추적": {
-    "tiers": [
-      {
-        "need": 2,
-        "text": "적 후열 우선 표식 1명. 추적형이 표식 대상에게 주는 피해 +10%",
-        "effects": [
-          {
-            "stat": "huntMarkTargets",
-            "set": 1
-          },
-          {
-            "stat": "huntMarkedDamageAdd",
-            "set": 0.1
-          }
-        ]
-      },
-      {
-        "need": 4,
-        "text": "적 후열 우선 표식 2명. 추적형이 표식 대상을 우선 타격하고 주는 피해 +16%",
-        "effects": [
-          {
-            "stat": "huntMarkTargets",
-            "set": 2
-          },
-          {
-            "stat": "huntMarkedDamageAdd",
-            "set": 0.16
-          },
-          {
-            "stat": "huntFocusMarked",
-            "set": 1
-          }
-        ]
-      },
-      {
-        "need": 6,
-        "text": "적 후열 우선 표식 3명. 추적형 표식 우선 타격. 표식 대상 공격 시 추적형은 대상 방어의 75%만 적용",
-        "effects": [
-          {
-            "stat": "huntMarkTargets",
-            "set": 3
-          },
-          {
-            "stat": "huntMarkedDamageAdd",
-            "set": 0.16
-          },
-          {
-            "stat": "huntFocusMarked",
-            "set": 1
-          },
-          {
-            "stat": "huntMarkedDefenseApplyRatio",
-            "set": 0.75
-          }
-        ]
+        "text": "처음 체력 50% 이하가 되면 최대 체력의 22% 보호막과 4초간 공격력·스킬 증폭 +40%",
+        "effects": [],
+        "mechanics": {
+          "comebackShieldRatio": 0.22,
+          "comebackPowerAdd": 0.4
+        }
       },
       {
         "need": 8,
-        "text": "적 후열 우선 표식 4명. 추적형 표식 우선/방어 75% 적용. 처치 시 표식 전이 + 1초 기절",
-        "effects": [
-          {
-            "stat": "huntMarkTargets",
-            "set": 4
-          },
-          {
-            "stat": "huntMarkedDamageAdd",
-            "set": 0.18
-          },
-          {
-            "stat": "huntFocusMarked",
-            "set": 1
-          },
-          {
-            "stat": "huntMarkedDefenseApplyRatio",
-            "set": 0.75
-          },
-          {
-            "stat": "huntTransferStunMs",
-            "set": 1000
-          }
-        ]
+        "text": "처음 체력 50% 이하가 되면 최대 체력의 30% 보호막과 4초간 공격력·스킬 증폭 +60%",
+        "effects": [],
+        "mechanics": {
+          "comebackShieldRatio": 0.3,
+          "comebackPowerAdd": 0.6
+        }
       }
     ]
   },
-  "지원": {
+  "연대": {
+    "category": "major",
+    "summary": "서로 다른 시전자를 연결해 팀 강화",
     "tiers": [
       {
         "need": 2,
-        "text": "지원형 회복량 +20%, 회복/보호막 대상 체력 +8%, 마나 획득량 +15%, 요구 마나 -5",
-        "effects": [
-          {
-            "stat": "heal",
-            "multiply": 1.2
-          },
-          {
-            "stat": "supportAidHpRatio",
-            "add": 0.08
-          },
-          {
-            "stat": "manaGain",
-            "multiply": 1.15
-          },
-          {
-            "stat": "maxManaReduction",
-            "add": 5
-          }
-        ]
+        "text": "서로 다른 2명이 스킬을 쓰면 3초간 공격 속도 +15%, 최대 체력의 4% 회복",
+        "effects": [],
+        "mechanics": {
+          "chainRequired": 2,
+          "chainBuffMs": 3000,
+          "chainSpeedAdd": 0.15,
+          "chainHealRatio": 0.04
+        }
       },
       {
         "need": 4,
-        "text": "지원형 회복량 +35%, 회복/보호막 대상 체력 +14%, 방어 +5, 받는 피해 -4%, 마나 획득량 +30%, 요구 마나 -10",
-        "effects": [
-          {
-            "stat": "heal",
-            "multiply": 1.35
-          },
-          {
-            "stat": "supportAidHpRatio",
-            "add": 0.14
-          },
-          {
-            "stat": "supportAidDefense",
-            "add": 5
-          },
-          {
-            "stat": "supportAidDamageReduction",
-            "add": 0.04
-          },
-          {
-            "stat": "manaGain",
-            "multiply": 1.3
-          },
-          {
-            "stat": "maxManaReduction",
-            "add": 10
-          }
-        ]
+        "text": "서로 다른 3명이 스킬을 쓰면 3초간 공격 속도 +25%, 최대 체력의 6% 회복",
+        "effects": [],
+        "mechanics": {
+          "chainRequired": 3,
+          "chainBuffMs": 3000,
+          "chainSpeedAdd": 0.25,
+          "chainHealRatio": 0.06
+        }
       },
       {
         "need": 6,
-        "text": "지원형 회복량 +55%, 회복/보호막 대상 체력 +20%, 방어 +10, 받는 피해 -8%, 마나 획득량 +45%, 요구 마나 -15",
-        "effects": [
-          {
-            "stat": "heal",
-            "multiply": 1.55
-          },
-          {
-            "stat": "supportAidHpRatio",
-            "add": 0.2
-          },
-          {
-            "stat": "supportAidDefense",
-            "add": 10
-          },
-          {
-            "stat": "supportAidDamageReduction",
-            "add": 0.08
-          },
-          {
-            "stat": "manaGain",
-            "multiply": 1.45
-          },
-          {
-            "stat": "maxManaReduction",
-            "add": 15
-          }
-        ]
+        "text": "서로 다른 3명이 스킬을 쓰면 3초간 공격 속도 +35%, 최대 체력의 9% 회복",
+        "effects": [],
+        "mechanics": {
+          "chainRequired": 3,
+          "chainBuffMs": 3000,
+          "chainSpeedAdd": 0.35,
+          "chainHealRatio": 0.09
+        }
       },
       {
         "need": 8,
-        "text": "지원형 회복량 +80%, 회복/보호막 대상 체력 +30%, 방어 +16, 받는 피해 -12%, 마나 획득량 +60%, 요구 마나 -20",
-        "effects": [
-          {
-            "stat": "heal",
-            "multiply": 1.8
-          },
-          {
-            "stat": "supportAidHpRatio",
-            "add": 0.3
-          },
-          {
-            "stat": "supportAidDefense",
-            "add": 16
-          },
-          {
-            "stat": "supportAidDamageReduction",
-            "add": 0.12
-          },
-          {
-            "stat": "manaGain",
-            "multiply": 1.6
-          },
-          {
-            "stat": "maxManaReduction",
-            "add": 20
-          }
-        ]
+        "text": "서로 다른 3명이 스킬을 쓰면 3초간 공격 속도 +50%, 최대 체력의 13% 회복",
+        "effects": [],
+        "mechanics": {
+          "chainRequired": 3,
+          "chainBuffMs": 3000,
+          "chainSpeedAdd": 0.5,
+          "chainHealRatio": 0.13
+        }
+      }
+    ]
+  },
+  "선봉": {
+    "category": "minor",
+    "summary": "첫 보호막을 공격으로 전환",
+    "tiers": [
+      {
+        "need": 2,
+        "text": "전투 시작 시 4초간 최대 체력의 8% 보호막. 첫 스킬이 남은 보호막의 40% 추가 피해",
+        "effects": [],
+        "mechanics": {
+          "vanguardShieldRatio": 0.08,
+          "vanguardDamageRatio": 0.4
+        }
+      },
+      {
+        "need": 4,
+        "text": "전투 시작 시 4초간 최대 체력의 14% 보호막. 첫 스킬이 남은 보호막의 60% 추가 피해",
+        "effects": [],
+        "mechanics": {
+          "vanguardShieldRatio": 0.14,
+          "vanguardDamageRatio": 0.6
+        }
+      },
+      {
+        "need": 6,
+        "text": "전투 시작 시 4초간 최대 체력의 20% 보호막. 첫 스킬이 남은 보호막의 80% 추가 피해",
+        "effects": [],
+        "mechanics": {
+          "vanguardShieldRatio": 0.2,
+          "vanguardDamageRatio": 0.8
+        }
+      }
+    ]
+  },
+  "사수": {
+    "category": "minor",
+    "summary": "제자리 연속 사격 보상",
+    "tiers": [
+      {
+        "need": 2,
+        "text": "제자리에서 평타 3회 후 다음 평타 사거리 +1, 피해 +30%",
+        "effects": [],
+        "mechanics": {
+          "marksmanDamageAdd": 0.3
+        }
+      },
+      {
+        "need": 4,
+        "text": "제자리에서 평타 3회 후 다음 평타 사거리 +1, 피해 +50%",
+        "effects": [],
+        "mechanics": {
+          "marksmanDamageAdd": 0.5
+        }
+      },
+      {
+        "need": 6,
+        "text": "제자리에서 평타 3회 후 다음 평타 사거리 +1, 피해 +75%",
+        "effects": [],
+        "mechanics": {
+          "marksmanDamageAdd": 0.75
+        }
+      }
+    ]
+  },
+  "봉쇄": {
+    "category": "minor",
+    "summary": "군중 제어한 대상을 약화",
+    "tiers": [
+      {
+        "need": 2,
+        "text": "군중 제어한 대상은 3초간 회복량 -20%, 받는 피해 +5%",
+        "effects": [],
+        "mechanics": {
+          "lockdownHealReduction": 0.2,
+          "lockdownDamageTakenAdd": 0.05
+        }
+      },
+      {
+        "need": 4,
+        "text": "군중 제어한 대상은 3초간 회복량 -30%, 받는 피해 +8%",
+        "effects": [],
+        "mechanics": {
+          "lockdownHealReduction": 0.3,
+          "lockdownDamageTakenAdd": 0.08
+        }
+      },
+      {
+        "need": 6,
+        "text": "군중 제어한 대상은 3초간 회복량 -40%, 받는 피해 +12%",
+        "effects": [],
+        "mechanics": {
+          "lockdownHealReduction": 0.4,
+          "lockdownDamageTakenAdd": 0.12
+        }
+      }
+    ]
+  },
+  "기동": {
+    "category": "minor",
+    "summary": "대상 변경 뒤 추격 강화",
+    "tiers": [
+      {
+        "need": 2,
+        "text": "대상 변경 후 최대 2초간 이동 속도 +25%, 공격 속도 +20%",
+        "effects": [],
+        "mechanics": {
+          "mobilityMoveSpeedAdd": 0.25,
+          "mobilityAttackSpeedAdd": 0.2
+        }
+      },
+      {
+        "need": 4,
+        "text": "대상 변경 후 최대 2초간 이동 속도 +40%, 공격 속도 +35%",
+        "effects": [],
+        "mechanics": {
+          "mobilityMoveSpeedAdd": 0.4,
+          "mobilityAttackSpeedAdd": 0.35
+        }
+      },
+      {
+        "need": 6,
+        "text": "대상 변경 후 최대 2초간 이동 속도 +60%, 공격 속도 +50%",
+        "effects": [],
+        "mechanics": {
+          "mobilityMoveSpeedAdd": 0.6,
+          "mobilityAttackSpeedAdd": 0.5
+        }
+      }
+    ]
+  },
+  "파동": {
+    "category": "minor",
+    "summary": "스킬 첫 적중 주변 추가 피해",
+    "tiers": [
+      {
+        "need": 2,
+        "text": "스킬 첫 적중 대상 주변 1칸에 스킬 증폭의 25% 마법 피해. 쿨다운 2초",
+        "effects": [],
+        "mechanics": {
+          "pulseSkillAmpRatio": 0.25
+        }
+      },
+      {
+        "need": 4,
+        "text": "스킬 첫 적중 대상 주변 1칸에 스킬 증폭의 40% 마법 피해. 쿨다운 2초",
+        "effects": [],
+        "mechanics": {
+          "pulseSkillAmpRatio": 0.4
+        }
+      },
+      {
+        "need": 6,
+        "text": "스킬 첫 적중 대상 주변 1칸에 스킬 증폭의 60% 마법 피해. 쿨다운 2초",
+        "effects": [],
+        "mechanics": {
+          "pulseSkillAmpRatio": 0.6
+        }
+      }
+    ]
+  },
+  "응원": {
+    "category": "minor",
+    "summary": "스킬로 아군의 다음 평타 지원",
+    "tiers": [
+      {
+        "need": 2,
+        "text": "스킬 사용 시 체력 비율이 가장 낮은 다른 아군의 다음 2회 평타에 공격력의 15% 추가 피해",
+        "effects": [],
+        "mechanics": {
+          "cheerAtkRatio": 0.15
+        }
+      },
+      {
+        "need": 4,
+        "text": "스킬 사용 시 체력 비율이 가장 낮은 다른 아군의 다음 2회 평타에 공격력의 25% 추가 피해",
+        "effects": [],
+        "mechanics": {
+          "cheerAtkRatio": 0.25
+        }
+      },
+      {
+        "need": 6,
+        "text": "스킬 사용 시 체력 비율이 가장 낮은 다른 아군의 다음 2회 평타에 공격력의 40% 추가 피해",
+        "effects": [],
+        "mechanics": {
+          "cheerAtkRatio": 0.4
+        }
+      }
+    ]
+  },
+  "응수": {
+    "category": "minor",
+    "summary": "피격 뒤 방어력 기반 반격",
+    "tiers": [
+      {
+        "need": 2,
+        "text": "기본 공격을 받으면 다음 평타에 방어력의 50% 추가 피해. 쿨다운 1초",
+        "effects": [],
+        "mechanics": {
+          "counterDefenseRatio": 0.5
+        }
+      },
+      {
+        "need": 4,
+        "text": "기본 공격을 받으면 다음 평타에 방어력의 80% 추가 피해. 쿨다운 1초",
+        "effects": [],
+        "mechanics": {
+          "counterDefenseRatio": 0.8
+        }
+      },
+      {
+        "need": 6,
+        "text": "기본 공격을 받으면 다음 평타에 방어력의 120% 추가 피해. 쿨다운 1초",
+        "effects": [],
+        "mechanics": {
+          "counterDefenseRatio": 1.2
+        }
+      }
+    ]
+  },
+  "결속": {
+    "category": "minor",
+    "summary": "가까운 동료와 생존 연계",
+    "tiers": [
+      {
+        "need": 2,
+        "text": "가장 가까운 결속 아군과 연결. 둘 다 생존 중 공격력·스킬 증폭 +8%",
+        "effects": [],
+        "mechanics": {
+          "bondPowerAdd": 0.08
+        }
+      },
+      {
+        "need": 4,
+        "text": "가장 가까운 결속 아군과 연결. 둘 다 생존 중 공격력·스킬 증폭 +14%",
+        "effects": [],
+        "mechanics": {
+          "bondPowerAdd": 0.14
+        }
+      },
+      {
+        "need": 6,
+        "text": "가장 가까운 결속 아군과 연결. 둘 다 생존 중 공격력·스킬 증폭 +22%",
+        "effects": [],
+        "mechanics": {
+          "bondPowerAdd": 0.22
+        }
+      }
+    ]
+  },
+  "종막": {
+    "category": "minor",
+    "summary": "전투 10초 이후 한 차례 결정타",
+    "tiers": [
+      {
+        "need": 2,
+        "text": "전투 10초 후 다음 스킬 피해 +20%. 패시브 유닛은 다음 평타 3회 피해 +10%",
+        "effects": [],
+        "mechanics": {
+          "finaleSkillDamageAdd": 0.2,
+          "finaleAttackDamageAdd": 0.1
+        }
+      },
+      {
+        "need": 4,
+        "text": "전투 10초 후 다음 스킬 피해 +35%. 패시브 유닛은 다음 평타 3회 피해 +18%",
+        "effects": [],
+        "mechanics": {
+          "finaleSkillDamageAdd": 0.35,
+          "finaleAttackDamageAdd": 0.18
+        }
+      },
+      {
+        "need": 6,
+        "text": "전투 10초 후 다음 스킬 피해 +55%. 패시브 유닛은 다음 평타 3회 피해 +28%",
+        "effects": [],
+        "mechanics": {
+          "finaleSkillDamageAdd": 0.55,
+          "finaleAttackDamageAdd": 0.28
+        }
       }
     ]
   }

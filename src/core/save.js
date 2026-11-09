@@ -1,4 +1,22 @@
-const SAVE_FORMAT_VERSION = 1;
+const SAVE_FORMAT_VERSION = 2;
+const SAVE_SEASON_ID = "synergy-rework-261109";
+export function resetGameSavesForCurrentSeason(storageKey) {
+  if (!storageKey) return false;
+  const markerKey = `${storageKey}:season`;
+  try {
+    if (localStorage.getItem(markerKey) === SAVE_SEASON_ID) return false;
+    const staleKeys = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key === storageKey || key?.startsWith(`${storageKey}:`)) staleKeys.push(key);
+    }
+    staleKeys.forEach((key) => localStorage.removeItem(key));
+    localStorage.setItem(markerKey, SAVE_SEASON_ID);
+    return staleKeys.length > 0;
+  } catch {
+    return false;
+  }
+}
 
 const GAMEPLAY_FIELDS = [
   "round",
@@ -66,6 +84,7 @@ const UNIT_RUNTIME_FIELDS = new Set([
   "focusTargetId",
   "forcedFocusTargetId",
   "tacticalTarget",
+  "lenoxPulledTarget",
   "hiddenAbsorbed",
   "hiddenDefeatHandled",
   "hiddenDefeatEffects",
@@ -75,6 +94,7 @@ const UNIT_RUNTIME_FIELDS = new Set([
   "hiddenPaintDetonator",
   "hiddenKillBlink",
   "hiddenTacticalGrowth",
+  "hiddenLenoxPullGrowth",
   "hiddenKillGrowth",
   "hiddenCloneSummon",
   "hiddenExclusiveRescue",
@@ -115,7 +135,8 @@ function normalizeUnit(unit) {
   if (!unit) return null;
   const copy = {};
   for (const [key, value] of Object.entries(unit)) {
-    if (!UNIT_RUNTIME_FIELDS.has(key)) copy[key] = value;
+    const traitRuntime = key.startsWith("trait") && key !== "trait" && key !== "traits";
+    if (!UNIT_RUNTIME_FIELDS.has(key) && !traitRuntime) copy[key] = value;
   }
   copy.hp = copy.maxHp;
   copy.mana = 0;
@@ -127,7 +148,24 @@ function normalizeUnitArray(units, size) {
   return Array.from({ length: size }, (_, index) => normalizeUnit(source[index]));
 }
 
-function normalizeSaveData(data, balance) {
+function reconcileUnit(unit, rosterByName) {
+  if (!unit) return null;
+  const base = rosterByName?.get(unit.name);
+  if (!base) return unit;
+  return {
+    ...unit,
+    cost: base.cost,
+    role: base.role,
+    weapon: base.weapon,
+    trait: base.trait,
+    traits: [...(base.traits || [base.trait])],
+    skill: base.skill,
+    skillId: base.skillId,
+    skillTooltip: base.skillTooltip,
+  };
+}
+
+function normalizeSaveData(data, balance, rosterByName = null) {
   const boardSize = 32;
   const benchSize = 8;
   const enemySize = balance.battle.enemySlots || 32;
@@ -154,9 +192,10 @@ function normalizeSaveData(data, balance) {
     activeAugmentsCollapsed: Boolean(data.activeAugmentsCollapsed),
     dragging: null,
     selected: null,
-    board: normalizeUnitArray(data.board, boardSize),
-    bench: normalizeUnitArray(data.bench, benchSize),
-    shop: (Array.isArray(data.shop) ? data.shop : []).map(normalizeUnit).filter(Boolean).slice(0, balance.shop.maxSize ?? 5),
+    board: normalizeUnitArray(data.board, boardSize).map((unit) => reconcileUnit(unit, rosterByName)),
+    bench: normalizeUnitArray(data.bench, benchSize).map((unit) => reconcileUnit(unit, rosterByName)),
+    shop: (Array.isArray(data.shop) ? data.shop : []).map(normalizeUnit).map((unit) => reconcileUnit(unit, rosterByName)).filter(Boolean).slice(0, balance.shop.maxSize ?? 5),
+    selectedAugments: structuredClone(data.selectedAugments || []),
     debugDummies: normalizeUnitArray(data.debugDummies, enemySize),
     temporaryBoosts: {
       hp: Number(data.temporaryBoosts?.hp) || 0,
@@ -181,7 +220,8 @@ function hasMeaningfulProgress(data) {
   );
 }
 
-export function createSaveController({ state, balance, storageKey, addLog, shouldOfferRestore = () => true, autoRestore = () => false }) {
+export function createSaveController({ state, balance, roster = [], storageKey, addLog, shouldOfferRestore = () => true, autoRestore = () => false }) {
+  const rosterByName = new Map(roster.map((unit) => [unit.name, unit]));
   function canSave() {
     return !state.busy && !state.combatGrid && !state.pvpReplaying && hasMeaningfulProgress(state);
   }
@@ -189,7 +229,7 @@ export function createSaveController({ state, balance, storageKey, addLog, shoul
   function snapshot() {
     const data = {};
     for (const field of GAMEPLAY_FIELDS) data[field] = state[field];
-    const normalized = normalizeSaveData(data, balance);
+    const normalized = normalizeSaveData(data, balance, rosterByName);
     return {
       formatVersion: SAVE_FORMAT_VERSION,
       savedAt: Date.now(),
@@ -247,7 +287,7 @@ export function createSaveController({ state, balance, storageKey, addLog, shoul
       clearSave();
       return false;
     }
-    Object.assign(state, normalizeSaveData(saved.data, balance));
+    Object.assign(state, normalizeSaveData(saved.data, balance, rosterByName));
     addLog?.("저장된 게임을 불러왔습니다.");
     return true;
   }

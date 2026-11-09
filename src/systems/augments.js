@@ -288,7 +288,7 @@ export function createAugmentController({
   }
 
   function isTraitAugment(augment) {
-    return ["traitCount", "virtualTraitCount", "traitCrown", "traitStat"].includes(augment?.effect?.type);
+    return ["traitCount", "virtualTraitCount", "traitCrown", "traitStat", "traitRulePatch"].includes(augment?.effect?.type);
   }
 
   function grantTraitAugmentUnit(augment) {

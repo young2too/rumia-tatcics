@@ -40,7 +40,7 @@
         "isAccessibleForFree": true
       }
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20261022-augment-catalog" />
+    <link rel="stylesheet" href="./styles.css?v=261109" />
   </head>
   <body>
     <main class="app">
@@ -112,6 +112,9 @@
               <p id="phase">준비 단계: 상점에서 영입하고 보드에 배치하세요.</p>
             </div>
             <div class="actions">
+              <button id="allyBoardToggle" class="board-view-toggle" type="button" aria-pressed="false" title="배치 중 적 전장을 접습니다">
+                <span id="allyBoardToggleLabel">아군만</span>
+              </button>
               <button id="levelUp">4XP 구매</button>
               <button id="replayBattle" type="button" hidden>이전 전투 보기</button>
               <button id="battle" class="primary">전투 시작</button>
@@ -145,6 +148,10 @@
               <h2>벤치</h2>
               <div class="bench-actions">
                 <div id="temporaryBoosts" class="temporary-boosts" aria-label="다음 전투 일시 강화"></div>
+                <div id="sellDropZone" class="sell-drop-zone" role="button" aria-label="유닛 판매" title="유닛을 끌어다 놓아 판매">
+                  <span aria-hidden="true">🗑</span>
+                  <b>판매</b>
+                </div>
                 <span id="benchCount">0/8</span>
               </div>
             </div>
@@ -450,6 +457,6 @@
       </button>
     </template>
 
-    <script type="module" src="./app.js?v=20261022-augment-catalog"></script>
+    <script type="module" src="./app.js?v=261109"></script>
   </body>
 </html>

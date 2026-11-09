@@ -321,5 +321,343 @@
       "rarity": "prismatic",
       "count": 1
     }
+  },
+  {
+    "active": true,
+    "id": "common_silver_trait_1",
+    "name": "격전 입문",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "silver",
+      "격전"
+    ],
+    "summary": "열기 요구량이 5로 감소합니다.",
+    "description": "열기 요구량이 5로 감소합니다. 2코스트 격전 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitRulePatch",
+      "trait": "격전",
+      "patch": {
+        "heatRequiredAdd": -1
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_trait_2",
+    "name": "정조준 입문",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "silver",
+      "정조준"
+    ],
+    "summary": "균열 폭발 피해가 20% 증가합니다.",
+    "description": "균열 폭발 피해가 20% 증가합니다. 2코스트 정조준 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitRulePatch",
+      "trait": "정조준",
+      "patch": {
+        "ruptureDamageMultiply": 1.2
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_trait_3",
+    "name": "철벽 입문",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "silver",
+      "철벽"
+    ],
+    "summary": "성역 보호막이 25% 증가합니다.",
+    "description": "성역 보호막이 25% 증가합니다. 2코스트 철벽 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitRulePatch",
+      "trait": "철벽",
+      "patch": {
+        "sanctuaryShieldMultiply": 1.25
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_trait_4",
+    "name": "술식 입문",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "silver",
+      "술식"
+    ],
+    "summary": "잔향 마나 회복량이 3 증가합니다.",
+    "description": "잔향 마나 회복량이 3 증가합니다. 2코스트 술식 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitRulePatch",
+      "trait": "술식",
+      "patch": {
+        "echoManaAdd": 3
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_trait_5",
+    "name": "암습 입문",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "silver",
+      "암습"
+    ],
+    "summary": "포식 발동 체력 기준이 40%로 증가합니다.",
+    "description": "포식 발동 체력 기준이 40%로 증가합니다. 2코스트 암습 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitRulePatch",
+      "trait": "암습",
+      "patch": {
+        "lowHpThresholdSet": 0.4
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_trait_6",
+    "name": "진형 입문",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "silver",
+      "진형"
+    ],
+    "summary": "전진 태세 체력과 포격 태세 확산 피해가 20% 증가합니다.",
+    "description": "전진 태세 체력과 포격 태세 확산 피해가 20% 증가합니다. 2코스트 진형 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitRulePatch",
+      "trait": "진형",
+      "patch": {
+        "orbitEffectMultiply": 1.2
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_trait_7",
+    "name": "투혼 입문",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "silver",
+      "투혼"
+    ],
+    "summary": "결의 보호막과 공격력·스킬 증폭이 20% 증가합니다.",
+    "description": "결의 보호막과 공격력·스킬 증폭이 20% 증가합니다. 2코스트 투혼 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitRulePatch",
+      "trait": "투혼",
+      "patch": {
+        "comebackEffectMultiply": 1.2
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_trait_8",
+    "name": "연대 입문",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "silver",
+      "연대"
+    ],
+    "summary": "연계 공용 쿨다운이 0.5초 감소합니다.",
+    "description": "연계 공용 쿨다운이 0.5초 감소합니다. 2코스트 연대 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitRulePatch",
+      "trait": "연대",
+      "patch": {
+        "chainCooldownAddMs": -500
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_ready_response",
+    "name": "선제 대응",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "mana",
+      "speed"
+    ],
+    "summary": "시작 마나와 공격 속도 증가",
+    "description": "모든 아군이 전투 시작 시 마나를 10 추가로 얻고 공격 속도가 5% 증가합니다.",
+    "effect": {
+      "type": "teamStat",
+      "stats": {
+        "openingManaAdd": 10,
+        "speedMultiply": 1.05
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_sturdy_formation",
+    "name": "견고한 대형",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "survival"
+    ],
+    "summary": "인접 아군 2명 이상이면 체력/방어 증가",
+    "description": "주변 1칸에 다른 아군이 2명 이상 있는 유닛은 체력과 방어력이 각각 8% 증가합니다.",
+    "effect": {
+      "type": "adjacentAllyStat",
+      "minAdjacentAllies": 2,
+      "stats": {
+        "hpMultiply": 1.08,
+        "defenseMultiply": 1.08
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_hunting_instinct",
+    "name": "사냥의 감각",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "combat",
+      "execute"
+    ],
+    "summary": "저체력 적에게 주는 피해 증가",
+    "description": "체력이 40% 이하인 적에게 모든 아군이 입히는 피해가 12% 증가합니다.",
+    "effect": {
+      "type": "damageBelowHpThreshold",
+      "thresholdHpRatio": 0.4,
+      "damageMultiply": 1.12
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_glass_cannon",
+    "name": "유리 대포",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "backline",
+      "risk"
+    ],
+    "summary": "후열 화력 증가, 체력 감소",
+    "description": "뒤 2열에 배치된 아군의 공격력과 스킬 증폭이 각각 12% 증가하지만 체력이 8% 감소합니다.",
+    "effect": {
+      "type": "positionStat",
+      "rows": "back2",
+      "stats": {
+        "hpMultiply": 0.92,
+        "atkMultiply": 1.12,
+        "skillAmpMultiply": 1.12
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_silver_independent_defense",
+    "name": "독립 방어",
+    "rarity": "silver",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "position",
+      "isolated",
+      "survival"
+    ],
+    "summary": "고립 아군 체력/방어 증가",
+    "description": "주변 1칸에 다른 아군이 없는 유닛은 체력과 방어력이 각각 12% 증가합니다.",
+    "effect": {
+      "type": "isolatedAllyStat",
+      "range": 1,
+      "stats": {
+        "hpMultiply": 1.12,
+        "defenseMultiply": 1.12
+      }
+    }
   }
 ]

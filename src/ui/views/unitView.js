@@ -105,7 +105,7 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
       const durationMs = Math.max(unit.healReductionDurationMs || healReductionMs || 1, 1);
       effects.push({ tone: "danger", label: "치감", ratio: healReductionMs / durationMs });
     }
-    if (unit.tacticalTarget) effects.push({ tone: "tactical", label: "전술 표적", ratio: 1 });
+    if (unit.lenoxPulledTarget) effects.push({ tone: "tactical", label: "독니 표적", ratio: 1 });
     if (unit.status === "suppressed") effects.push({ tone: "suppressed", label: "제압", ratio: 1 });
     if (unit.timeStopRemainingMs > 0) {
       const durationMs = Math.max(unit.timeStopDurationMs || unit.timeStopRemainingMs, 1);
@@ -141,6 +141,19 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     if ((unit.augmentDamageTakenAdd || 0) > 0) {
       effects.push({ tone: "vulnerable", label: `받피+${Math.round(unit.augmentDamageTakenAdd * 100)}%`, ratio: 1 });
     }
+    if (unit.traitOverloadBuff?.remainingMs > 0) {
+      effects.push({ tone: "frenzy", label: "과부하", ratio: unit.traitOverloadBuff.remainingMs / 3000 });
+    }
+    if (unit.traitComebackBuff?.remainingMs > 0) {
+      effects.push({ tone: "guard", label: "결의", ratio: unit.traitComebackBuff.remainingMs / 4000 });
+    }
+    if (unit.traitChainBuff?.remainingMs > 0) {
+      effects.push({ tone: "tactical", label: "연계", ratio: unit.traitChainBuff.remainingMs / 3000 });
+    }
+    if (unit.traitLockdownRemainingMs > 0) {
+      effects.push({ tone: "vulnerable", label: "봉쇄", ratio: unit.traitLockdownRemainingMs / 3000 });
+    }
+    if (unit.traitEchoReady) effects.push({ tone: "tactical", label: "잔향", ratio: 1 });
     return effects;
   }
 
@@ -213,6 +226,10 @@ export function createUnitView({ state, refs, balance, sellValue, activeTraits, 
     });
     node.addEventListener("click", (event) => {
       event.stopPropagation();
+      if (state.suppressUnitClick === `${source}:${index}`) {
+        state.suppressUnitClick = null;
+        return;
+      }
       if (source === "enemy" || state.busy) return;
       if (state.pendingAugmentTarget) {
         if (selectAugmentTarget?.(source, index)) return;

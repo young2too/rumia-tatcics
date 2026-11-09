@@ -42,6 +42,9 @@ export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit
     if (state.combatGrid && unit) cell.classList.add("occupied", side);
     cell.dataset.row = String(gridRow);
     cell.dataset.col = String(index % balance.battle.columns);
+    const hitArea = document.createElement("div");
+    hitArea.className = "cell-hit-area";
+    cell.append(hitArea);
     if (interactive) {
       cell.dataset.index = String(index);
       cell.addEventListener("dragover", (event) => {
@@ -50,12 +53,12 @@ export function createBattlefieldView({ state, refs, balance, unitNode, moveUnit
       });
       cell.addEventListener("dragleave", () => cell.classList.remove("can-drop"));
       cell.addEventListener("drop", () => moveUnit("board", index));
-      cell.addEventListener("click", () => moveSelected("board", index));
+      hitArea.addEventListener("click", () => moveSelected("board", index));
     }
     if (!interactive && state.debugMode && !state.combatGrid && state.debugDummyPlacement) {
       cell.classList.add("debug-dummy-target");
       cell.title = unit?.trainingDummy ? "훈련 더미 제거" : "훈련 더미 배치";
-      cell.addEventListener("click", () => placeDebugDummy(index));
+      hitArea.addEventListener("click", () => placeDebugDummy(index));
     }
     if (unit) cell.append(unitNode(unit, state.combatGrid ? side : interactive ? "board" : "enemy", index, !interactive));
     return cell;

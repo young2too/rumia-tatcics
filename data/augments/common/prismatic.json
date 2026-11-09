@@ -319,5 +319,313 @@
       "rarity": "prismatic",
       "count": 2
     }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_trait_1",
+    "name": "격전 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "prismatic",
+      "격전"
+    ],
+    "summary": "격전 시너지 카운트가 2 증가합니다. 초과 카운트마다 과부하 지속시간이 0.25초 증가합니다.",
+    "description": "격전 시너지 카운트가 2 증가합니다. 초과 카운트마다 과부하 지속시간이 0.25초 증가합니다. 5코스트 격전 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCrown",
+      "trait": "격전",
+      "add": 2,
+      "rulePatchPerOvercap": {
+        "add": {
+          "overloadMs": 250
+        }
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_trait_2",
+    "name": "정조준 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "prismatic",
+      "정조준"
+    ],
+    "summary": "정조준 시너지 카운트가 2 증가합니다. 초과 카운트마다 균열 폭발 피해가 12% 증가합니다.",
+    "description": "정조준 시너지 카운트가 2 증가합니다. 초과 카운트마다 균열 폭발 피해가 12% 증가합니다. 5코스트 정조준 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCrown",
+      "trait": "정조준",
+      "add": 2,
+      "rulePatchPerOvercap": {
+        "multiply": {
+          "ruptureAtkRatio": 0.12
+        }
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_trait_3",
+    "name": "철벽 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "prismatic",
+      "철벽"
+    ],
+    "summary": "철벽 시너지 카운트가 2 증가합니다. 초과 카운트마다 성역 보호막이 5% 증가합니다.",
+    "description": "철벽 시너지 카운트가 2 증가합니다. 초과 카운트마다 성역 보호막이 5% 증가합니다. 5코스트 철벽 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCrown",
+      "trait": "철벽",
+      "add": 2,
+      "rulePatchPerOvercap": {
+        "multiply": {
+          "sanctuaryShieldRatio": 0.05
+        }
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_trait_4",
+    "name": "술식 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "prismatic",
+      "술식"
+    ],
+    "summary": "술식 시너지 카운트가 2 증가합니다. 초과 카운트마다 잔향 추가 피해가 15% 증가합니다.",
+    "description": "술식 시너지 카운트가 2 증가합니다. 초과 카운트마다 잔향 추가 피해가 15% 증가합니다. 5코스트 술식 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCrown",
+      "trait": "술식",
+      "add": 2,
+      "rulePatchPerOvercap": {
+        "multiply": {
+          "echoSkillAmpRatio": 0.15
+        }
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_trait_5",
+    "name": "암습 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "prismatic",
+      "암습"
+    ],
+    "summary": "암습 시너지 카운트가 2 증가합니다. 초과 카운트마다 추적 중첩당 피해가 2%p 증가합니다.",
+    "description": "암습 시너지 카운트가 2 증가합니다. 초과 카운트마다 같은 대상 추적 중첩당 피해가 2%p 증가합니다. 5코스트 암습 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCrown",
+      "trait": "암습",
+      "add": 2,
+      "rulePatchPerOvercap": {
+        "add": {
+          "ambushFocusDamageAddPerStack": 0.02
+        }
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_trait_6",
+    "name": "진형 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "prismatic",
+      "진형"
+    ],
+    "summary": "진형 시너지 카운트가 2 증가합니다. 초과 카운트마다 전진 체력과 포격 확산 계수가 5%p 증가합니다.",
+    "description": "진형 시너지 카운트가 2 증가합니다. 초과 카운트마다 전진 체력과 포격 확산 계수가 5%p 증가합니다. 5코스트 진형 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCrown",
+      "trait": "진형",
+      "add": 2,
+      "rulePatchPerOvercap": {
+        "add": {
+          "frontHpMultiply": 0.05,
+          "backSplashRatio": 0.05
+        }
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_trait_7",
+    "name": "투혼 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "prismatic",
+      "투혼"
+    ],
+    "summary": "투혼 시너지 카운트가 2 증가합니다. 초과 카운트마다 결의 보호막과 공격력·스킬 증폭이 5%p 증가합니다.",
+    "description": "투혼 시너지 카운트가 2 증가합니다. 초과 카운트마다 결의 보호막과 공격력·스킬 증폭이 5%p 증가합니다. 5코스트 투혼 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCrown",
+      "trait": "투혼",
+      "add": 2,
+      "rulePatchPerOvercap": {
+        "add": {
+          "comebackShieldRatio": 0.05,
+          "comebackPowerAdd": 0.05
+        }
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_trait_8",
+    "name": "연대 왕관",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "prismatic",
+      "연대"
+    ],
+    "summary": "연대 시너지 카운트가 2 증가합니다. 초과 카운트마다 연계 지속시간이 0.25초 증가합니다.",
+    "description": "연대 시너지 카운트가 2 증가합니다. 초과 카운트마다 연계 지속시간이 0.25초 증가합니다. 5코스트 연대 유닛 1명을 획득합니다.",
+    "effect": {
+      "type": "traitCrown",
+      "trait": "연대",
+      "add": 2,
+      "rulePatchPerOvercap": {
+        "add": {
+          "chainBuffMs": 250
+        }
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_perfect_harmony",
+    "name": "완전한 조화",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "trait",
+      "team",
+      "stats"
+    ],
+    "summary": "메이저/마이너가 모두 활성화된 유닛 강화",
+    "description": "자신이 가진 메이저 시너지와 마이너 시너지가 모두 활성화된 아군은 체력, 공격력, 스킬 증폭이 각각 30% 증가합니다.",
+    "effect": {
+      "type": "activeTraitPairStat",
+      "stats": {
+        "hpMultiply": 1.3,
+        "atkMultiply": 1.3,
+        "skillAmpMultiply": 1.3
+      }
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_immortal_army",
+    "name": "불멸의 군단",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "team",
+      "survival"
+    ],
+    "summary": "모든 아군이 치명 피해를 1회 버팀",
+    "description": "각 아군은 전투당 1회, 체력이 0이 되는 피해를 받으면 체력 1로 살아남고 최대 체력의 25%만큼 보호막을 얻습니다.",
+    "effect": {
+      "type": "teamDeathGuard",
+      "shieldHpRatio": 0.25
+    }
+  },
+  {
+    "active": true,
+    "id": "common_prismatic_infinite_cycle",
+    "name": "무한 순환",
+    "rarity": "prismatic",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "tags": [
+      "common",
+      "team",
+      "heal",
+      "mana"
+    ],
+    "summary": "주기적으로 아군 전체 체력/마나 회복",
+    "description": "전투 시작 4초 후부터 4초마다 생존한 모든 아군이 최대 체력의 8%를 회복하고 마나를 12 얻습니다.",
+    "effect": {
+      "type": "teamRecoveryPulse",
+      "intervalSeconds": 4,
+      "healHpRatio": 0.08,
+      "manaAdd": 12
+    }
   }
 ]
