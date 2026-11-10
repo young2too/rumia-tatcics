@@ -1244,6 +1244,7 @@ combat = createCombatController({
   bossRoster,
   bossPatterns,
   roster,
+  traitRules,
   refs,
   sample,
   boardUnits,

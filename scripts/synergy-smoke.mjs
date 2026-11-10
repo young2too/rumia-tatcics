@@ -8,12 +8,13 @@ globalThis.document = {
 };
 
 const [
-  { balance, bossPatterns, bossRoster, communityBoardConfig, pvpRoomsConfig, roster, traitRules },
+  { allAugments, balance, bossPatterns, bossRoster, communityBoardConfig, pvpRoomsConfig, roster, traitRules },
   { createGameState },
   { createUnitPool, makeUnit },
   { createTraitController },
   { createCombatController },
   { resolveTraitMechanics },
+  { augmentTraitCountAdditions },
 ] = await Promise.all([
   import("../src/core/data.js"),
   import("../src/core/state.js"),
@@ -21,6 +22,7 @@ const [
   import("../src/systems/traits.js"),
   import("../src/systems/combat/controller.js"),
   import("../src/systems/combat/traitMechanics.js"),
+  import("../src/systems/augmentEffects.js"),
 ]);
 
 const EXPECTED_MAJOR = ["격전", "정조준", "철벽", "술식", "암습", "진형", "투혼", "연대"];
@@ -48,6 +50,20 @@ const PREFERRED_UNITS = {
 
 function unitTraits(unit) {
   return Array.from(new Set((unit.traits?.length ? unit.traits : [unit.trait]).filter(Boolean)));
+}
+
+function gridHexDistance(firstIndex, secondIndex) {
+  const cols = balance.battle.columns;
+  const toHex = (index) => {
+    const x = index % cols;
+    const y = Math.floor(index / cols);
+    return { q: x, r: y - Math.floor(x / 2) };
+  };
+  const first = toHex(firstIndex);
+  const second = toHex(secondIndex);
+  const dq = first.q - second.q;
+  const dr = first.r - second.r;
+  return (Math.abs(dq) + Math.abs(dq + dr) + Math.abs(dr)) / 2;
 }
 
 function validateTraitData() {
@@ -98,6 +114,51 @@ function validateTraitData() {
   }
 }
 
+function validateLowCostBaseStats() {
+  for (const [cost, multiplier] of [[1, 1.1], [2, 1.07], [3, 1.04], [4, 1], [5, 1]]) {
+    const base = roster.find((unit) => unit.active !== false && unit.cost === cost);
+    assert(base, `Missing active ${cost}-cost unit`);
+    const unit = makeUnit(base, balance, 1);
+    assert.equal(unit.maxHp, Math.round(base.hp * multiplier), `${cost}-cost HP boost mismatch`);
+    assert.equal(unit.atk, Math.round(base.atk * multiplier), `${cost}-cost attack boost mismatch`);
+    assert.equal(unit.skillAmp, Math.round(base.skillAmp * multiplier), `${cost}-cost skill amp boost mismatch`);
+    assert.equal(unit.defense, Math.round(base.defense * multiplier), `${cost}-cost defense boost mismatch`);
+  }
+
+  assert.equal(balance.battle.enemyBaseStatsByCost["1"].hp, 91, "PvE enemy base stats must remain independent");
+  assert.equal(balance.battle.enemyBaseStatsByCost["2"].hp, 95, "PvE enemy base stats must remain independent");
+  assert.equal(balance.battle.enemyBaseStatsByCost["3"].hp, 95, "PvE enemy base stats must remain independent");
+}
+
+function validateNewAugments() {
+  const traitPatches = allAugments.filter((augment) => augment.effect?.type === "traitRulePatch");
+  assert.equal(traitPatches.length, EXPECTED_MAJOR.length, "Every major synergy must have one active introduction augment");
+  for (const augment of traitPatches) {
+    const { trait, patch } = augment.effect;
+    const need = traitRules[trait]?.tiers?.[0]?.need;
+    assert(Number.isFinite(need), `${augment.name}: unknown synergy ${trait}`);
+    const resolved = resolveTraitMechanics(
+      { traits: [trait] },
+      { [trait]: need },
+      traitRules,
+      { selectedAugments: [augment] },
+    );
+    for (const [key, value] of Object.entries(patch || {})) {
+      assert.equal(resolved[key], value, `${augment.name}: ${key} did not reach combat mechanics`);
+    }
+  }
+
+  const countAugments = allAugments.filter((augment) => ["traitCount", "traitCrown"].includes(augment.effect?.type));
+  for (const augment of countAugments) {
+    const additions = augmentTraitCountAdditions({ selectedAugments: [augment] });
+    assert.equal(
+      additions[augment.effect.trait],
+      Number(augment.effect.add) || 0,
+      `${augment.name}: synergy count bonus did not apply`,
+    );
+  }
+}
+
 function makeTestUnit(name, { enemy = false, fragile = false } = {}) {
   const base = roster.find((unit) => unit.name === name);
   assert(base, `Missing roster unit: ${name}`);
@@ -130,24 +191,32 @@ async function runTraitCombat(trait, seed, options = {}) {
   });
   state.debugMode = true;
   state.shopLocked = true;
+  state.round = options.round || 1;
   state.selectedAugments = [];
   state.board = Array(32).fill(null);
 
-  const preferred = PREFERRED_UNITS[trait];
+  const preferred = options.names || PREFERRED_UNITS[trait];
   const need = options.need || traitRules[trait].tiers[0].need;
   const fallback = roster.filter((unit) => unit.active !== false && unitTraits(unit).includes(trait)).map((unit) => unit.name);
   const names = [...new Set([...(preferred || []), ...fallback])].slice(0, need);
   assert.equal(names.length, need, `${trait}: missing combat test members`);
-  const boardIndexes = trait === "진형"
+  const boardIndexes = options.boardIndexes || (trait === "진형"
     ? Array.from({ length: need }, (_, index) => 16 + index)
-    : Array.from({ length: need }, (_, index) => index);
+    : Array.from({ length: need }, (_, index) => index));
   names.forEach((name, index) => { state.board[boardIndexes[index]] = makeTestUnit(name); });
+  const baseMaxHpById = new Map(state.board.filter(Boolean).map((unit) => [unit.id, unit.maxHp]));
 
   const enemyName = roster.find((unit) => unit.name === "현우")?.name || roster[0].name;
   const enemies = Array.from({ length: options.enemyCount || 8 }, (_, index) => makeTestUnit(enemyName, {
     enemy: true,
     fragile: index === 0 && trait === "기동",
   }));
+  if (options.mode === "pve" && options.enemyBoardIndexes?.length) {
+    state.debugDummies = Array(balance.battle.enemySlots).fill(null);
+    options.enemyBoardIndexes.forEach((index) => {
+      state.debugDummies[index] = makeTestUnit(enemyName, { enemy: true });
+    });
+  }
   if (options.boss) {
     enemies.forEach((enemy) => {
       enemy.boss = true;
@@ -173,6 +242,7 @@ async function runTraitCombat(trait, seed, options = {}) {
   if (trait === "종막") enemies.forEach((enemy) => { enemy.atk = 3; });
   const logs = [];
   const triggers = [];
+  let openingSnapshot = null;
   const refs = {
     phase: { textContent: "" },
     battle: { disabled: false, textContent: "" },
@@ -209,7 +279,26 @@ async function runTraitCombat(trait, seed, options = {}) {
     playSkillVisual() {},
     clearSkillVisuals() {},
     setCombatTimeScale() {},
-    render() {},
+    render() {
+      if (openingSnapshot || !state.combatGrid) return;
+      openingSnapshot = state.combatGrid.filter((unit) => unit?.side === "ally").map((unit) => {
+        const index = state.combatGrid.indexOf(unit);
+        const target = state.combatGrid.find((candidate) => candidate?.id === unit.openingDiverTargetId);
+        const targetIndex = target ? state.combatGrid.indexOf(target) : -1;
+        return {
+          id: unit.id,
+          name: unit.name,
+          index,
+          row: Math.floor(index / balance.battle.columns),
+          targetRow: targetIndex >= 0 ? Math.floor(targetIndex / balance.battle.columns) : -1,
+          targetDistance: targetIndex >= 0 ? gridHexDistance(index, targetIndex) : -1,
+          maxHp: unit.maxHp,
+          baseMaxHp: baseMaxHpById.get(unit.id) || unit.maxHp,
+          shield: unit.shield || 0,
+          vanguardShield: unit.traitVanguardShield || 0,
+        };
+      });
+    },
     renderCombatFrame() {},
     rollShop() {},
     addXp() {},
@@ -221,20 +310,24 @@ async function runTraitCombat(trait, seed, options = {}) {
     onTraitTrigger: (entry) => triggers.push(entry),
   });
 
-  const result = await combat.simulate({
-    mode: "pvp",
-    round: 1,
-    seed,
-    enemies,
-    enemyTraits: {},
-    enemyState: { selectedAugments: [] },
-    opponentName: "시너지 테스트 더미",
-  });
+  const result = await combat.simulate(options.mode === "pve"
+    ? { mode: "pve", seed }
+    : {
+        mode: "pvp",
+        round: 1,
+        seed,
+        enemies,
+        enemyTraits: {},
+        enemyState: { selectedAugments: [] },
+        opponentName: "시너지 테스트 더미",
+      });
   assert(result, `${trait}: combat returned no result (${logs.slice(-3).join(" / ")})`);
   const errorLogs = logs.filter((message) => /오류|복구/.test(message));
   assert.equal(errorLogs.length, 0, `${trait}: combat recovered from an internal error (${errorLogs.join(" / ")})`);
   const ownTriggers = triggers.filter((entry) => entry.trait === trait);
-  assert(ownTriggers.length > 0, `${trait}: combat finished without a measured trigger; observed=${JSON.stringify(triggers)}; counts=${JSON.stringify(traits.activeTraits())}`);
+  if (!options.skipTriggerAssert) {
+    assert(ownTriggers.length > 0, `${trait}: combat finished without a measured trigger; observed=${JSON.stringify(triggers)}; counts=${JSON.stringify(traits.activeTraits())}`);
+  }
   return {
     trait,
     result: {
@@ -245,10 +338,16 @@ async function runTraitCombat(trait, seed, options = {}) {
     events: [...new Set(ownTriggers.map((entry) => entry.event))],
     eventDetails: ownTriggers.map((entry) => ({ event: entry.event, detail: entry.detail })),
     triggerCount: ownTriggers.length,
+    openingSnapshot,
+    logs,
   };
 }
 
 validateTraitData();
+validateLowCostBaseStats();
+validateNewAugments();
+console.log("OK low-cost base stats | 1-cost +10% / 2-cost +7% / 3-cost +4% / PvE enemies unchanged");
+console.log("OK augment wiring | 입문 8종 규칙 패치 / 문장·왕관 시너지 카운트");
 
 const report = [];
 for (const trait of EXPECTED_TRAITS) {
@@ -276,5 +375,52 @@ assert.equal(
   "암습: 8-piece boss combat must dodge exactly 3 incoming damage instances",
 );
 console.log(`OK 암습 보스전 | focus 5중첩 / dodge 3회 / 처치 회피 재장전 | ${ambushBoss.triggerCount}회`);
+
+const ironWallOpening = await runTraitCombat("철벽", "synergy-smoke:pve-iron-wall", { mode: "pve" });
+assert(ironWallOpening.events.includes("protect"), "철벽: PvE opening protection did not trigger");
+assert(ironWallOpening.openingSnapshot.some((unit) => unit.shield > 0), "철벽: PvE opening shield was not present on the first combat frame");
+
+const vanguardOpening = await runTraitCombat("선봉", "synergy-smoke:pve-vanguard", { mode: "pve" });
+assert(vanguardOpening.events.includes("opening-shield"), "선봉: PvE opening shield did not trigger");
+assert(vanguardOpening.openingSnapshot.every((unit) => unit.vanguardShield > 0), "선봉: PvE opening shield was not present on every vanguard unit");
+
+const formationOpening = await runTraitCombat("진형", "synergy-smoke:pve-formation-front", {
+  mode: "pve",
+  boardIndexes: [0, 1],
+  skipTriggerAssert: true,
+});
+assert(
+  formationOpening.openingSnapshot.every((unit) => unit.maxHp > unit.baseMaxHp),
+  "진형: front-row max HP did not increase on the first PvE combat frame",
+);
+
+const ambushOpening = await runTraitCombat("암습", "synergy-smoke:pve-ambush", {
+  mode: "pve",
+  enemyBoardIndexes: [27],
+});
+assert(
+  ambushOpening.openingSnapshot.every((unit) => unit.targetDistance === 1),
+  `암습: units did not land next to their selected target: ${JSON.stringify(ambushOpening.openingSnapshot)}`,
+);
+assert(
+  ambushOpening.openingSnapshot.every((unit) => unit.targetRow >= 2),
+  `암습: frontline fallback did not select the available frontline enemy: ${JSON.stringify(ambushOpening.openingSnapshot)}`,
+);
+const ambushBacklineOpening = await runTraitCombat("암습", "synergy-smoke:pvp-ambush-backline");
+assert(
+  ambushBacklineOpening.openingSnapshot.every((unit) => unit.targetRow <= 1 && unit.targetDistance === 1),
+  `암습: backline enemies were not prioritized: ${JSON.stringify(ambushBacklineOpening.openingSnapshot)}`,
+);
+const reportedAmbushPair = await runTraitCombat("암습", "synergy-smoke:shoichi-abigail", {
+  names: ["쇼이치", "아비게일"],
+  mode: "pve",
+  enemyBoardIndexes: [27],
+});
+assert(
+  reportedAmbushPair.logs.some((message) => message.includes("암습 전개: 암습 유닛 2명"))
+    && reportedAmbushPair.openingSnapshot.every((unit) => unit.targetDistance === 1),
+  `암습: 쇼이치/아비게일 pair did not dive: ${JSON.stringify(reportedAmbushPair.openingSnapshot)}`,
+);
+console.log("OK PvE opening mechanics | 철벽 보호 / 선봉 보호막 / 진형 전열 체력 / 암습 목표 인접 이동");
 
 console.log(`Synergy smoke OK: ${report.length} traits, ${report.reduce((sum, item) => sum + item.triggerCount, 0)} measured triggers.`);

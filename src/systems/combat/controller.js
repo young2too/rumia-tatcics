@@ -49,6 +49,10 @@ export function createCombatController(context) {
     onTraitTrigger = null,
   } = context;
 
+if (!traitRules || !Object.keys(traitRules).length) {
+  throw new Error("Combat controller requires active trait rules.");
+}
+
 function recordTraitTrigger(trait, event, detail = {}) {
   onTraitTrigger?.({ trait, event, detail, elapsedMs: combatElapsedMs });
 }
@@ -1023,18 +1027,17 @@ function emptyBacklineSlots(unit, preferredTarget = null) {
   if (!state.combatGrid || !from) return [];
   const rows = backlineJumpRows(unit);
   const foes = living(state.combatGrid).filter((other) => other.side && other.side !== unit.side);
-  const backlineTargets = foes
-    .filter((target) => {
-      const slot = unitSlot(target);
-      return slot && rows.includes(slot.y);
-    })
+  const diveTargets = foes
+    .filter((target) => unitSlot(target))
     .sort((a, b) => {
       if (a === preferredTarget) return -1;
       if (b === preferredTarget) return 1;
+      const backlineDelta = Number(isBacklineUnit(b)) - Number(isBacklineUnit(a));
+      if (backlineDelta) return backlineDelta;
       return compareByDistanceThenHp(unit, a, b);
     });
   const slots = [];
-  const targetSlots = backlineTargets
+  const targetSlots = diveTargets
     .map((target) => ({ target, slot: unitSlot(target) }))
     .filter(({ slot }) => slot);
   for (const { target, slot: targetSlot } of targetSlots) {
@@ -1043,12 +1046,26 @@ function emptyBacklineSlots(unit, preferredTarget = null) {
       const y = targetSlot.y + step.y;
       const index = slotIndexFor(unit.side, x, y, true);
       if (index < 0 || state.combatGrid[index]) continue;
-      const slot = { index, x, y, distance: Math.abs(x - from.x), rowPriority: rows.indexOf(targetSlot.y), target };
+      const crossedIntoEnemySide = unit.side === "ally" ? y < allyStartRow() : y >= allyStartRow();
+      const slot = {
+        index,
+        x,
+        y,
+        distance: Math.abs(x - from.x),
+        targetPriority: target === preferredTarget ? 0 : 1,
+        backlinePriority: isBacklineUnit(target) ? 0 : 1,
+        territoryPriority: crossedIntoEnemySide ? 0 : 1,
+        target,
+      };
       if (!slots.some((item) => item.index === index)) slots.push(slot);
     }
   }
   if (slots.length) {
-    return slots.sort((a, b) => a.rowPriority - b.rowPriority || distanceBetween(unit, a.target) - distanceBetween(unit, b.target) || a.distance - b.distance || a.index - b.index);
+    return slots.sort((a, b) => a.targetPriority - b.targetPriority
+      || a.backlinePriority - b.backlinePriority
+      || a.territoryPriority - b.territoryPriority
+      || a.distance - b.distance
+      || a.index - b.index);
   }
   for (const y of rows) {
     for (let x = 0; x < balance.battle.columns; x++) {
@@ -1084,9 +1101,10 @@ function placeBacklineDivers(units) {
       state.combatGrid[from.index] = null;
       state.combatGrid[to.index] = unit;
       unit.status = "moving";
-      if (focusTarget?.id) {
-        unit.openingDiverTargetId = focusTarget.id;
-        unit.focusTargetId = focusTarget.id;
+      const diveTarget = to.target || focusTarget;
+      if (diveTarget?.id) {
+        unit.openingDiverTargetId = diveTarget.id;
+        unit.focusTargetId = diveTarget.id;
         unit.hasPickedOpeningTarget = true;
       }
       moved += 1;
@@ -5754,11 +5772,18 @@ async function simulate(options = {}) {
   const huntMarkedUnits = assignHuntMarks(allies, state.enemies);
   const enemyHuntMarkedUnits = pvpBattle ? assignHuntMarks(state.enemies, allies) : [];
   const boss = living(state.enemies).find((unit) => unit.boss);
+  const vanguardShielded = allies.filter((unit) => (unit.traitVanguardShield || 0) > 0).length;
+  const sanctuaryShielded = allies.filter((unit) => (unit.traitSanctuaryShield || 0) > 0).length;
+  const formationFront = allies.filter((unit) => unit.traitOrbitMode === "front").length;
+  const formationBack = allies.filter((unit) => unit.traitOrbitMode === "back").length;
   addLog(boss
     ? `보스전 시작: ${boss.name} 출현!`
     : pvpBattle
       ? `PvP 전투 시작: 아군 ${allies.length}명 vs ${options.opponentName || "상대"} ${living(state.enemies).length}명`
       : `전투 시작: 아군 ${allies.length}명 vs 야생 실험체 ${living(state.enemies).length}명`);
+  if (sanctuaryShielded) addLog(`철벽 발동: 가까운 아군 ${sanctuaryShielded}명에게 보호막을 부여했습니다.`);
+  if (vanguardShielded) addLog(`선봉 발동: ${vanguardShielded}명이 전투 시작 보호막을 얻었습니다.`);
+  if (formationFront || formationBack) addLog(`진형 발동: 전열 ${formationFront}명 체력 강화 / 후열 ${formationBack}명 포격 태세.`);
   if (openingUtilities.backlineShielded) addLog(`중장비 발동: 후열 ${openingUtilities.backlineShielded}명 보호막.`);
   if (openingUtilities.frontlineShielded) addLog(`예술 발동: 전열 ${openingUtilities.frontlineShielded}명 보호막.`);
   if (enemyOpeningUtilities.backlineShielded) addLog(`상대 중장비 발동: 후열 ${enemyOpeningUtilities.backlineShielded}명 보호막.`);
@@ -5771,7 +5796,7 @@ async function simulate(options = {}) {
   }
   if (huntMarkedUnits.length) addLog(`추적 발동: ${huntMarkedUnits.map((unit) => unit.name).join(", ")} 표식.`);
   if (enemyHuntMarkedUnits.length) addLog(`상대 추적 발동: ${enemyHuntMarkedUnits.map((unit) => unit.name).join(", ")} 표식.`);
-  if (diverCount) addLog(`기습 전개: 기습형 ${diverCount}명이 후열로 진입.`);
+  if (diverCount) addLog(`암습 전개: 암습 유닛 ${diverCount}명이 적 후열로 진입했습니다.`);
   render();
   if (openingAugmentEffects.length || openingTraitEffects.length) playCombatEffects([...openingAugmentEffects, ...openingTraitEffects]);
 
