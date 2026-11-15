@@ -7,8 +7,11 @@ export function unitTraitText(unit) {
   return unitTraits(unit).join(", ");
 }
 
-export function traitPills(unit) {
-  return unitTraits(unit).map((trait) => `<i>${trait}</i>`).join("");
+export function traitPills(unit, highlightedTraits = null) {
+  return unitTraits(unit).map((trait) => {
+    const highlighted = highlightedTraits?.has(trait);
+    return `<i class="${highlighted ? "owned-trait" : ""}"${highlighted ? ` title="보유 중인 ${trait} 시너지"` : ""}>${trait}</i>`;
+  }).join("");
 }
 
 export function traitCountsFor(units) {

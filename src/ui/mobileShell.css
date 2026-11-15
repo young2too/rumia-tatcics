@@ -112,9 +112,63 @@
   .shop-panel-tabs { margin: 3px 0; }
   .shop-panel-tabs button { min-height: 28px; padding: 3px; }
   .shop { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
-  .shop-card { display: flex; flex-direction: column; padding: 4px 2px; min-width: 0; gap: 2px; }
-  .shop-card small, .shop-card-tags { display: none; }
-  .shop-card strong { font-size: 11px; overflow-wrap: anywhere; }
+  .shop-card {
+    display: grid;
+    min-width: 0;
+    min-height: 88px;
+    grid-template-columns: clamp(30px, 42%, 42px) minmax(0, 1fr);
+    grid-template-rows: minmax(58px, 1fr) 18px;
+    grid-template-areas:
+      "portrait main"
+      "price price";
+    align-items: center;
+    gap: 2px 4px;
+    padding: 5px 3px 3px;
+  }
+  .shop-card small { display: none; }
+  .shop-card > .portrait {
+    grid-area: portrait;
+    width: min(42px, 100%);
+    height: auto;
+    aspect-ratio: 1;
+    justify-self: center;
+  }
+  .shop-card-main {
+    grid-area: main;
+    width: 100%;
+    align-content: center;
+    justify-items: start;
+    gap: 2px;
+    text-align: left;
+  }
+  .shop-card strong {
+    width: 100%;
+    font-size: 10px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+  .shop-card-tags {
+    display: grid;
+    width: 100%;
+    justify-items: start;
+    gap: 2px;
+  }
+  .shop-card-tags i {
+    min-width: 0;
+    min-height: 14px;
+    padding: 1px 2px;
+    overflow: hidden;
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .shop-card > .price {
+    grid-area: price;
+    justify-self: center;
+    justify-items: center;
+    line-height: 1;
+  }
+  .shop-card > .price b { font-size: 13px; }
 
   .mobile-floating-menu {
     position: fixed;
@@ -248,4 +302,14 @@
   .global-chat > .global-chat-toggle, .pvp-social-rail { display: none; }
   .global-chat { right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); }
   .pvp-social { right: 8px; }
+}
+
+@media (max-width: 420px) {
+  .shop-card {
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 2px;
+    padding-inline: 2px;
+  }
+  .shop-card strong { font-size: 8px; }
+  .shop-card-tags i { font-size: 8px; }
 }

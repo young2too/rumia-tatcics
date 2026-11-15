@@ -3892,6 +3892,15 @@ body.ally-board-only:not(.fighting) .board {
   gap: 3px;
 }
 
+.shop-card-tags i.owned-trait {
+  border-color: rgba(255, 220, 104, 0.9);
+  color: #fff1a8;
+  background: linear-gradient(180deg, rgba(126, 91, 24, 0.98), rgba(70, 49, 18, 0.98));
+  box-shadow:
+    0 0 0 1px rgba(255, 244, 180, 0.12) inset,
+    0 0 8px rgba(255, 205, 74, 0.22);
+}
+
 .shop-card.owned {
   border-color: rgba(52, 197, 183, 0.58);
   background:

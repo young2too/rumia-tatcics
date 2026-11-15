@@ -1,4 +1,4 @@
-import { traitPills } from "./traitHelpers.js";
+import { traitPills, unitTraits } from "./traitHelpers.js";
 
 export function createShopView({ state, refs, balance, roster, buyUnit, displayNameFor = (unit) => unit.name, augmentPools = {}, canModify = () => true }) {
   const metricModes = {
@@ -80,6 +80,11 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
       }
     }
     refs.shop.innerHTML = "";
+    const ownedTraits = new Set(
+      [...state.board, ...state.bench]
+        .filter(Boolean)
+        .flatMap((unit) => unitTraits(unit)),
+    );
     const { disabled: shopDisabled, reason: disabledReason } = shopDisabledState();
     refs.shop.classList.toggle("disabled-state", Boolean(disabledReason));
     if (disabledReason) refs.shop.dataset.disabledReason = disabledReason;
@@ -95,7 +100,7 @@ export function createShopView({ state, refs, balance, roster, buyUnit, displayN
         <span class="portrait">${unit.art ? `<img src="${unit.art}" alt="">` : unit.name.slice(0, 1)}</span>
         <span class="shop-card-main">
           <strong>${displayNameFor(unit)}</strong>
-          <span class="shop-card-tags">${traitPills(unit)}</span>
+          <span class="shop-card-tags">${traitPills(unit, ownedTraits)}</span>
           <small>HP ${unit.maxHp} / 공격 ${unit.atk} / 스증 ${unit.skillAmp}</small>
         </span>
         <span class="price"><b>${unit.cost}코</b>${state.gameMode === "pvp" ? "" : `<small>풀 ${state.pool[unit.name] ?? 0}</small>`}</span>
