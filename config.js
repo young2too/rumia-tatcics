@@ -41,6 +41,7 @@ window.LUMIA_TACTICS_CONFIG = {
     items: [
       "1~3코스트 기물 상향",
       "시너지 적용 버그 수정",
+      "상점 및 모바일 UI 패치",
     ],
   },
 };
