@@ -251,7 +251,7 @@ function renderOverview() {
     breadcrumb: "도감",
     title: "루미아 택틱스 도감",
     subtitle: "왼쪽 목차에서 실험체, 시너지와 증강을 바로 찾아보세요.",
-    body: `<div class="codex-overview"><a class="codex-overview-card" href="${routeHref("units", "")}"><span>실험체</span><strong>${units.length}</strong><p>성급별 스탯과 스킬, 관련 증강을 확인합니다.</p></a><a class="codex-overview-card" href="${routeHref("trait", traits[0][0])}"><span>시너지</span><strong>${traits.length + hiddenTraits.length}</strong><p>메이저·마이너·히든 시너지 구성과 효과를 확인합니다.</p></a><a class="codex-overview-card" href="${routeHref("augment", augments[0].id)}"><span>증강</span><strong>${augments.length}</strong><p>등급과 등장 단계, 세부 효과를 확인합니다.</p></a></div>`,
+    body: `<div class="codex-overview"><a class="codex-overview-card" href="${routeHref("units", "")}"><span>실험체</span><strong>${units.length}</strong><p>성급별 스탯과 스킬, 관련 증강을 확인합니다.</p></a><a class="codex-overview-card" href="${routeHref("traits", "")}"><span>시너지</span><strong>${traits.length + hiddenTraits.length}</strong><p>메이저·마이너·히든 시너지 구성과 효과를 확인합니다.</p></a><a class="codex-overview-card" href="${routeHref("augments", "")}"><span>증강</span><strong>${augments.length}</strong><p>등급과 등장 단계, 세부 효과를 확인합니다.</p></a></div>`,
   });
 }
 
@@ -270,6 +270,46 @@ function renderUnitCatalog(costValue) {
     title: selectedCost ? `${selectedCost}코스트 실험체` : "실험체",
     subtitle: selectedCost ? `${units.filter((unit) => unit.cost === selectedCost).length}명의 실험체` : "코스트를 선택하세요.",
     body: `${costPicker}${portraits}`,
+  });
+}
+
+function renderTraitCatalog(categoryValue) {
+  const categories = ["major", "minor", "hidden"];
+  const selectedCategory = categories.includes(categoryValue) ? categoryValue : null;
+  const categoryEntries = selectedCategory === "hidden"
+    ? hiddenTraits.map(([name, rule]) => ({ name, rule, type: "hidden" }))
+    : traits.filter(([, rule]) => rule.category === selectedCategory).map(([name, rule]) => ({ name, rule, type: "trait" }));
+  const picker = `<nav class="codex-cost-picker codex-category-picker" aria-label="시너지 종류 선택">${categories.map((category) => {
+    const count = category === "hidden" ? hiddenTraits.length : traits.filter(([, rule]) => rule.category === category).length;
+    return `<a class="${selectedCategory === category ? "active" : ""}" href="${routeHref("traits", category)}"><strong>${categoryLabel[category]}</strong><small>${count}종</small></a>`;
+  }).join("")}</nav>`;
+  const catalog = selectedCategory
+    ? `<section class="codex-catalog"><h2>어떤 시너지를 볼까요?</h2><div class="codex-augment-list">${categoryEntries.map(({ name, rule, type }) => `<a class="codex-augment-link" href="${routeHref(type, name)}"><span><strong>${escapeHtml(name)}</strong><small>${escapeHtml(categoryLabel[selectedCategory])}</small></span><small>${escapeHtml(rule.summary || rule.text)}</small></a>`).join("")}</div></section>`
+    : "";
+  refs.detail.innerHTML = article({
+    breadcrumb: selectedCategory ? `도감 > 시너지 > ${categoryLabel[selectedCategory]}` : "도감 > 시너지",
+    title: selectedCategory ? `${categoryLabel[selectedCategory]} 시너지` : "시너지",
+    subtitle: selectedCategory ? `${categoryEntries.length}종의 시너지` : "종류를 선택하세요.",
+    body: `${picker}${catalog}`,
+  });
+}
+
+function renderAugmentCatalog(rarityValue) {
+  const rarities = ["silver", "gold", "prismatic"];
+  const selectedRarity = rarities.includes(rarityValue) ? rarityValue : null;
+  const rarityAugments = selectedRarity ? augments.filter((augment) => augment.rarity === selectedRarity) : [];
+  const picker = `<nav class="codex-cost-picker codex-category-picker" aria-label="증강 등급 선택">${rarities.map((rarity) => {
+    const count = augments.filter((augment) => augment.rarity === rarity).length;
+    return `<a class="${selectedRarity === rarity ? "active" : ""}" href="${routeHref("augments", rarity)}"><strong>${rarityLabel[rarity]}</strong><small>${count}개</small></a>`;
+  }).join("")}</nav>`;
+  const catalog = selectedRarity
+    ? `<section class="codex-catalog"><h2>어떤 증강을 볼까요?</h2><div class="codex-augment-list">${rarityAugments.map(augmentCard).join("")}</div></section>`
+    : "";
+  refs.detail.innerHTML = article({
+    breadcrumb: selectedRarity ? `도감 > 증강 > ${rarityLabel[selectedRarity]}` : "도감 > 증강",
+    title: selectedRarity ? `${rarityLabel[selectedRarity]} 증강` : "증강",
+    subtitle: selectedRarity ? `${rarityAugments.length}개의 증강` : "등급을 선택하세요.",
+    body: `${picker}${catalog}`,
   });
 }
 
@@ -292,12 +332,26 @@ function syncIndexHierarchy(route) {
     const costGroup = refs.index.querySelector(`[data-group="unit-${route.id}"]`);
     if (costGroup) costGroup.open = true;
   }
+  if (!active && route.type === "traits") {
+    const traitRoot = refs.index.querySelectorAll(".codex-index-root")[1];
+    if (traitRoot) traitRoot.open = true;
+    const traitGroup = refs.index.querySelector(`[data-group="trait-${route.id}"]`);
+    if (traitGroup) traitGroup.open = true;
+  }
+  if (!active && route.type === "augments") {
+    const augmentRoot = refs.index.querySelectorAll(".codex-index-root")[2];
+    if (augmentRoot) augmentRoot.open = true;
+    const augmentGroup = refs.index.querySelector(`[data-group="augment-${route.id}"]`);
+    if (augmentGroup) augmentGroup.open = true;
+  }
 }
 
 function renderRoute() {
   const route = parseRoute();
   syncIndexHierarchy(route);
   if (route.type === "units") return renderUnitCatalog(route.id);
+  if (route.type === "traits") return renderTraitCatalog(route.id);
+  if (route.type === "augments") return renderAugmentCatalog(route.id);
   if (route.type === "unit") {
     const unit = units.find((entry) => entry.name === route.id);
     if (unit) return renderUnit(unit);

@@ -230,6 +230,7 @@ a { color: inherit; }
 .codex-unit-link strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .codex-unit-link small { color: var(--muted); font-size: 10px; }
 .codex-cost-picker { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.codex-category-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .codex-cost-picker a {
   display: grid;
   min-height: 62px;
