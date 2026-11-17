@@ -1,15 +1,15 @@
 {
   "격전": {
     "category": "major",
-    "summary": "공격과 시전으로 열기를 쌓아 과부하",
+    "summary": "기본 공격 시 열기 +1, 스킬 시전 시 열기 +2. 열기 6에서 과부하",
     "tiers": [
       {
         "need": 2,
-        "text": "열기 6 도달 시 최대 체력의 3% 회복. 3초간 과부하: 공격 속도 +20%, 스킬 피해 +10%",
+        "text": "기본 공격 시 열기 +1, 스킬 시전 시 열기 +2. 열기 6 도달 시 최대 체력의 3% 회복. 2초간 과부하: 공격 속도 +20%, 스킬 피해 +10%. 과부하 중에는 열기를 쌓을 수 없습니다.",
         "effects": [],
         "mechanics": {
           "heatRequired": 6,
-          "overloadMs": 3000,
+          "overloadMs": 2000,
           "overloadSpeedAdd": 0.2,
           "overloadSkillDamageAdd": 0.1,
           "overloadHealRatio": 0.03
@@ -17,11 +17,11 @@
       },
       {
         "need": 4,
-        "text": "열기 6 도달 시 최대 체력의 4.5% 회복. 3초간 과부하: 공격 속도 +30%, 스킬 피해 +15%",
+        "text": "기본 공격 시 열기 +1, 스킬 시전 시 열기 +2. 열기 6 도달 시 최대 체력의 4.5% 회복. 2초간 과부하: 공격 속도 +30%, 스킬 피해 +15%. 과부하 중에는 열기를 쌓을 수 없습니다.",
         "effects": [],
         "mechanics": {
           "heatRequired": 6,
-          "overloadMs": 3000,
+          "overloadMs": 2000,
           "overloadSpeedAdd": 0.3,
           "overloadSkillDamageAdd": 0.15,
           "overloadHealRatio": 0.045
@@ -29,11 +29,11 @@
       },
       {
         "need": 6,
-        "text": "열기 6 도달 시 최대 체력의 6.5% 회복. 3초간 과부하: 공격 속도 +45%, 스킬 피해 +25%",
+        "text": "기본 공격 시 열기 +1, 스킬 시전 시 열기 +2. 열기 6 도달 시 최대 체력의 6.5% 회복. 2초간 과부하: 공격 속도 +45%, 스킬 피해 +25%. 과부하 중에는 열기를 쌓을 수 없습니다.",
         "effects": [],
         "mechanics": {
           "heatRequired": 6,
-          "overloadMs": 3000,
+          "overloadMs": 2000,
           "overloadSpeedAdd": 0.45,
           "overloadSkillDamageAdd": 0.25,
           "overloadHealRatio": 0.065
@@ -41,11 +41,11 @@
       },
       {
         "need": 8,
-        "text": "열기 6 도달 시 최대 체력의 9% 회복. 3초간 과부하: 공격 속도 +65%, 스킬 피해 +35%",
+        "text": "기본 공격 시 열기 +1, 스킬 시전 시 열기 +2. 열기 6 도달 시 최대 체력의 9% 회복. 2초간 과부하: 공격 속도 +65%, 스킬 피해 +35%. 과부하 중에는 열기를 쌓을 수 없습니다.",
         "effects": [],
         "mechanics": {
           "heatRequired": 6,
-          "overloadMs": 3000,
+          "overloadMs": 2000,
           "overloadSpeedAdd": 0.65,
           "overloadSkillDamageAdd": 0.35,
           "overloadHealRatio": 0.09
@@ -101,7 +101,7 @@
     "tiers": [
       {
         "need": 2,
-        "text": "전투 시작 시 가장 가까운 아군에게 최대 체력의 8% 보호막을 부여하고 가장 가까운 적에게 방어력의 120% 피해. 6초 후 1회 반복",
+        "text": "철벽 유닛 각각이 전투 시작 시 자신을 제외한 가장 가까운 아군 1명에게 대상 최대 체력의 8% 보호막을 부여합니다. 한 아군은 최대 2명의 철벽 유닛에게 보호받을 수 있습니다. 각 철벽 유닛은 자신과 가장 가까운 적에게 자신의 방어력의 120% 피해를 주며, 6초 후 같은 대상에게 보호막과 공격을 1회 갱신합니다.",
         "effects": [],
         "mechanics": {
           "sanctuaryShieldRatio": 0.08,
@@ -110,7 +110,7 @@
       },
       {
         "need": 4,
-        "text": "전투 시작 시 가장 가까운 아군에게 최대 체력의 12% 보호막을 부여하고 가장 가까운 적에게 방어력의 180% 피해. 6초 후 1회 반복",
+        "text": "철벽 유닛 각각이 전투 시작 시 자신을 제외한 가장 가까운 아군 1명에게 대상 최대 체력의 12% 보호막을 부여합니다. 한 아군은 최대 2명의 철벽 유닛에게 보호받을 수 있습니다. 각 철벽 유닛은 자신과 가장 가까운 적에게 자신의 방어력의 180% 피해를 주며, 6초 후 같은 대상에게 보호막과 공격을 1회 갱신합니다.",
         "effects": [],
         "mechanics": {
           "sanctuaryShieldRatio": 0.12,
@@ -119,7 +119,7 @@
       },
       {
         "need": 6,
-        "text": "전투 시작 시 가장 가까운 아군에게 최대 체력의 18% 보호막을 부여하고 가장 가까운 적에게 방어력의 260% 피해. 6초 후 1회 반복",
+        "text": "철벽 유닛 각각이 전투 시작 시 자신을 제외한 가장 가까운 아군 1명에게 대상 최대 체력의 18% 보호막을 부여합니다. 한 아군은 최대 2명의 철벽 유닛에게 보호받을 수 있습니다. 각 철벽 유닛은 자신과 가장 가까운 적에게 자신의 방어력의 260% 피해를 주며, 6초 후 같은 대상에게 보호막과 공격을 1회 갱신합니다.",
         "effects": [],
         "mechanics": {
           "sanctuaryShieldRatio": 0.18,
@@ -128,7 +128,7 @@
       },
       {
         "need": 8,
-        "text": "전투 시작 시 가장 가까운 아군에게 최대 체력의 25% 보호막을 부여하고 가장 가까운 적에게 방어력의 380% 피해. 6초 후 1회 반복",
+        "text": "철벽 유닛 각각이 전투 시작 시 자신을 제외한 가장 가까운 아군 1명에게 대상 최대 체력의 25% 보호막을 부여합니다. 한 아군은 최대 2명의 철벽 유닛에게 보호받을 수 있습니다. 각 철벽 유닛은 자신과 가장 가까운 적에게 자신의 방어력의 380% 피해를 주며, 6초 후 같은 대상에게 보호막과 공격을 1회 갱신합니다.",
         "effects": [],
         "mechanics": {
           "sanctuaryShieldRatio": 0.25,
@@ -255,41 +255,49 @@
   },
   "진형": {
     "category": "major",
-    "summary": "배치에 따라 전진 또는 포격 태세",
+    "summary": "배치에 따라 전열은 체력·방어력, 후열은 공격력·스킬 증폭과 포격 강화",
     "tiers": [
       {
         "need": 2,
-        "text": "앞 2열은 최대 체력 +10%. 뒤 2열은 매 4번째 평타가 뒤쪽 1칸에 25% 확산",
+        "text": "앞 2열은 최대 체력과 방어력 +10%. 뒤 2열은 공격력과 스킬 증폭 +6%, 매 4번째 기본 공격이 대상 주위 1칸에 25% 피해로 확산됩니다.",
         "effects": [],
         "mechanics": {
           "frontHpMultiply": 1.1,
+          "frontDefenseMultiply": 1.1,
+          "backPowerMultiply": 1.06,
           "backSplashRatio": 0.25
         }
       },
       {
         "need": 4,
-        "text": "앞 2열은 최대 체력 +15%. 뒤 2열은 매 4번째 평타가 뒤쪽 1칸에 40% 확산",
+        "text": "앞 2열은 최대 체력과 방어력 +15%. 뒤 2열은 공격력과 스킬 증폭 +10%, 매 4번째 기본 공격이 대상 주위 1칸에 40% 피해로 확산됩니다.",
         "effects": [],
         "mechanics": {
           "frontHpMultiply": 1.15,
+          "frontDefenseMultiply": 1.15,
+          "backPowerMultiply": 1.1,
           "backSplashRatio": 0.4
         }
       },
       {
         "need": 6,
-        "text": "앞 2열은 최대 체력 +22%. 뒤 2열은 매 4번째 평타가 뒤쪽 1칸에 60% 확산",
+        "text": "앞 2열은 최대 체력과 방어력 +22%. 뒤 2열은 공격력과 스킬 증폭 +15%, 매 4번째 기본 공격이 대상 주위 1칸에 60% 피해로 확산됩니다.",
         "effects": [],
         "mechanics": {
           "frontHpMultiply": 1.22,
+          "frontDefenseMultiply": 1.22,
+          "backPowerMultiply": 1.15,
           "backSplashRatio": 0.6
         }
       },
       {
         "need": 8,
-        "text": "앞 2열은 최대 체력 +30%. 뒤 2열은 매 4번째 평타가 뒤쪽 1칸에 85% 확산",
+        "text": "앞 2열은 최대 체력과 방어력 +30%. 뒤 2열은 공격력과 스킬 증폭 +22%, 매 4번째 기본 공격이 대상 주위 1칸에 85% 피해로 확산됩니다.",
         "effects": [],
         "mechanics": {
           "frontHpMultiply": 1.3,
+          "frontDefenseMultiply": 1.3,
+          "backPowerMultiply": 1.22,
           "backSplashRatio": 0.85
         }
       }
@@ -301,88 +309,92 @@
     "tiers": [
       {
         "need": 2,
-        "text": "처음 체력 50% 이하가 되면 최대 체력의 10% 보호막과 4초간 공격력·스킬 증폭 +15%",
+        "text": "처음 체력 50% 이하가 되면 최대 체력의 10% 보호막과 4초간 공격력·스킬 증폭 +15%, 공격 속도 +8%",
         "effects": [],
         "mechanics": {
           "comebackShieldRatio": 0.1,
-          "comebackPowerAdd": 0.15
+          "comebackPowerAdd": 0.15,
+          "comebackSpeedAdd": 0.08
         }
       },
       {
         "need": 4,
-        "text": "처음 체력 50% 이하가 되면 최대 체력의 15% 보호막과 4초간 공격력·스킬 증폭 +25%",
+        "text": "처음 체력 50% 이하가 되면 최대 체력의 15% 보호막과 4초간 공격력·스킬 증폭 +25%, 공격 속도 +12%",
         "effects": [],
         "mechanics": {
           "comebackShieldRatio": 0.15,
-          "comebackPowerAdd": 0.25
+          "comebackPowerAdd": 0.25,
+          "comebackSpeedAdd": 0.12
         }
       },
       {
         "need": 6,
-        "text": "처음 체력 50% 이하가 되면 최대 체력의 22% 보호막과 4초간 공격력·스킬 증폭 +40%",
+        "text": "처음 체력 50% 이하가 되면 최대 체력의 22% 보호막과 4초간 공격력·스킬 증폭 +40%, 공격 속도 +18%",
         "effects": [],
         "mechanics": {
           "comebackShieldRatio": 0.22,
-          "comebackPowerAdd": 0.4
+          "comebackPowerAdd": 0.4,
+          "comebackSpeedAdd": 0.18
         }
       },
       {
         "need": 8,
-        "text": "처음 체력 50% 이하가 되면 최대 체력의 30% 보호막과 4초간 공격력·스킬 증폭 +60%",
+        "text": "처음 체력 50% 이하가 되면 최대 체력의 30% 보호막과 4초간 공격력·스킬 증폭 +60%, 공격 속도 +25%",
         "effects": [],
         "mechanics": {
           "comebackShieldRatio": 0.3,
-          "comebackPowerAdd": 0.6
+          "comebackPowerAdd": 0.6,
+          "comebackSpeedAdd": 0.25
         }
       }
     ]
   },
   "연대": {
     "category": "major",
-    "summary": "서로 다른 시전자를 연결해 팀 강화",
+    "summary": "서로 다른 연대 시전자를 연결해 아군 전체 회복",
     "tiers": [
       {
         "need": 2,
-        "text": "서로 다른 2명이 스킬을 쓰면 3초간 공격 속도 +15%, 최대 체력의 4% 회복",
+        "text": "서로 다른 연대 유닛 2명이 스킬을 쓰면 모든 아군이 최대 체력의 5%를 회복하고, 연대 유닛은 3초간 공격 속도 +15%",
         "effects": [],
         "mechanics": {
           "chainRequired": 2,
           "chainBuffMs": 3000,
           "chainSpeedAdd": 0.15,
-          "chainHealRatio": 0.04
+          "chainHealRatio": 0.05
         }
       },
       {
         "need": 4,
-        "text": "서로 다른 3명이 스킬을 쓰면 3초간 공격 속도 +25%, 최대 체력의 6% 회복",
+        "text": "서로 다른 연대 유닛 3명이 스킬을 쓰면 모든 아군이 최대 체력의 8%를 회복하고, 연대 유닛은 3초간 공격 속도 +25%",
         "effects": [],
         "mechanics": {
           "chainRequired": 3,
           "chainBuffMs": 3000,
           "chainSpeedAdd": 0.25,
-          "chainHealRatio": 0.06
+          "chainHealRatio": 0.08
         }
       },
       {
         "need": 6,
-        "text": "서로 다른 3명이 스킬을 쓰면 3초간 공격 속도 +35%, 최대 체력의 9% 회복",
+        "text": "서로 다른 연대 유닛 3명이 스킬을 쓰면 모든 아군이 최대 체력의 12%를 회복하고, 연대 유닛은 3초간 공격 속도 +35%",
         "effects": [],
         "mechanics": {
           "chainRequired": 3,
           "chainBuffMs": 3000,
           "chainSpeedAdd": 0.35,
-          "chainHealRatio": 0.09
+          "chainHealRatio": 0.12
         }
       },
       {
         "need": 8,
-        "text": "서로 다른 3명이 스킬을 쓰면 3초간 공격 속도 +50%, 최대 체력의 13% 회복",
+        "text": "서로 다른 연대 유닛 3명이 스킬을 쓰면 모든 아군이 최대 체력의 18%를 회복하고, 연대 유닛은 3초간 공격 속도 +50%",
         "effects": [],
         "mechanics": {
           "chainRequired": 3,
           "chainBuffMs": 3000,
           "chainSpeedAdd": 0.5,
-          "chainHealRatio": 0.13
+          "chainHealRatio": 0.18
         }
       }
     ]

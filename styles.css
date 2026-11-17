@@ -1641,11 +1641,13 @@ body.ally-board-only:not(.fighting) .board {
 
 .ranking-button,
 .statistics-button,
+.codex-button,
 .community-board-button,
 .pvp-rooms-button,
 .patch-notes-button,
 .audio-button {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   height: 38px;
@@ -1807,6 +1809,7 @@ body.ally-board-only:not(.fighting) .board {
 
 .ranking-button:hover,
 .statistics-button:hover,
+.codex-button:hover,
 .community-board-button:hover,
 .pvp-rooms-button:hover,
 .patch-notes-button:hover,

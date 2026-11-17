@@ -10,6 +10,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         game: `${root}index.html`,
+        codex: `${root}codex.html`,
         statistics: `${root}stats.html`,
         pvp: `${root}pvp.html`,
         pvpRoom: `${root}pvp-room.html`,

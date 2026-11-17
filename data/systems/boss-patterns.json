@@ -22,9 +22,9 @@
   "wickeline": {
     "targetCount": 3,
     "immuneHpRatio": 0.1,
-    "immuneTicks": 4,
-    "skillAmpMultiplier": 1.4,
-    "atkMultiplier": 0.4
+    "immuneTicks": 2,
+    "skillAmpMultiplier": 1.15,
+    "atkMultiplier": 0.3
   },
   "hana": {
     "summonRange": 1,
@@ -37,7 +37,7 @@
   },
   "nadja": {
     "basicTargetCount": 2,
-    "skillAmpMultiplier": 0.72,
-    "atkMultiplier": 0.25
+    "skillAmpMultiplier": 0.58,
+    "atkMultiplier": 0.2
   }
 }

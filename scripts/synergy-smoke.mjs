@@ -1,5 +1,6 @@
 // Runs data validation and deterministic combat smoke tests for every active synergy.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 globalThis.window = { location: { hostname: "127.0.0.1" } };
 globalThis.document = {
@@ -112,10 +113,31 @@ function validateTraitData() {
       assert(members.some((unit) => Number(unit.cost) === cost), `${trait}: missing ${cost}-cost augment reward unit`);
     }
   }
+
+  for (const tier of traitRules["격전"].tiers) {
+    assert.equal(tier.mechanics.overloadMs, 2000, `격전 ${tier.need}: 과부하 지속시간은 2초여야 합니다`);
+    assert.match(tier.text, /기본 공격 시 열기 \+1, 스킬 시전 시 열기 \+2/, `격전 ${tier.need}: 열기 획득 조건이 툴팁에 없습니다`);
+  }
+}
+
+function validateSkillContracts() {
+  const activeRoster = roster.filter((unit) => unit.active !== false);
+  const combatSource = readFileSync(new URL("../src/systems/combat/controller.js", import.meta.url), "utf8");
+  for (const unit of activeRoster) {
+    assert(unit.skillId, `${unit.name}: missing skillId`);
+    assert(String(unit.skillTooltip || "").trim(), `${unit.name}: missing skill tooltip`);
+    assert(/[0-9]/.test(unit.skillTooltip), `${unit.name}: skill tooltip has no concrete value`);
+    assert(combatSource.includes(JSON.stringify(unit.skillId)), `${unit.name}: skillId is not wired to combat`);
+  }
+
+  assert(/targets:\s*targets\.slice\(\),\s*fixedDamage:\s*Math\.round\(caster\.skillAmp \* 2\)/.test(combatSource), "유키: second strike must hit every target from the first strike");
+  assert(combatSource.includes('const targets = recall ? lineTargetsBetween(caster, target, enemies) : [target]'), "칼라: only the fourth cast may pierce the full path");
+  assert(combatSource.includes('hpDamage > 0 && target.nickyGuardRemainingMs > 0'), "니키: counter must require taking damage during guard");
+  assert(combatSource.includes('caster.manaLockRemainingMs = Math.max(caster.manaLockRemainingMs || 0, 2000)'), "샬럿: mana lock must apply to Charlotte, not every immune ally");
 }
 
 function validateLowCostBaseStats() {
-  for (const [cost, multiplier] of [[1, 1.1], [2, 1.07], [3, 1.04], [4, 1], [5, 1]]) {
+  for (const [cost, multiplier] of [[1, 1.1], [2, 1.07], [3, 1.04], [4, 1.08], [5, 1.12]]) {
     const base = roster.find((unit) => unit.active !== false && unit.cost === cost);
     assert(base, `Missing active ${cost}-cost unit`);
     const unit = makeUnit(base, balance, 1);
@@ -128,6 +150,14 @@ function validateLowCostBaseStats() {
   assert.equal(balance.battle.enemyBaseStatsByCost["1"].hp, 91, "PvE enemy base stats must remain independent");
   assert.equal(balance.battle.enemyBaseStatsByCost["2"].hp, 95, "PvE enemy base stats must remain independent");
   assert.equal(balance.battle.enemyBaseStatsByCost["3"].hp, 95, "PvE enemy base stats must remain independent");
+}
+
+function validateBalanceTuning() {
+  assert.equal(balance.battle.baseIncome, 4, "PvE base income must be 4 credits");
+  assert.equal(balance.battle.pvpBaseIncome, 5, "PvP base income must remain 5 credits");
+  assert.equal(bossPatterns.wickeline.immuneTicks, 2, "Wickeline immunity nerf mismatch");
+  assert.equal(bossPatterns.wickeline.skillAmpMultiplier, 1.15, "Wickeline skill nerf mismatch");
+  assert.equal(bossPatterns.nadja.skillAmpMultiplier, 0.58, "Nadja skill nerf mismatch");
 }
 
 function validateNewAugments() {
@@ -198,13 +228,19 @@ async function runTraitCombat(trait, seed, options = {}) {
   const preferred = options.names || PREFERRED_UNITS[trait];
   const need = options.need || traitRules[trait].tiers[0].need;
   const fallback = roster.filter((unit) => unit.active !== false && unitTraits(unit).includes(trait)).map((unit) => unit.name);
-  const names = [...new Set([...(preferred || []), ...fallback])].slice(0, need);
-  assert.equal(names.length, need, `${trait}: missing combat test members`);
+  const traitNames = [...new Set([...(preferred || []), ...fallback])].slice(0, need);
+  assert.equal(traitNames.length, need, `${trait}: missing combat test members`);
+  const names = [...traitNames, ...(options.extraNames || []).filter((name) => !traitNames.includes(name))];
   const boardIndexes = options.boardIndexes || (trait === "진형"
-    ? Array.from({ length: need }, (_, index) => 16 + index)
-    : Array.from({ length: need }, (_, index) => index));
+    ? Array.from({ length: names.length }, (_, index) => 16 + index)
+    : Array.from({ length: names.length }, (_, index) => index));
   names.forEach((name, index) => { state.board[boardIndexes[index]] = makeTestUnit(name); });
-  const baseMaxHpById = new Map(state.board.filter(Boolean).map((unit) => [unit.id, unit.maxHp]));
+  const baseStatsById = new Map(state.board.filter(Boolean).map((unit) => [unit.id, {
+    maxHp: unit.maxHp,
+    atk: unit.atk,
+    skillAmp: unit.skillAmp,
+    defense: unit.defense,
+  }]));
 
   const enemyName = roster.find((unit) => unit.name === "현우")?.name || roster[0].name;
   const enemies = Array.from({ length: options.enemyCount || 8 }, (_, index) => makeTestUnit(enemyName, {
@@ -293,9 +329,16 @@ async function runTraitCombat(trait, seed, options = {}) {
           targetRow: targetIndex >= 0 ? Math.floor(targetIndex / balance.battle.columns) : -1,
           targetDistance: targetIndex >= 0 ? gridHexDistance(index, targetIndex) : -1,
           maxHp: unit.maxHp,
-          baseMaxHp: baseMaxHpById.get(unit.id) || unit.maxHp,
+          atk: unit.atk,
+          skillAmp: unit.skillAmp,
+          defense: unit.defense,
+          baseMaxHp: baseStatsById.get(unit.id)?.maxHp || unit.maxHp,
+          baseAtk: baseStatsById.get(unit.id)?.atk || unit.atk,
+          baseSkillAmp: baseStatsById.get(unit.id)?.skillAmp || unit.skillAmp,
+          baseDefense: baseStatsById.get(unit.id)?.defense || unit.defense,
           shield: unit.shield || 0,
           vanguardShield: unit.traitVanguardShield || 0,
+          sanctuarySources: unit.traitSanctuarySources?.size || 0,
         };
       });
     },
@@ -344,10 +387,14 @@ async function runTraitCombat(trait, seed, options = {}) {
 }
 
 validateTraitData();
+validateSkillContracts();
 validateLowCostBaseStats();
+validateBalanceTuning();
 validateNewAugments();
-console.log("OK low-cost base stats | 1-cost +10% / 2-cost +7% / 3-cost +4% / PvE enemies unchanged");
+console.log("OK unit base stats | 1-cost +10% / 2-cost +7% / 3-cost +4% / 4-cost +8% / 5-cost +12% / PvE enemies unchanged");
+console.log("OK economy and boss tuning | PvE income 4 / PvP income 5 / Wickeline and Nadja nerfed");
 console.log("OK augment wiring | 입문 8종 규칙 패치 / 문장·왕관 시너지 카운트");
+console.log("OK skill contracts | 66 active units wired / numeric tooltips / critical behavior checks");
 
 const report = [];
 for (const trait of EXPECTED_TRAITS) {
@@ -379,6 +426,16 @@ console.log(`OK 암습 보스전 | focus 5중첩 / dodge 3회 / 처치 회피 �
 const ironWallOpening = await runTraitCombat("철벽", "synergy-smoke:pve-iron-wall", { mode: "pve" });
 assert(ironWallOpening.events.includes("protect"), "철벽: PvE opening protection did not trigger");
 assert(ironWallOpening.openingSnapshot.some((unit) => unit.shield > 0), "철벽: PvE opening shield was not present on the first combat frame");
+const ironWallSixOpening = await runTraitCombat("철벽", "synergy-smoke:pve-iron-wall-six", { mode: "pve", need: 6 });
+assert.equal(
+  ironWallSixOpening.openingSnapshot.reduce((sum, unit) => sum + unit.sanctuarySources, 0),
+  6,
+  "철벽 6: every Iron Wall unit must protect one ally",
+);
+assert(
+  ironWallSixOpening.openingSnapshot.every((unit) => unit.sanctuarySources <= 2),
+  "철벽 6: one ally may not receive shields from more than two Iron Wall units",
+);
 
 const vanguardOpening = await runTraitCombat("선봉", "synergy-smoke:pve-vanguard", { mode: "pve" });
 assert(vanguardOpening.events.includes("opening-shield"), "선봉: PvE opening shield did not trigger");
@@ -390,8 +447,17 @@ const formationOpening = await runTraitCombat("진형", "synergy-smoke:pve-forma
   skipTriggerAssert: true,
 });
 assert(
-  formationOpening.openingSnapshot.every((unit) => unit.maxHp > unit.baseMaxHp),
-  "진형: front-row max HP did not increase on the first PvE combat frame",
+  formationOpening.openingSnapshot.every((unit) => unit.maxHp > unit.baseMaxHp && unit.defense > unit.baseDefense),
+  "진형: front-row max HP and defense did not increase on the first PvE combat frame",
+);
+const formationBackOpening = await runTraitCombat("진형", "synergy-smoke:pve-formation-back", {
+  mode: "pve",
+  boardIndexes: [16, 17],
+  skipTriggerAssert: true,
+});
+assert(
+  formationBackOpening.openingSnapshot.every((unit) => unit.atk > unit.baseAtk && unit.skillAmp > unit.baseSkillAmp),
+  "진형: back-row attack and skill amp did not increase on the first PvE combat frame",
 );
 
 const ambushOpening = await runTraitCombat("암습", "synergy-smoke:pve-ambush", {
@@ -422,5 +488,22 @@ assert(
   `암습: 쇼이치/아비게일 pair did not dive: ${JSON.stringify(reportedAmbushPair.openingSnapshot)}`,
 );
 console.log("OK PvE opening mechanics | 철벽 보호 / 선봉 보호막 / 진형 전열 체력 / 암습 목표 인접 이동");
+
+const chainTeamHeal = await runTraitCombat("연대", "synergy-smoke:chain-team-heal", { extraNames: ["현우"], enemyCount: 1 });
+assert(
+  chainTeamHeal.eventDetails.some((entry) => entry.event === "chain" && entry.detail.allies === 3),
+  `연대: 비연대 아군을 포함한 전체 회복이 발동하지 않았습니다: ${JSON.stringify(chainTeamHeal.eventDetails)}`,
+);
+console.log("OK 연대 | 비연대 아군을 포함한 아군 전체 회복");
+
+const priyaFullBoard = await runTraitCombat("연대", "synergy-smoke:priya-full-board", {
+  names: ["프리야", "레니"],
+  enemyCount: 8,
+});
+assert(
+  priyaFullBoard.logs.some((message) => message.includes("프리야 대지의메아리: 8명")),
+  `프리야: 대지의메아리가 생존한 적 전원을 타격하지 않았습니다: ${priyaFullBoard.logs.join(" / ")}`,
+);
+console.log("OK 프리야 대지의메아리 | 정신집중 종료 후 생존 적 전원 타격");
 
 console.log(`Synergy smoke OK: ${report.length} traits, ${report.reduce((sum, item) => sum + item.triggerCount, 0)} measured triggers.`);

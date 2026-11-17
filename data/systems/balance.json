@@ -29,7 +29,9 @@
   "playerBaseStatMultiplierByCost": {
     "1": 1.1,
     "2": 1.07,
-    "3": 1.04
+    "3": 1.04,
+    "4": 1.08,
+    "5": 1.12
   },
   "tierByCost": {
     "1": {
@@ -455,7 +457,7 @@
     },
     "meleeRange": 1,
     "rangedRange": 4,
-    "baseIncome": 2,
+    "baseIncome": 4,
     "pvpBaseIncome": 5,
     "winIncome": 1,
     "maxInterest": 5,

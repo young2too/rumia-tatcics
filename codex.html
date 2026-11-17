@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="루미아 택틱스 실험체 스탯, 스킬, 시너지와 증강 정보를 확인하는 게임 도감" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://rumia-tatcics.onrender.com/codex.html" />
+    <meta property="og:title" content="루미아 택틱스 도감" />
+    <meta property="og:description" content="실험체·시너지·증강 정보를 목차에서 빠르게 찾아보세요." />
+    <meta property="og:url" content="https://rumia-tatcics.onrender.com/codex.html" />
+    <meta property="og:image" content="https://rumia-tatcics.onrender.com/assets/characters/000_Dr.Nadja.png" />
+    <title>루미아 택틱스 도감 | 실험체·시너지·증강</title>
+    <link rel="icon" href="./assets/characters/000_Dr.Nadja.png" />
+    <link rel="stylesheet" href="./codex.css" />
+  </head>
+  <body>
+    <main class="codex-app">
+      <header class="codex-header">
+        <a class="codex-brand" href="./index.html" aria-label="Lumia Tactics로 돌아가기">
+          <span><img src="./assets/characters/000_Dr.Nadja.png" alt="" /></span>
+          <div><strong>Lumia Tactics</strong><small>게임 도감</small></div>
+        </a>
+        <div class="codex-header-actions">
+          <button id="codexIndexToggle" type="button" aria-expanded="false">목차</button>
+          <a href="./index.html">게임으로</a>
+        </div>
+      </header>
+
+      <div class="codex-layout">
+        <aside id="codexSidebar" class="codex-sidebar" aria-label="도감 목차">
+          <header>
+            <div><strong>목차</strong><small>실험체 · 시너지 · 증강</small></div>
+            <div class="codex-sidebar-actions">
+              <button id="codexIndexBack" type="button" aria-label="이전 페이지로 돌아가기">← <span>뒤로</span></button>
+              <button id="codexIndexClose" type="button" aria-label="목차 닫기">×</button>
+            </div>
+          </header>
+          <label class="codex-search">
+            <span>검색</span>
+            <input id="codexSearch" type="search" maxlength="30" placeholder="이름, 역할, 효과 검색" autocomplete="off" />
+          </label>
+          <nav id="codexIndex" class="codex-index"></nav>
+        </aside>
+
+        <button id="codexBackdrop" class="codex-backdrop" type="button" aria-label="목차 닫기" hidden></button>
+        <article id="codexDetail" class="codex-detail" aria-live="polite"></article>
+      </div>
+    </main>
+    <script type="module" src="./src/codex/main.js"></script>
+  </body>
+</html>

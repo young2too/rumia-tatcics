@@ -152,13 +152,15 @@ function addTimedSpeed(unit, key, ratio, durationMs) {
   unit[key] = { delta, remainingMs: durationMs };
 }
 
-function addTimedPower(unit, key, ratio, durationMs) {
+function addTimedPower(unit, key, ratio, durationMs, speedRatio = 0) {
   if (!unit || ratio <= 0 || durationMs <= 0 || unit[key]) return;
   const atkDelta = unit.atk * ratio;
   const ampDelta = unit.skillAmp * ratio;
+  const speedDelta = unit.speed * Math.max(0, speedRatio);
   unit.atk += atkDelta;
   unit.skillAmp += ampDelta;
-  unit[key] = { atkDelta, ampDelta, remainingMs: durationMs };
+  unit.speed += speedDelta;
+  unit[key] = { atkDelta, ampDelta, speedDelta, remainingMs: durationMs };
 }
 
 function grantTraitShield(target, amount, sourceKey) {
@@ -237,7 +239,7 @@ function applyOpeningTraitMechanics(units) {
 
 function chargeTorrent(unit, amount) {
   const requiredBase = mechanicValue(unit, "heatRequired");
-  if (!requiredBase || unit.traitOverloadBuff || (unit.traitOverloadRestMs || 0) > 0) return false;
+  if (!requiredBase || unit.traitOverloadBuff) return false;
   const required = Math.max(3, Math.round(requiredBase + Number(unit.traitMechanics?.heatRequiredAdd || 0)));
   unit.traitHeat = Math.min(required, (unit.traitHeat || 0) + amount);
   if (unit.traitHeat < required) return false;
@@ -266,14 +268,17 @@ function triggerChain(caster, friends, effects, messages) {
   chain.casters.clear();
   chain.readyAt = combatElapsedMs + cooldown;
   let healed = 0;
-  for (const ally of living(friends).filter((unit) => hasActiveTrait(unit, "연대"))) {
-    addTimedSpeed(ally, "traitChainBuff", mechanicValue(caster, "chainSpeedAdd"), mechanicValue(caster, "chainBuffMs", 3000));
+  const livingFriends = living(friends);
+  for (const ally of livingFriends) {
+    if (hasActiveTrait(ally, "연대")) {
+      addTimedSpeed(ally, "traitChainBuff", mechanicValue(caster, "chainSpeedAdd"), mechanicValue(caster, "chainBuffMs", 3000));
+    }
     const amount = applyHeal(ally, ally.maxHp * mechanicValue(caster, "chainHealRatio"));
     if (amount) effects.push(combatEffect(caster, ally, "heal", { amount }));
     healed += amount;
   }
-  messages.push(`${caster.name} 연대 발동: ${healed} 회복`);
-  recordTraitTrigger("연대", "chain", { caster: caster.name, healed });
+  messages.push(`${caster.name} 연대 발동: 아군 ${livingFriends.length}명 ${healed} 회복`);
+  recordTraitTrigger("연대", "chain", { caster: caster.name, allies: livingFriends.length, healed });
 }
 
 function triggerRupture(attacker, target, effects, messages) {
@@ -858,9 +863,19 @@ function gainMana(unit, amount) {
   if (unit.shieldDefenseRemainingMs > 0) return;
   if (unit.peaceRemainingMs > 0) return;
   if (unit.lifeShareRemainingMs > 0) return;
-  if (unit.immuneRemainingMs > 0) return;
   if (unit.manaLockRemainingMs > 0) return;
   unit.mana = Math.min(unitMaxMana(unit), (unit.mana || 0) + Math.round(amount * (unit.manaGain || 1)));
+}
+
+function grantTimedShield(target, field, amount, durationMs) {
+  const previous = Math.max(0, Number(target[field]) || 0);
+  if (previous > 0) target.shield = Math.max(0, (target.shield || 0) - previous);
+  const shield = Math.max(1, Math.round(amount));
+  target[field] = shield;
+  target[`${field}RemainingMs`] = durationMs;
+  target[`${field}DurationMs`] = durationMs;
+  target.shield = (target.shield || 0) + shield;
+  return shield;
 }
 
 function applyHeal(target, amount) {
@@ -1206,10 +1221,10 @@ function triggerFenrirLastStand(unit) {
   if (!unit || unit.skillId !== "fenrir_last_stand" || unit.fenrirLastStandUsed) return null;
   unit.fenrirLastStandUsed = true;
   unit.fenrirLastStandActive = true;
-  unit.fenrirLastStandRemainingMs = 1500;
-  unit.fenrirLastStandDurationMs = 1500;
-  unit.hp = Math.max(1, Math.round(unit.maxHp * 0.55));
-  unit.speed *= 1.3;
+  unit.fenrirLastStandRemainingMs = 800;
+  unit.fenrirLastStandDurationMs = 800;
+  unit.hp = Math.max(1, Math.round(unit.maxHp * 0.35));
+  unit.speed *= 1.15;
   unit.mana = 0;
   unit.status = "last-stand";
   return combatEffect(unit, unit, "heal", { amount: unit.hp });
@@ -1721,9 +1736,16 @@ function prepareCombatUnit(unit, side, counts = {}, playerState = null, playerUn
   if (slot && mechanicValue(unit, "frontHpMultiply", 1) > 1) {
     const front = side === "ally" ? slot.y <= allyStartRow() + 1 : slot.y >= enemyRows() - 2;
     unit.traitOrbitMode = front ? "front" : "back";
+    const formationEffect = Number(unit.traitMechanics?.orbitEffectMultiply) || 1;
     if (front) {
       const hpMultiplier = mechanicValue(unit, "frontHpMultiply", 1);
-      stats.hp *= 1 + (hpMultiplier - 1) * (Number(unit.traitMechanics?.orbitEffectMultiply) || 1);
+      const defenseMultiplier = mechanicValue(unit, "frontDefenseMultiply", 1);
+      stats.hp *= 1 + (hpMultiplier - 1) * formationEffect;
+      stats.defense *= 1 + (defenseMultiplier - 1) * formationEffect;
+    } else {
+      const powerMultiplier = mechanicValue(unit, "backPowerMultiply", 1);
+      stats.atk *= 1 + (powerMultiplier - 1) * formationEffect;
+      stats.skillAmp *= 1 + (powerMultiplier - 1) * formationEffect;
     }
   } else if (slot && mechanicValue(unit, "backSplashRatio") > 0) {
     unit.traitOrbitMode = side === "ally"
@@ -1879,7 +1901,6 @@ function prepareCombatUnit(unit, side, counts = {}, playerState = null, playerUn
   delete unit.traitChainBuff;
   delete unit.traitMobilityBuff;
   delete unit.traitComebackBuff;
-  unit.traitOverloadRestMs = 0;
   unit.traitOverloadSkillDamageAdd = 0;
   unit.traitVanguardShield = 0;
   unit.traitVanguardShieldRemainingMs = 0;
@@ -2076,7 +2097,8 @@ function dealDamage(source, target, amount, options = {}) {
   const assassinOpeningReduction = target.assassinOpeningProtectionRemainingMs > 0
     ? target.assassinOpeningDamageReduction || 0
     : 0;
-  const totalReduction = Math.max(0, Math.min(0.85, (target.damageReduction || 0) + shawlReduction + shieldDefenseReduction + assassinOpeningReduction));
+  const sanctuaryReduction = target.sanctuaryRemainingMs > 0 ? 0.2 : 0;
+  const totalReduction = Math.max(0, Math.min(0.85, (target.damageReduction || 0) + shawlReduction + shieldDefenseReduction + assassinOpeningReduction + sanctuaryReduction));
   const effectiveDefense = target.defense * (target?.huntMarked && source?.huntMarkedDefenseApplyRatio < 1 && source.side !== target.side ? source.huntMarkedDefenseApplyRatio : 1);
   const reducedAmount = adjustedAmount * (1 - totalReduction);
   const damage = options.fixed
@@ -2101,10 +2123,26 @@ function dealDamage(source, target, amount, options = {}) {
     const witchAbsorbed = Math.min(target.witchShield || 0, trackedAbsorbed);
     target.witchShield = Math.max(0, (target.witchShield || 0) - witchAbsorbed);
     trackedAbsorbed -= witchAbsorbed;
-    target.leniShield = Math.max(0, (target.leniShield || 0) - trackedAbsorbed);
+    const sanctuaryAbsorbed = Math.min(target.traitSanctuaryShield || 0, trackedAbsorbed);
+    target.traitSanctuaryShield = Math.max(0, (target.traitSanctuaryShield || 0) - sanctuaryAbsorbed);
+    trackedAbsorbed -= sanctuaryAbsorbed;
+    let sanctuarySourceAbsorbed = sanctuaryAbsorbed;
+    for (const [sourceId, sourceShield] of target.traitSanctuaryShieldBySource || []) {
+      if (sanctuarySourceAbsorbed <= 0) break;
+      const sourceAbsorbed = Math.min(sourceShield, sanctuarySourceAbsorbed);
+      target.traitSanctuaryShieldBySource.set(sourceId, Math.max(0, sourceShield - sourceAbsorbed));
+      sanctuarySourceAbsorbed -= sourceAbsorbed;
+    }
+    for (const field of ["leniShield", "mirkaShield", "theodoreShield"]) {
+      if (trackedAbsorbed <= 0) break;
+      const fieldAbsorbed = Math.min(target[field] || 0, trackedAbsorbed);
+      target[field] = Math.max(0, (target[field] || 0) - fieldAbsorbed);
+      trackedAbsorbed -= fieldAbsorbed;
+    }
   }
   const hpDamage = Math.max(0, damage - absorbed);
   target.hp = Math.max(0, target.hp - hpDamage);
+  if (hpDamage > 0 && target.nickyGuardRemainingMs > 0) target.nickyCounterReady = 1;
   if (target.hp <= 0 && target.side === "ally" && !target.augmentTeamDeathGuardUsed) {
     const deathGuard = selectedAugmentEffects("teamDeathGuard")[0];
     if (deathGuard) {
@@ -2124,8 +2162,16 @@ function dealDamage(source, target, amount, options = {}) {
   if (target.hp > 0 && !target.traitComebackUsed && target.hp / target.maxHp <= 0.5 && mechanicValue(target, "comebackShieldRatio") > 0) {
     target.traitComebackUsed = true;
     grantTraitShield(target, target.maxHp * mechanicValue(target, "comebackShieldRatio") * (Number(target.traitMechanics?.comebackEffectMultiply) || 1), "traitComebackShield");
-    addTimedPower(target, "traitComebackBuff", mechanicValue(target, "comebackPowerAdd") * (Number(target.traitMechanics?.comebackEffectMultiply) || 1), 4000);
-    recordTraitTrigger("투혼", "comeback", { unit: target.name });
+    const comebackEffectMultiply = Number(target.traitMechanics?.comebackEffectMultiply) || 1;
+    const comebackSpeedAdd = mechanicValue(target, "comebackSpeedAdd") * comebackEffectMultiply;
+    addTimedPower(
+      target,
+      "traitComebackBuff",
+      mechanicValue(target, "comebackPowerAdd") * comebackEffectMultiply,
+      4000,
+      comebackSpeedAdd,
+    );
+    recordTraitTrigger("투혼", "comeback", { unit: target.name, speedAdd: comebackSpeedAdd });
   }
   if (hpDamage > 0 && source?.id && source.side !== target.side) {
     target.killContributors ||= new Set();
@@ -2189,7 +2235,7 @@ function dealDamage(source, target, amount, options = {}) {
     if (fenrirEffect) {
       state.pendingHiddenEffects ||= [];
       state.pendingHiddenEffects.push(fenrirEffect);
-      addLog(`${target.name} 최후의 저항: 체력 55%로 부활하고 1.5초 동안 피해 면역 / 공격속도 +30%.`);
+      addLog(`${target.name} 최후의 저항: 체력 35%로 부활하고 0.8초 동안 피해 면역 / 공격속도 +15%.`);
       return damage;
     }
     const reviveEffect = triggerThreeStarRevive(target);
@@ -2768,7 +2814,7 @@ function basicAttack(attacker, enemies) {
   const bihyungSecondStrike = bihyungEnhanced && attacker.bihyungEnhancedAttacks === 1;
   const hit = basicAttackDamage(attacker, attacker.atk * variance * balance.battle.basicDamageMultiplier, target);
   const duelBonus = advanceDuelSameTargetStack(attacker, target);
-  let attackAmount = (guardCounter ? hit.amount * 1.18 : hit.amount) * (bihyungEnhanced ? 1.35 : 1) * (1 + duelBonus.damageAdd);
+  let attackAmount = hit.amount * (bihyungEnhanced ? 1.35 : 1) * (1 + duelBonus.damageAdd);
   if (attacker.lukeCleaningBoost) {
     const effect = unitAugmentEffect(attacker, "lukeCleaningService");
     attackAmount += attacker.atk * (Number(effect?.nextAttackAtkRatioAdd) || 0);
@@ -3482,7 +3528,7 @@ function castPriyaSkill(caster, allies, enemies) {
   caster.actionLockDurationMs = 800;
   caster.status = "channeling";
   const supportTargets = living(allies);
-  const effects = supportTargets.map((unit) => combatEffect(caster, unit, "shield", { amount: 1 }));
+  const effects = [];
   const augment = unitAugmentEffect(caster, "priyaGrandFinale");
   if (augment) {
     const nearbyAllies = supportTargets.filter((unit) => distanceBetween(caster, unit) <= 2);
@@ -3497,7 +3543,6 @@ function castPriyaSkill(caster, allies, enemies) {
     caster,
     enemies: enemies.slice(),
   });
-  playSkillVisual?.({ type: "priya-earth-echo", fromId: caster.id, targetIds: supportTargets.map((unit) => unit.id) });
   return {
     message: `${caster.name} 대지의메아리: 0.8초 정신집중`,
     effects,
@@ -3507,6 +3552,20 @@ function castPriyaSkill(caster, allies, enemies) {
 function lineTargetsBetween(caster, target, enemies) {
   const { targets } = shoichiPathTargets(caster, enemies, target);
   return targets.slice().sort((a, b) => distanceBetween(caster, a) - distanceBetween(caster, b));
+}
+
+function wideLineTargetsBetween(caster, target, units, radius = 1.05) {
+  const start = projectileSlotPoint(unitSlot(caster));
+  const end = projectileSlotPoint(unitSlot(target));
+  if (!start || !end) return lineTargetsBetween(caster, target, units);
+  return living(units)
+    .filter((unit) => {
+      const point = projectileSlotPoint(unitSlot(unit));
+      if (!point) return false;
+      const hit = pointSegmentDistance(point, start, end);
+      return hit.t >= 0 && hit.t <= 1 && hit.distance <= radius;
+    })
+    .sort((a, b) => distanceBetween(caster, a) - distanceBetween(caster, b));
 }
 
 function firstProjectileHit(caster, intendedTarget, enemies) {
@@ -4069,7 +4128,7 @@ function farthestEnemy(caster, enemies) {
 }
 
 function lowestHpEnemy(enemies) {
-  return living(enemies).slice().sort((a, b) => a.hp - b.hp)[0] || null;
+  return living(enemies).slice().sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp) || a.hp - b.hp)[0] || null;
 }
 
 function lowestHpAllies(allies, count) {
@@ -4172,14 +4231,13 @@ function castElevenSkill(caster, enemies) {
 }
 
 function castNickySkill(caster, enemies) {
-  caster.nickyCounterReady = 1;
+  caster.nickyCounterReady = 0;
+  caster.nickyGuardRemainingMs = 750;
   caster.actionLockRemainingMs = Math.max(caster.actionLockRemainingMs || 0, 750);
   caster.actionLockDurationMs = Math.max(caster.actionLockDurationMs || 0, 750);
-  const shield = Math.max(1, Math.round(skillOutput(caster, caster.skillAmp * 0.75 + caster.defense * 1.1 + 8)));
-  caster.shield = (caster.shield || 0) + shield;
   const target = pickTarget(caster, enemies);
   playSkillVisual?.({ type: "sissela-channel", fromId: caster.id, targetIds: target ? [target.id] : [caster.id] });
-  return { message: `${caster.name} 가드 카운터: 다음 평타 기절 준비 / 보호막 ${shield}`, effects: [combatEffect(caster, caster, "shield", { amount: shield })] };
+  return { message: `${caster.name} 가드 카운터: 0.75초 가드`, effects: [] };
 }
 
 function castCamiloSkill(caster, enemies) {
@@ -4203,8 +4261,8 @@ function castCamiloSkill(caster, enemies) {
 function castArdaSkill(caster, allies, enemies) {
   const target = pickTarget(caster, enemies);
   if (!target) return { message: "", effects: [] };
-  const enemyTargets = lineTargetsBetween(caster, target, enemies);
-  const allyTargets = lineTargetsBetween(caster, target, allies).filter((unit) => unit !== caster);
+  const enemyTargets = wideLineTargetsBetween(caster, target, enemies);
+  const allyTargets = wideLineTargetsBetween(caster, target, allies).filter((unit) => unit !== caster);
   const effects = [];
   let total = 0;
   let healTotal = 0;
@@ -4247,8 +4305,8 @@ function castKarlaSkill(caster, enemies) {
   const target = farthestEnemy(caster, enemies);
   if (!target) return { message: "", effects: [] };
   caster.karlaHarpoonCasts = (caster.karlaHarpoonCasts || 0) + 1;
-  const targets = lineTargetsBetween(caster, target, enemies);
   const recall = caster.karlaHarpoonCasts % 4 === 0;
+  const targets = recall ? lineTargetsBetween(caster, target, enemies) : [target];
   const { effects, total } = hitTargets(caster, targets, caster.atk * (recall ? 0.62 : 0.42) + caster.skillAmp * (recall ? 0.62 : 0.48) + 6, "arrow", 70);
   playSkillVisual?.({ type: "rio-kaeyumi", fromId: caster.id, targetIds: [target.id] });
   return { message: `${caster.name} 관통 작살: 경로 ${targets.length}명 ${total} 피해${recall ? " / 작살 회수" : ""}`, effects };
@@ -4337,6 +4395,8 @@ function castCharlotteSkill(caster, allies) {
     target.immuneDurationMs = Math.max(target.immuneDurationMs || 0, 2000);
     target.status = "immune";
   }
+  caster.manaLockRemainingMs = Math.max(caster.manaLockRemainingMs || 0, 2000);
+  caster.manaLockDurationMs = Math.max(caster.manaLockDurationMs || 0, 2000);
   playSkillVisual?.({ type: "hart-peacemaker", fromId: caster.id, targetIds: targets.map((unit) => unit.id) });
   return { message: `${caster.name} 기적 실현: ${targets.length}명 2초 무적`, effects: targets.map((unit) => combatEffect(caster, unit, "shield", { amount: 1 })) };
 }
@@ -4397,8 +4457,7 @@ function castMirkaSkill(caster, enemies) {
     knockBack(target, caster, 1);
     effects.push(combatEffect(caster, target, "skill", { amount: damage }));
   }
-  const shield = Math.max(1, Math.round(skillOutput(caster, caster.skillAmp + caster.defense * 1.5)));
-  caster.shield = (caster.shield || 0) + shield;
+  const shield = grantTimedShield(caster, "mirkaShield", skillOutput(caster, caster.skillAmp + caster.defense * 1.5), 1500);
   effects.push(combatEffect(caster, caster, "shield", { amount: shield }));
   playSkillVisual?.({ type: "sissela-liberation", fromId: caster.id, targetIds: targets.map((unit) => unit.id) });
   return { message: `${caster.name} 리펄스배리어: ${targets.length}명 ${total} 피해 / 보호막 ${shield}`, effects };
@@ -4547,8 +4606,7 @@ function castTheodoreSkill(caster, allies) {
   let total = 0;
   for (const target of targets) {
     const heal = applyHeal(target, skillOutput(caster, caster.skillAmp * 0.65 + 10) * caster.healPower);
-    const shield = Math.max(1, Math.round(skillOutput(caster, caster.skillAmp * 0.28 + 6)));
-    target.shield = (target.shield || 0) + shield;
+    const shield = grantTimedShield(target, "theodoreShield", skillOutput(caster, caster.skillAmp * 0.28 + 6), 1500);
     total += heal + shield;
     if (heal > 0) effects.push(combatEffect(caster, target, "heal", { amount: heal }));
     effects.push(combatEffect(caster, target, "shield", { amount: shield }));
@@ -4795,7 +4853,7 @@ function resolveSkillTimelineEvents(elapsedMs, timeline = skillTimeline) {
       continue;
     }
     if (event.type === "priya-earth-echo") {
-      const targets = unitsInRange(event.caster, event.enemies, 3);
+      const targets = living(event.enemies);
       const augment = unitAugmentEffect(event.caster, "priyaGrandFinale");
       let total = 0;
       for (const target of targets) {
@@ -5424,6 +5482,7 @@ function advanceTimedStatuses(units, stepMs) {
     if (unit.timeStopRemainingMs > 0) unit.timeStopRemainingMs = Math.max(0, unit.timeStopRemainingMs - stepMs);
     if (unit.warpVisualRemainingMs > 0) unit.warpVisualRemainingMs = Math.max(0, unit.warpVisualRemainingMs - stepMs);
     if (unit.manaLockRemainingMs > 0) unit.manaLockRemainingMs = Math.max(0, unit.manaLockRemainingMs - stepMs);
+    if (unit.nickyGuardRemainingMs > 0) unit.nickyGuardRemainingMs = Math.max(0, unit.nickyGuardRemainingMs - stepMs);
     if (unit.rootRemainingMs > 0) unit.rootRemainingMs = Math.max(0, unit.rootRemainingMs - stepMs);
     if (unit.healReductionRemainingMs > 0) unit.healReductionRemainingMs = Math.max(0, unit.healReductionRemainingMs - stepMs);
     if (unit.augmentAmpRelayRemainingMs > 0) {
@@ -5444,6 +5503,19 @@ function advanceTimedStatuses(units, stepMs) {
         unit.witchShield = 0;
       }
     }
+    for (const field of ["mirkaShield", "theodoreShield"]) {
+      const remainingField = `${field}RemainingMs`;
+      const durationField = `${field}DurationMs`;
+      if (unit[remainingField] > 0) {
+        unit[remainingField] = Math.max(0, unit[remainingField] - stepMs);
+        if (unit[remainingField] <= 0 && unit[field] > 0) {
+          unit.shield = Math.max(0, (unit.shield || 0) - unit[field]);
+          unit[field] = 0;
+        }
+      }
+      if (unit[remainingField] <= 0) unit[durationField] = 0;
+    }
+    if (unit.sanctuaryRemainingMs > 0) unit.sanctuaryRemainingMs = Math.max(0, unit.sanctuaryRemainingMs - stepMs);
     if (unit.assassinOpeningProtectionRemainingMs > 0) {
       unit.assassinOpeningProtectionRemainingMs = Math.max(0, unit.assassinOpeningProtectionRemainingMs - stepMs);
     }
@@ -5499,15 +5571,14 @@ function advanceTraitMechanics(units, stepMs) {
       delete unit[key];
       if (key === "traitOverloadBuff") {
         unit.traitOverloadSkillDamageAdd = 0;
-        unit.traitOverloadRestMs = 2000;
       }
     }
-    if (unit.traitOverloadRestMs > 0) unit.traitOverloadRestMs = Math.max(0, unit.traitOverloadRestMs - stepMs);
     if (unit.traitComebackBuff) {
       unit.traitComebackBuff.remainingMs = Math.max(0, unit.traitComebackBuff.remainingMs - stepMs);
       if (unit.traitComebackBuff.remainingMs <= 0) {
         unit.atk = Math.max(1, unit.atk - unit.traitComebackBuff.atkDelta);
         unit.skillAmp = Math.max(0, unit.skillAmp - unit.traitComebackBuff.ampDelta);
+        unit.speed = Math.max(0.1, unit.speed - (unit.traitComebackBuff.speedDelta || 0));
         delete unit.traitComebackBuff;
       }
     }
@@ -5578,6 +5649,7 @@ function passiveOnlySkill(unit) {
   return new Set([
     "fenrir_last_stand",
     "tsubame_biyeon",
+    "jackie_assault",
   ]).has(unit?.skillId);
 }
 
@@ -6043,6 +6115,16 @@ async function simulate(options = {}) {
     unit.witchShield = 0;
     unit.witchShieldRemainingMs = 0;
     unit.witchShieldDurationMs = 0;
+    unit.mirkaShield = 0;
+    unit.mirkaShieldRemainingMs = 0;
+    unit.mirkaShieldDurationMs = 0;
+    unit.theodoreShield = 0;
+    unit.theodoreShieldRemainingMs = 0;
+    unit.theodoreShieldDurationMs = 0;
+    unit.sanctuaryRemainingMs = 0;
+    unit.nickyGuardRemainingMs = 0;
+    unit.nickyCounterReady = 0;
+    unit.karlaHarpoonCasts = 0;
     unit.assassinOpeningProtectionRemainingMs = 0;
     unit.assassinRearmReady = false;
     unit.assassinRearmReadyAt = 0;
