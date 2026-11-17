@@ -8,7 +8,7 @@ export function createPatchNotesController({ state, patchNotesConfig, patchNotes
   }
 
   function hiddenMarker() {
-    return `${patchNotesConfig.version || "legacy"}:${todayKey()}`;
+    return `${patchNotesConfig.version || "legacy"}:${patchNotesConfig.date || "undated"}:${todayKey()}`;
   }
 
   function hiddenToday() {
