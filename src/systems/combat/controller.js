@@ -1224,7 +1224,8 @@ function triggerFenrirLastStand(unit) {
   unit.fenrirLastStandRemainingMs = 800;
   unit.fenrirLastStandDurationMs = 800;
   unit.hp = Math.max(1, Math.round(unit.maxHp * 0.35));
-  unit.speed *= 1.15;
+  unit.fenrirLastStandSpeedDelta = unit.speed * 0.15;
+  unit.speed += unit.fenrirLastStandSpeedDelta;
   unit.mana = 0;
   unit.status = "last-stand";
   return combatEffect(unit, unit, "heal", { amount: unit.hp });
@@ -1866,6 +1867,7 @@ function prepareCombatUnit(unit, side, counts = {}, playerState = null, playerUn
   unit.fenrirLastStandActive = false;
   unit.fenrirLastStandRemainingMs = 0;
   unit.fenrirLastStandDurationMs = 0;
+  unit.fenrirLastStandSpeedDelta = 0;
   unit.garnetIronMaiden = null;
   unit.semtexGrenade = null;
   unit.biancaReignUsed = false;
@@ -5521,7 +5523,12 @@ function advanceTimedStatuses(units, stepMs) {
     }
     if (unit.fenrirLastStandRemainingMs > 0) {
       unit.fenrirLastStandRemainingMs = Math.max(0, unit.fenrirLastStandRemainingMs - stepMs);
-      if (unit.fenrirLastStandRemainingMs <= 0 && unit.fenrirLastStandActive) unit.status = "last-stand";
+      if (unit.fenrirLastStandRemainingMs <= 0 && unit.fenrirLastStandActive) {
+        unit.speed = Math.max(0.1, unit.speed - (unit.fenrirLastStandSpeedDelta || 0));
+        unit.fenrirLastStandSpeedDelta = 0;
+        unit.fenrirLastStandActive = false;
+        unit.status = "";
+      }
     }
     if (unit.garnetIronMaiden?.remainingMs > 0) {
       unit.garnetIronMaiden.remainingMs = Math.max(0, unit.garnetIronMaiden.remainingMs - stepMs);
@@ -6086,6 +6093,7 @@ async function simulate(options = {}) {
     unit.fenrirLastStandExpired = false;
     unit.fenrirLastStandRemainingMs = 0;
     unit.fenrirLastStandDurationMs = 0;
+    unit.fenrirLastStandSpeedDelta = 0;
     unit.hp = unit.maxHp;
     unit.mana = 0;
     unit.status = "";
@@ -6343,6 +6351,7 @@ async function simulate(options = {}) {
       unit.fenrirLastStandExpired = false;
       unit.fenrirLastStandRemainingMs = 0;
       unit.fenrirLastStandDurationMs = 0;
+      unit.fenrirLastStandSpeedDelta = 0;
       unit.hp = unit.maxHp;
       unit.mana = 0;
       unit.status = "";

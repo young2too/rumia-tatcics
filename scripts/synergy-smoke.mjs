@@ -134,6 +134,7 @@ function validateSkillContracts() {
   assert(combatSource.includes('const targets = recall ? lineTargetsBetween(caster, target, enemies) : [target]'), "칼라: only the fourth cast may pierce the full path");
   assert(combatSource.includes('hpDamage > 0 && target.nickyGuardRemainingMs > 0'), "니키: counter must require taking damage during guard");
   assert(combatSource.includes('caster.manaLockRemainingMs = Math.max(caster.manaLockRemainingMs || 0, 2000)'), "샬럿: mana lock must apply to Charlotte, not every immune ally");
+  assert(combatSource.includes('unit.speed = Math.max(0.1, unit.speed - (unit.fenrirLastStandSpeedDelta || 0))'), "펜리르: 최후의 저항 종료 시 공격 속도 증가가 해제되어야 합니다");
 }
 
 function validateLowCostBaseStats() {
